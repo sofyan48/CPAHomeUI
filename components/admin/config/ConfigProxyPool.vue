@@ -65,25 +65,7 @@
             <span class="block max-w-56 truncate text-sm text-[var(--ui-text-muted)]" :title="rowValue(row).note || ''">{{ rowValue(row).note || '—' }}</span>
           </template>
 
-          <template #actions-cell="{ row }">
-            <div class="hidden justify-end gap-1 xl:flex">
-              <UButton size="sm" color="neutral" variant="ghost" icon="i-heroicons-signal" :loading="testingId === rowValue(row).id" :disabled="Boolean(testingId)" @click="testPool(rowValue(row))">Test</UButton>
-              <UButton size="sm" color="neutral" variant="ghost" icon="i-heroicons-pencil-square" @click="openEdit(rowValue(row))">Edit</UButton>
-              <UButton size="sm" color="error" variant="ghost" icon="i-heroicons-trash" :aria-label="`Delete ${rowValue(row).name}`" @click="confirmDelete(rowValue(row))" />
-            </div>
-            <div class="flex justify-end xl:hidden">
-              <UPopover>
-                <UButton size="sm" color="neutral" variant="ghost" icon="i-heroicons-ellipsis-horizontal" :aria-label="`Actions for ${rowValue(row).name}`" />
-                <template #content>
-                  <div class="grid min-w-40 gap-1 p-2">
-                    <UButton size="sm" color="neutral" variant="ghost" icon="i-heroicons-signal" class="justify-start" :loading="testingId === rowValue(row).id" :disabled="Boolean(testingId)" @click="testPool(rowValue(row))">Test</UButton>
-                    <UButton size="sm" color="neutral" variant="ghost" icon="i-heroicons-pencil-square" class="justify-start" @click="openEdit(rowValue(row))">Edit</UButton>
-                    <UButton size="sm" color="error" variant="ghost" icon="i-heroicons-trash" class="justify-start" @click="confirmDelete(rowValue(row))">Delete</UButton>
-                  </div>
-                </template>
-              </UPopover>
-            </div>
-          </template>
+          <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-signal" aria-label="Test proxy" title="Test" :loading="testingId === rowValue(row).id" :disabled="Boolean(testingId)" @click="testPool(rowValue(row))" /><UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-pencil-square" aria-label="Edit proxy" title="Edit" @click="openEdit(rowValue(row))" /><UButton size="xs" color="error" variant="ghost" icon="i-heroicons-trash" :aria-label="`Delete ${rowValue(row).name}`" title="Delete" @click="confirmDelete(rowValue(row))" /></div></template>
 
           <template #empty>
             <div class="py-12 text-center text-sm text-[var(--ui-text-muted)]">
@@ -182,7 +164,7 @@ const columns = [
   { accessorKey: 'priority', header: 'Priority' },
   { accessorKey: 'last_test', header: 'Last test' },
   { accessorKey: 'note', header: 'Note' },
-  { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }
+  { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head table-action-medium', td: 'table-action-cell table-action-medium' } } }
 ]
 
 const pools = ref<ProxyPool[]>([])

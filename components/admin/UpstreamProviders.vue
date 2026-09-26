@@ -80,19 +80,7 @@
             </span>
           </template>
 
-          <template #actions-cell="{ row }">
-            <UPopover>
-              <UButton color="neutral" variant="ghost" size="sm" icon="i-heroicons-ellipsis-horizontal" :aria-label="`Actions for ${providerEntryLabel(rowValue(row))}`" />
-              <template #content>
-                <div class="grid min-w-40 gap-1 p-2">
-                  <UButton color="neutral" variant="ghost" size="sm" icon="i-heroicons-eye" class="justify-start" @click="openProviderDetail(rowValue(row))">View</UButton>
-                  <UButton color="neutral" variant="ghost" size="sm" icon="i-heroicons-pencil-square" class="justify-start" @click="openProviderEdit(rowValue(row))">Edit</UButton>
-                  <UButton color="neutral" variant="ghost" size="sm" icon="i-heroicons-document-duplicate" class="justify-start" @click="duplicateProvider(rowValue(row))">Duplicate</UButton>
-                  <UButton color="error" variant="ghost" size="sm" icon="i-heroicons-trash" class="justify-start" @click="confirmProviderDelete(rowValue(row))">Delete</UButton>
-                </div>
-              </template>
-            </UPopover>
-          </template>
+          <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><UButton color="neutral" variant="ghost" size="xs" icon="i-heroicons-eye" aria-label="View provider" title="View" @click="openProviderDetail(rowValue(row))" /><UButton color="neutral" variant="ghost" size="xs" icon="i-heroicons-pencil-square" aria-label="Edit provider" title="Edit" @click="openProviderEdit(rowValue(row))" /><UButton color="neutral" variant="ghost" size="xs" icon="i-heroicons-document-duplicate" aria-label="Duplicate provider" title="Duplicate" @click="duplicateProvider(rowValue(row))" /><UButton color="error" variant="ghost" size="xs" icon="i-heroicons-trash" aria-label="Delete provider" title="Delete" @click="confirmProviderDelete(rowValue(row))" /></div></template>
 
           <template #empty>
             <div class="flex flex-col items-center justify-center px-6 py-14 text-center">
@@ -321,7 +309,7 @@ const providerColumns = [
   { accessorKey: 'prefix', header: 'Prefix' },
   { accessorKey: 'models', header: 'Models' },
   { accessorKey: 'status', header: 'Status' },
-  { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }
+  { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head table-action-wide', td: 'table-action-cell table-action-wide' } } }
 ]
 
 const selectedProvider = computed(() => providerCategories.find(item => item.value === selectedProviderRoute.value) || providerCategories[0])

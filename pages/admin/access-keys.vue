@@ -141,19 +141,7 @@
               </span>
             </template>
 
-            <template #actions-cell="{ row }">
-              <div class="flex justify-end">
-                <UDropdownMenu :items="rowActions(rowValue(row))" :content="{ align: 'end' }">
-                  <UButton
-                    color="neutral"
-                    variant="ghost"
-                    size="sm"
-                    icon="i-heroicons-ellipsis-horizontal"
-                    :aria-label="`Actions for ${resourceSummary(rowValue(row))}`"
-                  />
-                </UDropdownMenu>
-              </div>
-            </template>
+            <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-eye" aria-label="View access key" title="View" @click="openDetail(rowValue(row))" /><UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-pencil-square" aria-label="Edit access key" title="Edit" @click="openEdit(rowValue(row))" /><UButton v-if="rowValue(row).identifier" size="xs" color="neutral" variant="ghost" icon="i-heroicons-clipboard-document" aria-label="Copy identifier" title="Copy identifier" @click="copyText(rowValue(row).identifier, 'Identifier copied.')" /><UButton size="xs" color="error" variant="ghost" icon="i-heroicons-trash" aria-label="Delete access key" title="Delete" @click="openDelete(rowValue(row))" /></div></template>
 
             <template #empty>
               <div class="px-6 py-12 text-center text-sm text-[var(--ui-text-muted)]">No access keys match the current filter.</div>
@@ -313,7 +301,7 @@ const compactColumns = [
   { accessorKey: 'select', header: '' },
   { accessorKey: 'identity', header: 'Name / key' },
   { accessorKey: 'status', header: 'Status' },
-  { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }
+  { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head table-action-wide', td: 'table-action-cell table-action-wide' } } }
 ]
 
 const fullColumns = [
@@ -325,7 +313,7 @@ const fullColumns = [
   { accessorKey: 'model-scope', header: 'Model scope' },
   { accessorKey: 'length', header: 'Length' },
   { accessorKey: 'status', header: 'Status' },
-  { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }
+  { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head table-action-wide', td: 'table-action-cell table-action-wide' } } }
 ]
 
 const columns = computed(() => wideTable.value ? fullColumns : compactColumns)

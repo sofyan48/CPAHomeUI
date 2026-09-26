@@ -45,7 +45,7 @@
                   <th scope="col" class="px-4 py-3 font-medium">Credential scope</th>
                   <th scope="col" class="px-4 py-3 font-medium">Model scope</th>
                   <th scope="col" class="px-4 py-3 font-medium">Updated</th>
-                  <th scope="col" class="table-action-head font-medium">Actions</th>
+                  <th scope="col" class="table-action-head user-action-column font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -60,7 +60,7 @@
                   <td class="px-4 py-3"><span class="block max-w-52 truncate" :title="effectiveChannelScopes(filteredUsers[virtualRow.index].id).join(', ')">{{ scopeSummary(effectiveChannelScopes(filteredUsers[virtualRow.index].id)) }}</span></td>
                   <td class="px-4 py-3"><span class="block max-w-52 truncate" :title="effectiveModelScopes(filteredUsers[virtualRow.index].id).join(', ')">{{ scopeSummary(effectiveModelScopes(filteredUsers[virtualRow.index].id)) }}</span></td>
                   <td class="px-4 py-3"><span class="whitespace-nowrap text-[var(--ui-text-muted)]">{{ formatDate(filteredUsers[virtualRow.index].updated_at) }}</span></td>
-                  <td class="table-action-cell"><RowMenu :label="filteredUsers[virtualRow.index].username" :items="userMenuItems(filteredUsers[virtualRow.index])" /></td>
+                  <td class="table-action-cell user-action-column"><div class="flex justify-end gap-1"><UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-eye" aria-label="View user" title="View user" @click="openUserDetail(filteredUsers[virtualRow.index])" /><UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-pencil-square" aria-label="Edit user" title="Edit user" @click="openUserEdit(filteredUsers[virtualRow.index])" /><UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-banknotes" aria-label="Balance operation" title="Balance operation" :disabled="!isOperableUser(filteredUsers[virtualRow.index])" @click="openBalance([filteredUsers[virtualRow.index]])" /><UButton size="xs" color="error" variant="ghost" icon="i-heroicons-trash" aria-label="Delete user" title="Delete user" @click="confirmUserDelete(filteredUsers[virtualRow.index])" /></div></td>
                 </tr>
                 <tr v-if="userVirtualPaddingBottom" class="user-spacer-row" aria-hidden="true"><td :colspan="userColumnCount" :style="{ height: `${userVirtualPaddingBottom}px` }" /></tr>
                 <tr v-if="!filteredUsers.length"><td :colspan="userColumnCount"><EmptyState icon="i-heroicons-users" text="No users match the current filter." /></td></tr>
@@ -78,7 +78,7 @@
               <template #credentialScope-cell="{ row }"><span class="block max-w-60 truncate">{{ scopeSummary(keyChannelNames(rowValue(row))) }}</span></template>
               <template #modelScope-cell="{ row }"><span class="block max-w-60 truncate">{{ scopeSummary(keyModelNames(rowValue(row))) }}</span></template>
               <template #length-cell="{ row }">{{ rowValue(row).api_key.length }}</template>
-              <template #actions-cell="{ row }"><RowMenu :label="maskKey(rowValue(row).api_key)" :items="keyMenuItems(rowValue(row))" /></template>
+              <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-pencil-square" aria-label="Edit client key" title="Edit client key" @click="openKeyEdit(rowValue(row))" /><UButton size="xs" color="error" variant="ghost" icon="i-heroicons-trash" aria-label="Delete client key" title="Delete client key" @click="confirmKeyDelete(rowValue(row))" /></div></template>
               <template #empty><EmptyState icon="i-heroicons-key" text="No client keys yet." /></template>
             </UTable>
           </div>
@@ -118,7 +118,7 @@
                   <template #model-cell="{ row }"><div class="min-w-0"><p class="truncate font-mono text-xs" :title="rowValue(row).model_id">{{ rowValue(row).model_id }}</p></div></template>
                   <template #channels-cell="{ row }"><span class="block max-w-64 truncate text-xs text-[var(--ui-text-muted)]" :title="modelBindingChannelLabel(rowValue(row))">{{ modelBindingChannelLabel(rowValue(row)) }}</span></template>
                   <template #updated-cell="{ row }"><span class="whitespace-nowrap text-xs text-[var(--ui-text-muted)]">{{ formatDate(rowValue(row).updated_at) }}</span></template>
-                  <template #actions-cell="{ row }"><UButton size="sm" color="error" variant="ghost" icon="i-heroicons-x-mark" @click="confirmDetailDelete('model', rowValue(row))">Remove</UButton></template>
+                  <template #actions-cell="{ row }"><UButton size="sm" color="error" variant="ghost" icon="i-heroicons-x-mark" aria-label="Remove model from scope" title="Remove model from scope" @click="confirmDetailDelete('model', rowValue(row))" /></template>
                   <template #empty><EmptyState icon="i-heroicons-cube" :text="selectedModelGroup ? 'No models are bound to this scope.' : 'Select a model scope.'" /></template>
                 </UTable>
               </AdminDataPanel>
@@ -186,7 +186,7 @@
 <script setup>
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import EmptyState from '@/components/admin/users/UsersEmptyState.vue'
-import RowMenu from '@/components/admin/users/UsersRowMenu.vue'
+
 import UnsupportedScopes from '@/components/admin/users/UsersUnsupportedScopes.vue'
 import SummaryRow from '@/components/admin/users/UsersSummaryRow.vue'
 import DetailSection from '@/components/admin/users/UsersDetailSection.vue'
@@ -231,6 +231,7 @@ function measureUserRow(element) { if (element) userRowVirtualizer.value.measure
 watch(search, () => userRowVirtualizer.value.scrollToOffset(0))
 const filteredKeys = computed(() => keys.value.filter(key => matches([key.api_key, userById(key.user_id)?.username, ...keyChannelNames(key), ...keyModelNames(key)])))
 const filteredChannelGroups = computed(() => channelGroups.value.filter(group => matches([group.id, group.channel_name, ...channelDetailsFor(group.id).map(item => item.auth_id)])))
+const selectedModelGroupId = ref(null)
 const filteredModelGroups = computed(() => modelGroups.value.filter(group => matches([group.id, group.group_name, ...modelDetailsFor(group.id).map(item => item.model_id)])))
 const modelScopeOptions = computed(() => filteredModelGroups.value.map(group => ({ label: `${group.group_name} · ${modelDetailsFor(group.id).length} models`, value: Number(group.id) })))
 const selectedModelGroup = computed(() => modelGroups.value.find(group => Number(group.id) === Number(selectedModelGroupId.value)) || filteredModelGroups.value[0] || null)
@@ -285,8 +286,7 @@ const allFilteredUsersSelected = computed(() => operableFilteredUsers.value.leng
 const someFilteredUsersSelected = computed(() => !allFilteredUsersSelected.value && operableFilteredUsers.value.some(user => selectedUserIds.value.has(user.id)))
 function toggleUserSelection(id, checked) { const next = new Set(selectedUserIds.value); checked ? next.add(id) : next.delete(id); selectedUserIds.value = next }
 function toggleAllFilteredUsers(checked) { const next = new Set(selectedUserIds.value); for (const user of operableFilteredUsers.value) checked ? next.add(user.id) : next.delete(user.id); selectedUserIds.value = next }
-function userMenuItems(user) { return [{ label: 'View', icon: 'i-heroicons-eye', click: () => openUserDetail(user) }, { label: 'Edit', icon: 'i-heroicons-pencil-square', click: () => openUserEdit(user) }, { label: 'Delete', icon: 'i-heroicons-trash', color: 'error', click: () => confirmUserDelete(user) }, { label: 'Balance', icon: 'i-heroicons-banknotes', disabled: !isOperableUser(user), click: () => openBalance([user]) }] }
-function keyMenuItems(key) { return [{ label: 'Edit', icon: 'i-heroicons-pencil-square', click: () => openKeyEdit(key) }, { label: 'Delete', icon: 'i-heroicons-trash', color: 'error', click: () => confirmKeyDelete(key) }] }
+
 
 const periodWindowIds = ['5h', '1d', '7d', '30d'], timezoneOptions = ['Asia/Shanghai', 'Asia/Taipei', 'Asia/Tokyo', 'UTC', 'Europe/London', 'Europe/Berlin', 'America/New_York', 'America/Los_Angeles']
 const weekDayOptions = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((label, index) => ({ label, value: index + 1 }))
@@ -436,6 +436,7 @@ async function performDelete() { const target = deleteTarget.value; if (!target)
 </script>
 
 <style scoped>
+.user-action-column { width: 9rem !important; min-width: 9rem !important; max-width: 9rem !important; }
 .users-table { border-collapse: separate; border-spacing: 0; }
 .users-table thead th { position: sticky; top: 0; z-index: 4; background: var(--ui-bg-muted); box-shadow: 0 1px 0 var(--ui-border); }
 .users-table .user-data-row { height: 57px; }

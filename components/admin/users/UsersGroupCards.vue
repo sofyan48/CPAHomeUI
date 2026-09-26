@@ -35,7 +35,7 @@
               <td v-if="kind === 'model' && channelBindingsSupported" class="truncate px-3 py-2 text-[var(--ui-text-muted)]" :title="channels(detail)">{{ channels(detail) }}</td>
               <td class="truncate px-3 py-2 text-[var(--ui-text-muted)]">{{ updated(detail) }}</td>
               <td class="px-3 py-2 text-right">
-                <UButton color="error" variant="ghost" size="sm" icon="i-heroicons-trash" @click="$emit('delete-detail', detail)">Delete</UButton>
+                <UButton color="error" variant="ghost" size="sm" icon="i-heroicons-trash" aria-label="Remove binding" title="Remove binding" @click="$emit('delete-detail', detail)" />
               </td>
             </tr>
           </tbody>

@@ -78,18 +78,7 @@
         </template>
         <template #cooling-cell="{ row }"><USwitch :model-value="!value(row)['disable-cooling']" :disabled="busy || !value(row).id" :loading="inlineChanging === value(row).id" :aria-label="`Cooling schedule for ${value(row).label || value(row).name || value(row).id}`" @update:model-value="setInlineField(value(row), 'disable_cooling', !$event)" /></template>
         <template #priority-cell="{ row }"><span class="font-mono text-xs tabular-nums">{{ value(row).priority ?? 'Not set' }}</span></template>
-        <template #actions-cell="{ row }">
-          <UPopover>
-            <UButton color="neutral" variant="ghost" size="sm" icon="i-heroicons-ellipsis-horizontal" :aria-label="`Actions for ${value(row).label || value(row).id}`" />
-            <template #content><div class="grid min-w-48 gap-1 p-2">
-              <UButton color="neutral" variant="ghost" size="sm" icon="i-heroicons-eye" class="justify-start" @click="showDetails(value(row))">Details</UButton>
-              <UButton color="neutral" variant="ghost" size="sm" class="justify-start" @click="openConnectivity(value(row))">Test connectivity</UButton>
-              <UButton v-if="supports('credential_cooldown_reset', false)" color="neutral" variant="ghost" size="sm" class="justify-start" :loading="resettingCooldown === value(row).id" :disabled="busy || !!resettingCooldown" @click="resetCooldown(value(row))">Clear quota cooldown</UButton>
-              <UButton color="neutral" variant="ghost" size="sm" icon="i-heroicons-arrow-down-tray" class="justify-start" :disabled="busy" @click="downloadCredential(value(row))">Download</UButton>
-              <UButton color="error" variant="ghost" size="sm" icon="i-heroicons-trash" class="justify-start" :disabled="busy" @click="confirmDelete(value(row))">Delete</UButton>
-            </div></template>
-          </UPopover>
-        </template>
+        <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><UButton color="neutral" variant="ghost" size="xs" icon="i-heroicons-eye" aria-label="View credential details" title="Details" @click="showDetails(value(row))" /><UButton color="neutral" variant="ghost" size="xs" icon="i-heroicons-signal" aria-label="Test connectivity" title="Test connectivity" @click="openConnectivity(value(row))" /><UButton v-if="supports('credential_cooldown_reset', false)" color="neutral" variant="ghost" size="xs" icon="i-heroicons-arrow-path-rounded-square" aria-label="Clear quota cooldown" title="Clear quota cooldown" :loading="resettingCooldown === value(row).id" :disabled="busy || !!resettingCooldown" @click="resetCooldown(value(row))" /><UButton color="neutral" variant="ghost" size="xs" icon="i-heroicons-arrow-down-tray" aria-label="Download credential" title="Download" :disabled="busy" @click="downloadCredential(value(row))" /><UButton color="error" variant="ghost" size="xs" icon="i-heroicons-trash" aria-label="Delete credential" title="Delete" :disabled="busy" @click="confirmDelete(value(row))" /></div></template>
         <template #empty><div class="py-14 text-center text-sm text-[var(--ui-text-muted)]"><p>{{ pending ? 'Loading accounts…' : pageError ? 'Could not load accounts. Check the connection and refresh.' : hasActiveFilters ? 'No matching credentials.' : 'No credentials have been added.' }}</p><UButton v-if="hasActiveFilters && !pending" class="mt-3" color="neutral" variant="outline" size="sm" @click="clearFilters">Clear filters</UButton></div></template>
       </UTable>
         </div>
@@ -387,7 +376,7 @@ function handleCreateOpen(open) {
   if (!open) { stopOAuthPolling(); oauthSessions.value = {}; uploadResults.value = []; if (fileInput.value) fileInput.value.value = '' }
 }
 
-const columns = [{ id: 'select', header: '' }, { accessorKey: 'identity', header: 'Credential' }, { accessorKey: 'provider', header: 'Provider' }, { accessorKey: 'status', header: 'Enabled' }, { accessorKey: 'quota', header: 'Quota / reset' }, { accessorKey: 'websockets', header: 'WS' }, { accessorKey: 'cooling', header: 'Cooling' }, { accessorKey: 'priority', header: 'Priority' }, { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }]
+const columns = [{ id: 'select', header: '' }, { accessorKey: 'identity', header: 'Credential' }, { accessorKey: 'provider', header: 'Provider' }, { accessorKey: 'status', header: 'Enabled' }, { accessorKey: 'quota', header: 'Quota / reset' }, { accessorKey: 'websockets', header: 'WS' }, { accessorKey: 'cooling', header: 'Cooling' }, { accessorKey: 'priority', header: 'Priority' }, { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head table-action-xwide', td: 'table-action-cell table-action-xwide' } } }]
 
 const flightError = ref('')
 async function loadData() {
