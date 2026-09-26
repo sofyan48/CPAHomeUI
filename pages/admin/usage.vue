@@ -2,10 +2,8 @@
   <div class="space-y-6">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 class="text-2xl font-bold">Usage</h1>
-        <p class="mt-1 text-sm text-[var(--ui-text-muted)]">
-          Request volume, token consumption, latency, and billing attribution from persisted usage records.
-        </p>
+        <h1 class="text-2xl font-bold">Usage & Requests</h1>
+        <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Observe token usage, spend, request activity, and persisted request records.</p>
       </div>
       <UButton
         color="neutral"
@@ -18,6 +16,14 @@
       </UButton>
     </div>
 
+    <div role="tablist" aria-label="Usage & Requests" class="workbench-page-tabs">
+      <UButton role="tab" :aria-selected="activeView === 'overview'" color="neutral" :variant="activeView === 'overview' ? 'soft' : 'ghost'" @click="setView('overview')">Overview</UButton>
+      <UButton role="tab" :aria-selected="activeView === 'requests'" color="neutral" :variant="activeView === 'requests' ? 'soft' : 'ghost'" @click="setView('requests')">Request records</UButton>
+    </div>
+
+    <AdminRequestRecords v-if="activeView === 'requests'" />
+
+    <template v-else>
     <div
       v-if="errorMessage"
       class="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400"
@@ -25,7 +31,7 @@
       {{ errorMessage }}
     </div>
 
-    <UCard class="workbench-filter-panel">
+    <section class="usage-filter-panel rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] px-4 py-3">
       <form @submit.prevent="applyFilters">
         <div class="mb-3">
           <h2 class="text-sm font-semibold">Overview scope</h2>
@@ -42,64 +48,18 @@
             <UInputMenu v-model="filters.model" :items="modelSuggestions" create-item @create="filters.model = $event.trim()" placeholder="Search models..." class="w-full" />
           </UFormField>
         </div>
-        <div class="mt-4 border-t border-[var(--ui-border)] pt-4">
-          <h2 class="text-sm font-semibold">Records only</h2>
-          <p class="mb-3 text-xs text-[var(--ui-text-muted)]">These filters narrow records and export, not headline metrics, charts, or insights.</p>
-          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            <UFormField label="Status">
-              <USelect :model-value="filters.status || allOptionValue" @update:model-value="filters.status = $event === allOptionValue ? '' : $event" :items="statusOptions" value-key="value" label-key="label" class="w-full" />
-            </UFormField>
-            <UFormField label="Search">
-              <UInput v-model="filters.search" placeholder="Request, user, key, node..." icon="i-tabler-search" class="w-full" />
-            </UFormField>
-          </div>
+
+        <div v-if="rangePreset === 'custom'" class="mt-3 grid grid-cols-1 gap-3 border-t border-[var(--ui-border)] pt-3 sm:grid-cols-2">
+          <UFormField label="Start date"><UInput v-model="filters.from" type="date" class="w-full" /></UFormField>
+          <UFormField label="End date"><UInput v-model="filters.to" type="date" class="w-full" /></UFormField>
         </div>
-        <div class="mt-4">
-          <UButton type="button" color="neutral" variant="ghost" size="sm" :icon="showAdvancedFilters ? 'i-tabler-chevron-up' : 'i-tabler-chevron-down'" :aria-expanded="showAdvancedFilters" @click="showAdvancedFilters = !showAdvancedFilters">
-            {{ showAdvancedFilters ? 'Hide advanced filters' : 'Advanced filters' }}
-          </UButton>
+        <div class="mt-3 border-t border-[var(--ui-border)] pt-3">
+          <UButton type="button" color="neutral" variant="ghost" size="sm" :icon="showAdvancedFilters ? 'i-tabler-chevron-up' : 'i-tabler-adjustments-horizontal'" :aria-expanded="showAdvancedFilters" @click="showAdvancedFilters = !showAdvancedFilters">{{ showAdvancedFilters ? 'Hide advanced' : 'Advanced filters' }}</UButton>
         </div>
-        <div v-if="showAdvancedFilters" class="mt-3 space-y-4">
-          <div>
-            <p class="mb-2 text-xs font-semibold text-[var(--ui-text-muted)]">Overview scope</p>
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <UFormField label="From">
-                <UInput v-model="filters.from" type="date" class="w-full" @update:model-value="rangePreset = 'custom'" />
-              </UFormField>
-              <UFormField label="To">
-                <UInput v-model="filters.to" type="date" class="w-full" @update:model-value="rangePreset = 'custom'" />
-              </UFormField>
-              <UFormField label="Endpoint">
-                <UInput v-model="filters.endpoint" placeholder="Endpoint" class="w-full" />
-              </UFormField>
-              <UFormField label="Home IP">
-                <UInput v-model="filters.homeIp" placeholder="Home IP" class="w-full" />
-              </UFormField>
-            </div>
-          </div>
-          <div>
-            <p class="mb-2 text-xs font-semibold text-[var(--ui-text-muted)]">Records only</p>
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <UFormField label="HTTP status code">
-                <UInput v-model="filters.statusCode" type="number" min="1" placeholder="e.g. 429" class="w-full" />
-              </UFormField>
-              <UFormField label="Request ID">
-                <UInput v-model="filters.requestId" placeholder="Exact request ID" class="w-full" />
-              </UFormField>
-              <UFormField label="User">
-                <UInput v-model="filters.user" placeholder="Username" class="w-full" />
-              </UFormField>
-              <UFormField label="Client key">
-                <UInput v-model="filters.clientKey" placeholder="Client key" class="w-full" />
-              </UFormField>
-              <UFormField label="Credential ID">
-                <UInput v-model="filters.credentialId" placeholder="Credential ID" class="w-full" />
-              </UFormField>
-              <UFormField label="CPA node">
-                <UInput v-model="filters.cpaNode" placeholder="CPA node" class="w-full" />
-              </UFormField>
-            </div>
-          </div>
+        <div v-if="showAdvancedFilters" class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <UFormField label="Credential type"><USelect :model-value="filters.credentialType || allOptionValue" @update:model-value="filters.credentialType = $event === allOptionValue ? '' : $event" :items="credentialTypeOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
+          <UFormField label="Home node"><UInput v-model="filters.homeIp" placeholder="Home IP" class="w-full" /></UFormField>
+          <UFormField label="Endpoint"><UInput v-model="filters.endpoint" placeholder="Endpoint" class="w-full" /></UFormField>
         </div>
         <div class="mt-4 flex flex-wrap items-center gap-2">
           <UButton type="submit" color="primary" :loading="loading">Apply filters</UButton>
@@ -109,213 +69,49 @@
           </span>
         </div>
       </form>
-    </UCard>
+    </section>
 
-    <div>
-      <h2 class="font-semibold">Overview</h2>
-      <p class="text-xs text-[var(--ui-text-muted)]">Applied scope: {{ overviewScopeLabel }} · Records-only filters do not affect these totals or charts.</p>
-    </div>
-    <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
-      <UCard v-for="metric in metrics" :key="metric.label">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <p class="text-sm font-medium text-[var(--ui-text-muted)]">{{ metric.label }}</p>
-            <p class="mt-2 text-2xl font-bold tracking-tight">{{ metric.value }}</p>
-            <p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ metric.hint }}</p>
-          </div>
-          <div class="rounded-lg bg-[var(--ui-bg-elevated)] p-2 text-[var(--ui-text-muted)]">
-            <UIcon :name="metric.icon" class="size-5" />
-          </div>
-        </div>
-      </UCard>
-    </div>
-
-    <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
-      <UCard class="xl:col-span-2">
-        <template #header>
-          <div class="flex items-center justify-between gap-3">
-            <div>
-              <h2 class="font-semibold">Request activity</h2>
-              <p class="text-xs text-[var(--ui-text-muted)]">Server-selected {{ overviewRange.interval || 'auto' }} buckets</p>
-            </div>
-            <span class="text-xs text-[var(--ui-text-muted)]">{{ formatRange(overviewRange.from, overviewRange.to) }}</span>
-          </div>
-        </template>
-
-        <div v-if="trend.length" class="space-y-3">
-          <div
-            v-for="point in displayedTrend"
-            :key="point.bucket_start"
-            class="grid grid-cols-[7rem_1fr_auto] items-center gap-3 text-sm"
-          >
-            <span class="text-xs text-[var(--ui-text-muted)]">{{ formatTrendTime(point.bucket_start) }}</span>
-            <div class="h-2 overflow-hidden rounded-full bg-[var(--ui-bg-elevated)]">
-              <div
-                class="h-full rounded-full bg-[var(--ui-primary)] transition-all"
-                :style="{ width: `${trendWidth(point.request_count)}%` }"
-              />
-            </div>
-            <span class="min-w-12 text-right font-medium tabular-nums">{{ formatNumber(point.request_count) }}</span>
-          </div>
-        </div>
-        <div v-else class="py-10 text-center text-sm text-[var(--ui-text-muted)]">
-          No activity in the selected range.
-        </div>
-      </UCard>
-
-      <UCard>
-        <template #header>
-          <div>
-            <h2 class="font-semibold">Live snapshot</h2>
-            <p class="text-xs text-[var(--ui-text-muted)]">Recent {{ formatDuration(live.window_seconds) }} within the applied overview scope</p>
-          </div>
-        </template>
-        <dl class="space-y-4">
-          <div class="flex items-center justify-between gap-4">
-            <dt class="text-sm text-[var(--ui-text-muted)]">Requests / min</dt>
-            <dd class="font-semibold tabular-nums">{{ formatDecimal(live.rpm) }}</dd>
-          </div>
-          <div class="flex items-center justify-between gap-4">
-            <dt class="text-sm text-[var(--ui-text-muted)]">Tokens / min</dt>
-            <dd class="font-semibold tabular-nums">{{ formatNumber(live.tpm) }}</dd>
-          </div>
-          <div class="flex items-center justify-between gap-4">
-            <dt class="text-sm text-[var(--ui-text-muted)]">Success rate</dt>
-            <dd class="font-semibold tabular-nums">{{ formatPercent(live.success_rate) }}</dd>
-          </div>
-          <div class="flex items-center justify-between gap-4">
-            <dt class="text-sm text-[var(--ui-text-muted)]">P50 latency</dt>
-            <dd class="font-semibold tabular-nums">{{ formatMilliseconds(live.p50_latency_ms) }}</dd>
-          </div>
-          <div class="flex items-center justify-between gap-4">
-            <dt class="text-sm text-[var(--ui-text-muted)]">P95 latency</dt>
-            <dd class="font-semibold tabular-nums">{{ formatMilliseconds(live.p95_latency_ms) }}</dd>
-          </div>
-        </dl>
-      </UCard>
-    </div>
-
-    <div class="grid gap-6 xl:grid-cols-2">
-      <UCard>
-        <template #header><div><h2 class="font-semibold">Token accounting</h2><p class="text-xs text-[var(--ui-text-muted)]">Canonical mutually-exclusive buckets for the selected overview range.</p></div></template>
-        <div v-if="overviewTokenBreakdown" class="space-y-4"><div class="flex items-center justify-between"><span class="text-sm">Accounting quality</span><UBadge :color="tokenQualityColor(overviewTokenBreakdown.quality)" variant="subtle">{{ overviewTokenBreakdown.quality || 'unknown' }}</UBadge></div><div class="grid grid-cols-2 gap-3 sm:grid-cols-3"><div v-for="bucket in overviewTokenBuckets" :key="bucket.label" class="rounded-lg bg-[var(--ui-bg-muted)] p-3"><p class="text-xs text-[var(--ui-text-muted)]">{{ bucket.label }}</p><p class="mt-1 font-semibold">{{ formatCompactNumber(bucket.value) }}</p></div></div></div><p v-else class="py-8 text-center text-sm text-[var(--ui-text-muted)]">Canonical token accounting is unavailable.</p>
-      </UCard>
-      <UCard>
-        <template #header><h2 class="font-semibold">Cost breakdown</h2></template>
-        <div v-if="costBreakdown.length" class="space-y-3"><div v-for="item in costBreakdown" :key="item.category" class="flex items-center justify-between gap-3 text-sm"><div><p class="font-medium">{{ item.category }}</p><p class="text-xs text-[var(--ui-text-muted)]">{{ formatCompactNumber(item.tokens) }} tokens · {{ item.billing_basis || 'unknown basis' }}</p></div><span>{{ formatAmount(item.amount, totals.currency) }} · {{ formatPercent(item.percentage) }}</span></div></div><p v-else class="py-8 text-center text-sm text-[var(--ui-text-muted)]">Reliable cost splitting is unavailable; Home does not fabricate a breakdown.</p>
-      </UCard>
-      <UCard>
-        <template #header><h2 class="font-semibold">Model efficiency</h2></template>
-        <div v-if="modelEfficiency.length" class="space-y-3"><div v-for="item in modelEfficiency.slice(0, 8)" :key="item.id || item.label" class="flex items-center justify-between gap-3 text-sm"><div class="min-w-0"><p class="truncate font-medium">{{ item.label || item.id }}</p><p class="text-xs text-[var(--ui-text-muted)]">{{ formatNumber(item.request_count) }} requests · p95 {{ formatMilliseconds(item.p95_latency_ms) }}</p></div><span>{{ formatCompactNumber(item.total_tokens) }} tok</span></div></div><p v-else class="py-8 text-center text-sm text-[var(--ui-text-muted)]">No model efficiency data.</p>
-      </UCard>
-      <UCard>
-        <template #header><h2 class="font-semibold">Activity health</h2></template>
-        <div v-if="activity.length" class="grid grid-cols-8 gap-1 sm:grid-cols-12">
-          <div v-for="point in activity" :key="point.bucket_start" class="aspect-square rounded-sm" :class="activityColor(point.status)" :title="`${formatDateTime(point.bucket_start)} · ${point.status} · ${formatNumber(point.request_count)} requests`" />
-          <div class="col-span-full mt-3 flex flex-wrap gap-3 text-xs text-[var(--ui-text-muted)]">
-            <span v-for="legend in activityLegend" :key="legend.status" class="flex items-center gap-1"><span class="size-2 rounded-sm" :class="activityColor(legend.status)" />{{ legend.label }}</span>
-          </div>
-        </div>
-        <p v-else class="py-8 text-center text-sm text-[var(--ui-text-muted)]">No activity buckets.</p>
-      </UCard>
-    </div>
-
-    <UCard :ui="{ body: { padding: '' } }">
-      <template #header>
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 class="font-semibold">Usage records</h2>
-            <p class="text-xs text-[var(--ui-text-muted)]">{{ formatNumber(recordsTotal) }} matching requests · Applied {{ recordScopeLabel }}</p>
-          </div>
-          <div class="flex flex-wrap gap-2">
-            <USelect v-model="sort" :items="sortOptions" value-key="value" label-key="label" class="w-full sm:w-52" @update:model-value="changeRecordsView" />
-            <USelect v-model="pageSize" :items="pageSizeOptions" value-key="value" label-key="label" class="w-full sm:w-36" @update:model-value="changeRecordsView" />
-          </div>
-        </div>
-      </template>
-
-      <UTable :columns="recordColumns" :data="records" :loading="recordsLoading">
-        <template #empty>
-          <div class="flex flex-col items-center justify-center py-12">
-            <UIcon name="i-tabler-chart-bar" class="mb-3 size-8 text-[var(--ui-text-muted)]" />
-            <span class="text-sm text-[var(--ui-text-muted)]">No usage records match these filters.</span>
-          </div>
-        </template>
-
-        <template #timestamp-cell="{ row }">
-          <div class="min-w-32">
-            <p class="text-sm font-medium">{{ formatDateTime(rowValue(row).timestamp) }}</p>
-            <p class="text-xs text-[var(--ui-text-muted)]">{{ rowValue(row).request_id || 'No request ID' }}</p>
-          </div>
-        </template>
-
-        <template #status-cell="{ row }">
-          <div class="space-y-1">
-            <UBadge :color="rowValue(row).failed ? 'error' : 'success'" variant="subtle" size="sm">
-              {{ rowValue(row).failed ? 'Failed' : 'Success' }}
-            </UBadge>
-            <p v-if="rowValue(row).status_code" class="text-xs text-[var(--ui-text-muted)]">
-              HTTP {{ rowValue(row).status_code }}
-            </p>
-          </div>
-        </template>
-
-        <template #model-cell="{ row }">
-          <div class="min-w-36">
-            <p class="font-medium">{{ rowValue(row).model || 'Unknown model' }}</p>
-            <p class="text-xs text-[var(--ui-text-muted)]">
-              {{ rowValue(row).provider || 'Unknown provider' }} · {{ rowValue(row).endpoint || 'Unknown endpoint' }}
-            </p>
-          </div>
-        </template>
-
-        <template #tokens-cell="{ row }">
-          <div class="min-w-28 text-sm tabular-nums">
-            <p class="font-semibold">{{ formatNumber(rowValue(row).tokens?.total_tokens) }}</p>
-            <p class="text-xs text-[var(--ui-text-muted)]">
-              {{ formatNumber(rowValue(row).tokens?.input_tokens) }} in / {{ formatNumber(rowValue(row).tokens?.output_tokens) }} out
-            </p>
-          </div>
-        </template>
-
-        <template #performance-cell="{ row }">
-          <div class="min-w-24 text-sm tabular-nums">
-            <p>{{ formatMilliseconds(rowValue(row).performance?.latency_ms) }}</p>
-            <p class="text-xs text-[var(--ui-text-muted)]">TTFT {{ formatMilliseconds(rowValue(row).performance?.ttft_ms) }}</p>
-          </div>
-        </template>
-
-        <template #client-cell="{ row }">
-          <div class="min-w-32 text-sm">
-            <p>{{ rowValue(row).client?.username || rowValue(row).client?.api_key_label || 'Unattributed' }}</p>
-            <p class="text-xs text-[var(--ui-text-muted)]">{{ rowValue(row).runtime?.cpa_label || rowValue(row).runtime?.cpa_ip || rowValue(row).runtime?.home_ip || 'Unknown node' }}</p>
-          </div>
-        </template>
-
-        <template #actions-cell="{ row }">
-          <div class="flex justify-end">
-            <UButton size="sm" color="neutral" variant="ghost" icon="i-tabler-eye" @click="openDetail(rowValue(row))">
-              Details
-            </UButton>
-          </div>
-        </template>
-      </UTable>
-
-      <div class="flex flex-col gap-3 border-t border-[var(--ui-border)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <p class="text-xs text-[var(--ui-text-muted)]">
-          Showing {{ pageStart }}–{{ pageEnd }} of {{ formatNumber(recordsTotal) }}
-        </p>
-        <div class="flex items-center gap-2">
-          <UButton size="sm" color="neutral" variant="outline" :disabled="page === 1 || recordsLoading" @click="previousPage">
-            Previous
-          </UButton>
-          <span class="min-w-20 text-center text-sm">Page {{ page }} of {{ totalPages }}</span>
-          <UButton size="sm" color="neutral" variant="outline" :disabled="page >= totalPages || recordsLoading" @click="nextPage">
-            Next
-          </UButton>
-        </div>
+    <section>
+      <div class="mb-2 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between"><div><h2 class="text-sm font-semibold">Overview</h2><p class="text-xs text-[var(--ui-text-muted)]">{{ overviewScopeLabel }}</p></div><span class="text-xs text-[var(--ui-text-muted)]">{{ formatRange(overviewRange.from, overviewRange.to) }}</span></div>
+      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <article v-for="metric in chartMetrics" :key="metric.label" class="overflow-hidden rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)]">
+          <div class="flex items-start justify-between gap-3 px-4 pt-3"><div><p class="text-xs font-medium text-[var(--ui-text-muted)]">{{ metric.label }}</p><p class="mt-1 text-xl font-semibold tracking-tight">{{ metric.value }}</p></div><UIcon :name="metric.icon" class="mt-0.5 size-4 text-[var(--ui-text-muted)]" /></div>
+          <AdminUsageSparkline :values="metric.points" :label="`${metric.label} trend`" class="px-2" :class="metric.color" />
+          <p class="truncate border-t border-[var(--ui-border-muted)] px-4 py-2 text-[11px] text-[var(--ui-text-muted)]">{{ metric.hint }}</p>
+        </article>
+        <article class="rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-4">
+          <div class="mb-3 flex items-center justify-between"><p class="text-xs font-medium text-[var(--ui-text-muted)]">System health</p><UIcon name="i-tabler-activity-heartbeat" class="size-4 text-[var(--ui-text-muted)]" /></div>
+          <dl class="grid grid-cols-2 gap-x-4 gap-y-3">
+            <div><dt class="text-[11px] text-[var(--ui-text-muted)]">RPM</dt><dd class="mt-0.5 text-sm font-semibold tabular-nums">{{ formatDecimal(live.rpm) }}</dd></div>
+            <div><dt class="text-[11px] text-[var(--ui-text-muted)]">TPM</dt><dd class="mt-0.5 text-sm font-semibold tabular-nums">{{ formatCompactNumber(live.tpm) }}</dd></div>
+            <div><dt class="text-[11px] text-[var(--ui-text-muted)]">Error rate</dt><dd class="mt-0.5 text-sm font-semibold tabular-nums">{{ formatPercent(totals.error_rate) }}</dd></div>
+            <div><dt class="text-[11px] text-[var(--ui-text-muted)]">P50 latency</dt><dd class="mt-0.5 text-sm font-semibold tabular-nums">{{ formatMilliseconds(live.p50_latency_ms) }}</dd></div>
+          </dl>
+        </article>
       </div>
-    </UCard>
+    </section>
+
+    <div class="grid items-start gap-3 xl:grid-cols-[minmax(0,1.7fr)_minmax(20rem,1fr)]">
+      <section class="overflow-hidden rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)]">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--ui-border)] px-4 py-3"><div><h2 class="text-sm font-semibold">Token usage over time</h2><p class="text-xs text-[var(--ui-text-muted)]">Canonical token categories across the selected range.</p></div><div class="flex items-center gap-2"><USelect v-model="chartOverlay" :items="chartOverlayOptions" value-key="value" label-key="label" size="sm" class="w-32" /><UBadge v-if="overviewTokenBreakdown" :color="tokenQualityColor(overviewTokenBreakdown.quality)" variant="subtle">{{ overviewTokenBreakdown.quality || 'unknown' }}</UBadge></div></div>
+        <div class="p-4"><AdminUsageTokenChart :points="trend" :overlay="chartOverlayValues" /><div class="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-[var(--ui-text-muted)]"><span v-for="series in tokenSeriesLegend" :key="series.label" class="flex items-center gap-1.5"><span class="size-2 rounded-sm" :class="series.color" />{{ series.label }}</span><span v-if="chartOverlay !== 'none'" class="flex items-center gap-1.5"><span class="h-0.5 w-3 bg-amber-500" />{{ chartOverlay === 'requests' ? 'Requests' : 'Spend' }}</span></div></div>
+      </section>
+      <section class="overflow-hidden rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)]">
+        <div class="border-b border-[var(--ui-border)] px-4 py-3"><h2 class="text-sm font-semibold">Cost breakdown</h2><p class="text-xs text-[var(--ui-text-muted)]">{{ formatAmount(totals.total_amount, totals.currency) }} total · {{ formatAmount(totals.blended_cost_per_1m_tokens, totals.currency) }} / 1M tokens</p></div>
+        <div v-if="costBreakdown.length" class="divide-y divide-[var(--ui-border-muted)] px-4"><div v-for="item in costBreakdown" :key="item.category" class="py-3"><div class="flex items-center justify-between gap-3 text-sm"><div><p class="font-medium">{{ item.category }}</p><p class="text-xs text-[var(--ui-text-muted)]">{{ formatCompactNumber(item.tokens) }} tokens · {{ item.billing_basis || 'unknown basis' }}</p></div><span class="whitespace-nowrap font-medium">{{ formatAmount(item.amount, totals.currency) }}</span></div><div class="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--ui-bg-muted)]"><div class="h-full rounded-full bg-[var(--ui-primary)]" :style="{ width: `${Math.max(0, Math.min(100, Number(item.percentage) * 100))}%` }" /></div></div></div><p v-else class="p-6 text-center text-sm text-[var(--ui-text-muted)]">No cost breakdown is available.</p>
+      </section>
+    </div>
+
+    <div class="grid gap-3 lg:grid-cols-3">
+      <section v-for="ranking in rankingCards" :key="ranking.key" class="overflow-hidden rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)]"><div class="flex items-center justify-between border-b border-[var(--ui-border)] px-4 py-3"><h2 class="text-sm font-semibold">{{ ranking.label }}</h2><UButton size="xs" color="neutral" variant="ghost" @click="openRanking(ranking.key)">View all</UButton></div><ol v-if="ranking.items.length" class="divide-y divide-[var(--ui-border-muted)]"><li v-for="(item, index) in ranking.items" :key="item.id || item.label" class="grid grid-cols-[1.5rem_minmax(0,1fr)_auto] items-center gap-2 px-4 py-3"><span class="text-xs font-semibold text-[var(--ui-text-muted)]">{{ index + 1 }}</span><div class="min-w-0"><p class="truncate text-sm font-medium">{{ item.label || item.id || 'Unknown' }}</p><p class="text-xs text-[var(--ui-text-muted)]">{{ formatNumber(item.request_count) }} requests</p></div><span class="whitespace-nowrap text-sm font-semibold">{{ formatAmount(item.total_amount, item.currency || totals.currency) }}</span></li></ol><p v-else class="px-4 py-6 text-center text-sm text-[var(--ui-text-muted)]">No ranking data.</p></section>
+    </div>
+
+    <section class="overflow-hidden rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)]">
+      <div class="flex items-center justify-between border-b border-[var(--ui-border)] px-4 py-3"><div><h2 class="text-sm font-semibold">Execution credential usage</h2><p class="text-xs text-[var(--ui-text-muted)]">Requests, tokens, spend, success, and latest activity by execution credential.</p></div><UButton size="sm" color="neutral" variant="ghost" icon="i-tabler-refresh" :loading="credentialsLoading" @click="loadCredentialUsage" /></div>
+      <UTable :columns="credentialColumns" :data="credentialUsage" :loading="credentialsLoading" class="min-w-[980px]"><template #credential-cell="{ row }"><div class="min-w-48"><p class="truncate text-sm font-medium">{{ rowValue(row).label || rowValue(row).id || 'Unknown credential' }}</p><p class="truncate font-mono text-xs text-[var(--ui-text-muted)]">{{ rowValue(row).id }}</p></div></template><template #provider-cell="{ row }"><span class="text-sm">{{ rowValue(row).metadata?.provider || 'Unknown' }}</span></template><template #status-cell="{ row }"><div><UBadge :color="Number(rowValue(row).error_rate) > 0.05 ? 'warning' : 'success'" variant="subtle">{{ formatPercent(rowValue(row).success_rate) }} success</UBadge><p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ formatNumber(rowValue(row).failed_count) }} failed</p></div></template><template #requests-cell="{ row }"><span class="tabular-nums">{{ formatNumber(rowValue(row).request_count) }}</span></template><template #tokens-cell="{ row }"><span class="tabular-nums">{{ formatCompactNumber(rowValue(row).total_tokens) }}</span></template><template #cost-cell="{ row }"><span class="whitespace-nowrap">{{ formatAmount(rowValue(row).total_amount, rowValue(row).currency || totals.currency) }}</span></template><template #lastUsed-cell="{ row }"><span class="whitespace-nowrap text-xs text-[var(--ui-text-muted)]">{{ formatDateTime(rowValue(row).last_used_at) }}</span></template><template #empty><div class="py-10 text-center text-sm text-[var(--ui-text-muted)]">No execution credential usage data.</div></template></UTable>
+    </section>
+
+    <UModal v-model:open="rankingOpen" title="Usage ranking" description="Aggregated usage for the selected dimension and metric." :ui="{ content: 'sm:max-w-6xl' }"><template #body><div class="space-y-4"><div class="grid gap-3 sm:grid-cols-3"><UFormField label="Group by"><USelect v-model="rankingGroup" :items="rankingGroupOptions" value-key="value" label-key="label" class="w-full" @update:model-value="loadRanking" /></UFormField><UFormField label="Metric"><USelect v-model="rankingMetric" :items="rankingMetricOptions" value-key="value" label-key="label" class="w-full" @update:model-value="loadRanking" /></UFormField><UFormField label="Rows"><USelect v-model="rankingLimit" :items="rankingLimitOptions" value-key="value" label-key="label" class="w-full" @update:model-value="loadRanking" /></UFormField></div><UTable :columns="rankingColumns" :data="rankingItems" :loading="rankingLoading" class="min-w-[980px]"><template #rank-cell="{ row }">{{ rankingItems.indexOf(rowValue(row)) + 1 }}</template><template #name-cell="{ row }"><div class="min-w-48"><p class="truncate font-medium">{{ rowValue(row).label || rowValue(row).id || 'Unknown' }}</p><p class="truncate font-mono text-xs text-[var(--ui-text-muted)]">{{ rowValue(row).id }}</p></div></template><template #amount-cell="{ row }">{{ formatAmount(rowValue(row).total_amount, rowValue(row).currency || totals.currency) }}</template><template #requests-cell="{ row }">{{ formatNumber(rowValue(row).request_count) }}</template><template #tokens-cell="{ row }">{{ formatCompactNumber(rowValue(row).total_tokens) }}</template><template #success-cell="{ row }">{{ formatPercent(rowValue(row).success_rate) }}</template><template #cache-cell="{ row }">{{ formatPercent(rowValue(row).cache_rate) }}</template><template #latency-cell="{ row }">{{ formatMilliseconds(rowValue(row).avg_latency_ms) }}</template></UTable></div></template></UModal>
 
     <UModal v-model:open="detailOpen" title="Usage record details" description="Redacted request, execution, token, and billing metadata.">
       <template #body>
@@ -396,13 +192,17 @@
         <div v-else class="py-10 text-center text-sm text-[var(--ui-text-muted)]">Record details are unavailable.</div>
       </template>
     </UModal>
-    <UsageInsights :common-query="insightQuery" :record-query="exportQuery" />
+    </template>
   </div>
 </template>
 
 <script setup>
 const { fetchAPI } = useApi()
+const route = useRoute()
+const router = useRouter()
 const allOptionValue = '__all__'
+const activeView = computed(() => route.query.view === 'requests' ? 'requests' : 'overview')
+const setView = async (view) => { await router.replace({ query: { ...route.query, view } }) }
 
 const pageSize = ref(50)
 const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
@@ -440,6 +240,7 @@ const rangeOptions = [
 ]
 const rangePreset = ref('7d')
 const showAdvancedFilters = ref(false)
+const credentialTypeOptions = [{ label: 'All credential types', value: allOptionValue }, { label: 'OAuth', value: 'oauth' }, { label: 'API key', value: 'api_key' }, { label: 'Token', value: 'token' }]
 const defaultFilters = () => ({
   ...datesForRange('7d'),
   provider: '',
@@ -450,6 +251,7 @@ const defaultFilters = () => ({
   user: '',
   clientKey: '',
   credentialId: '',
+  credentialType: '',
   endpoint: '',
   homeIp: '',
   cpaNode: '',
@@ -469,6 +271,10 @@ const detailOpen = ref(false)
 const detailLoading = ref(false)
 const selectedDetail = ref(null)
 const downloadingLog = ref(false)
+const chartOverlay = ref('requests')
+const chartOverlayOptions = [{ label: 'No overlay', value: 'none' }, { label: 'Requests', value: 'requests' }, { label: 'Spend', value: 'spend' }]
+const rankingOpen = ref(false), rankingLoading = ref(false), rankingItems = ref([]), rankingGroup = ref('user'), rankingMetric = ref('total_amount'), rankingLimit = ref(10)
+const credentialUsage = ref([]), credentialsLoading = ref(false)
 
 const statusOptions = [
   { label: 'All statuses', value: allOptionValue },
@@ -512,16 +318,27 @@ const overviewTokenBuckets = computed(() => overviewTokenBreakdown.value ? [
   { label: 'Unclassified', value: overviewTokenBreakdown.value.unclassified_tokens }
 ] : [])
 const costBreakdown = computed(() => Array.isArray(overview.value?.cost_breakdown) ? overview.value.cost_breakdown : [])
-const modelEfficiency = computed(() => Array.isArray(overview.value?.model_efficiency) ? overview.value.model_efficiency : [])
-const activity = computed(() => Array.isArray(overview.value?.activity) ? overview.value.activity.slice(-96) : [])
-const activityLegend = [{ status: 'healthy', label: 'Healthy' }, { status: 'degraded', label: 'Degraded' }, { status: 'unavailable', label: 'Unavailable' }, { status: 'empty', label: 'No requests' }]
-const displayedTrend = computed(() => {
-  const points = trend.value
-  if (points.length <= 16) return points
-  const stride = Math.ceil(points.length / 16)
-  return points.filter((_, index) => index % stride === 0 || index === points.length - 1)
-})
-const maxTrendRequests = computed(() => Math.max(1, ...displayedTrend.value.map((point) => Number(point.request_count) || 0)))
+const top = computed(() => overview.value?.top || {})
+const chartMetrics = computed(() => [
+  { label: 'Total tokens', value: formatCompactNumber(totals.value.total_tokens), hint: `${formatCompactNumber(totals.value.input_tokens)} input · ${formatCompactNumber(totals.value.output_tokens)} output`, icon: 'i-tabler-database', color: 'text-blue-500', points: trend.value.map(point => Number(point.total_tokens) || 0) },
+  { label: 'Spend', value: formatAmount(totals.value.total_amount, totals.value.currency), hint: `${formatAmount(totals.value.blended_cost_per_1m_tokens, totals.value.currency)} / 1M tokens`, icon: 'i-tabler-wallet', color: 'text-emerald-500', points: trend.value.map(point => Number(point.total_amount) || 0) },
+  { label: 'Requests', value: formatNumber(totals.value.request_count), hint: `${formatNumber(totals.value.success_count)} successful · ${formatNumber(totals.value.failed_count)} failed`, icon: 'i-tabler-bolt', color: 'text-violet-500', points: trend.value.map(point => Number(point.request_count) || 0) }
+])
+const tokenSeriesLegend = [
+  { label: 'Uncached input', color: 'bg-blue-500' }, { label: 'Cache read', color: 'bg-cyan-500' }, { label: 'Cache write', color: 'bg-teal-500' },
+  { label: 'Regular output', color: 'bg-violet-500' }, { label: 'Reasoning', color: 'bg-fuchsia-500' }, { label: 'Unclassified', color: 'bg-slate-400' }
+]
+const rankingCards = computed(() => [
+  { key: 'user', label: 'User ranking', items: Array.isArray(top.value.users) ? top.value.users.slice(0, 3) : [] },
+  { key: 'model', label: 'Model ranking', items: Array.isArray(top.value.models) ? top.value.models.slice(0, 3) : [] },
+  { key: 'client_key', label: 'Client key ranking', items: Array.isArray(top.value.client_keys) ? top.value.client_keys.slice(0, 3) : [] }
+])
+const chartOverlayValues = computed(() => chartOverlay.value === 'requests' ? trend.value.map(point => Number(point.request_count) || 0) : chartOverlay.value === 'spend' ? trend.value.map(point => Number(point.total_amount) || 0) : [])
+const rankingGroupOptions = [{ label: 'User', value: 'user' }, { label: 'Model', value: 'model' }, { label: 'Client key', value: 'client_key' }, { label: 'Execution credential', value: 'credential' }, { label: 'Provider', value: 'provider' }, { label: 'Endpoint', value: 'endpoint' }, { label: 'Home node', value: 'home_ip' }, { label: 'Executor', value: 'executor' }]
+const rankingMetricOptions = [{ label: 'Spend', value: 'total_amount' }, { label: 'Requests', value: 'request_count' }, { label: 'Total tokens', value: 'total_tokens' }, { label: 'Failures', value: 'failed_count' }, { label: 'Average latency', value: 'avg_latency_ms' }, { label: 'P95 latency', value: 'p95_latency_ms' }]
+const rankingLimitOptions = [{ label: 'Top 10', value: 10 }, { label: 'Top 50', value: 50 }]
+const rankingColumns = [{ accessorKey: 'rank', header: '#' }, { accessorKey: 'name', header: 'Name' }, { accessorKey: 'amount', header: 'Spend' }, { accessorKey: 'requests', header: 'Requests' }, { accessorKey: 'tokens', header: 'Tokens' }, { accessorKey: 'success', header: 'Success' }, { accessorKey: 'cache', header: 'Cache rate' }, { accessorKey: 'latency', header: 'Avg latency' }]
+const credentialColumns = [{ accessorKey: 'credential', header: 'Credential' }, { accessorKey: 'provider', header: 'Provider' }, { accessorKey: 'status', header: 'Status' }, { accessorKey: 'requests', header: 'Requests' }, { accessorKey: 'tokens', header: 'Tokens' }, { accessorKey: 'cost', header: 'Cost' }, { accessorKey: 'lastUsed', header: 'Last used' }]
 const records = computed(() => Array.isArray(recordsResponse.value?.items) ? recordsResponse.value.items : [])
 const providerSuggestions = computed(() => [...new Set(records.value.map(item => item.provider).filter(Boolean))].sort())
 const modelSuggestions = computed(() => [...new Set(records.value.map(item => item.model).filter(Boolean))].sort())
@@ -537,6 +354,7 @@ const overviewScopeLabel = computed(() => {
     source.model && `Model: ${source.model}`,
     source.endpoint && `Endpoint: ${source.endpoint}`,
     source.homeIp && `Home IP: ${source.homeIp}`,
+    source.credentialType && `Credential: ${source.credentialType}`,
   ].filter(Boolean)
   return [range, ...extras].join(' · ')
 })
@@ -555,32 +373,6 @@ const recordScopeLabel = computed(() => {
   return extras.length ? `Records-only: ${extras.join(' · ')}` : 'No records-only filters'
 })
 
-const metrics = computed(() => [
-  {
-    label: 'Requests',
-    value: formatNumber(totals.value.request_count),
-    hint: `${formatNumber(totals.value.success_count)} successful · ${formatNumber(totals.value.failed_count)} failed`,
-    icon: 'i-tabler-bolt',
-  },
-  {
-    label: 'Total tokens',
-    value: formatCompactNumber(totals.value.total_tokens),
-    hint: `${formatCompactNumber(totals.value.input_tokens)} input · ${formatCompactNumber(totals.value.output_tokens)} output`,
-    icon: 'i-tabler-database',
-  },
-  {
-    label: 'Success rate',
-    value: formatPercent(totals.value.success_rate),
-    hint: `${formatPercent(totals.value.error_rate)} error rate`,
-    icon: 'i-tabler-circle-check',
-  },
-  {
-    label: 'P95 latency',
-    value: formatMilliseconds(totals.value.p95_latency_ms),
-    hint: `${formatMilliseconds(totals.value.avg_latency_ms)} average`,
-    icon: 'i-tabler-clock',
-  },
-])
 
 const buildCommonParams = (source) => {
   const params = new URLSearchParams()
@@ -591,6 +383,7 @@ const buildCommonParams = (source) => {
   if (source.model.trim()) params.set('model', source.model.trim())
   if (source.endpoint.trim()) params.set('endpoint', source.endpoint.trim())
   if (source.homeIp.trim()) params.set('home_ip', source.homeIp.trim())
+  if (source.credentialType.trim()) params.set('credential_type', source.credentialType.trim())
   return params
 }
 
@@ -611,8 +404,7 @@ const insightQuery = computed(() => buildCommonParams(appliedFilters.value).toSt
 const exportQuery = computed(() => buildRecordParams(appliedFilters.value).toString())
 
 const selectRange = (preset) => {
-  if (preset === 'custom') showAdvancedFilters.value = true
-  else Object.assign(filters.value, datesForRange(preset))
+  if (preset !== 'custom') Object.assign(filters.value, datesForRange(preset))
 }
 
 const loadOverview = async () => {
@@ -638,10 +430,24 @@ const loadRecords = async () => {
   }
 }
 
+const loadRanking = async () => {
+  rankingLoading.value = true
+  try { const response = await fetchAPI(`/usage/aggregates?${insightQuery.value}`, { query: { group_by: rankingGroup.value, metric: rankingMetric.value, limit: rankingLimit.value } }); rankingItems.value = response?.items || [] }
+  catch (error) { errorMessage.value = apiErrorMessage(error, 'Failed to load usage ranking.') }
+  finally { rankingLoading.value = false }
+}
+const openRanking = async (group) => { rankingGroup.value = group; rankingOpen.value = true; await loadRanking() }
+const loadCredentialUsage = async () => {
+  credentialsLoading.value = true
+  try { const response = await fetchAPI(`/usage/aggregates?${insightQuery.value}`, { query: { group_by: 'credential', metric: 'request_count', limit: 50 } }); credentialUsage.value = response?.items || [] }
+  catch (error) { errorMessage.value = apiErrorMessage(error, 'Failed to load execution credential usage.') }
+  finally { credentialsLoading.value = false }
+}
+
 const refreshAll = async () => {
   errorMessage.value = ''
   try {
-    await Promise.all([loadOverview(), loadRecords()])
+    await Promise.all([loadOverview(), loadRecords(), loadCredentialUsage()])
   } catch (error) {
     errorMessage.value = apiErrorMessage(error, 'Failed to load usage observability data.')
   }
@@ -663,6 +469,7 @@ const resetFilters = async () => {
   filters.value = defaultFilters()
   appliedFilters.value = defaultFilters()
   sort.value = 'timestamp_desc'
+  showAdvancedFilters.value = false
   page.value = 1
   await refreshAll()
 }
@@ -727,7 +534,6 @@ const downloadDetailLog = async () => {
 }
 
 const rowValue = (row) => row?.original || row
-const trendWidth = (count) => Math.max(2, Math.round(((Number(count) || 0) / maxTrendRequests.value) * 100))
 
 const formatNumber = (value) => new Intl.NumberFormat().format(Number(value) || 0)
 const formatCompactNumber = (value) => new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(Number(value) || 0)
@@ -757,22 +563,3 @@ const apiErrorMessage = (error, fallback) => error?.data?.message || error?.data
 onMounted(refreshAll)
 </script>
 
-<script>
-export default {
-  components: {
-    DetailItem: {
-      props: {
-        label: String,
-        value: [String, Number],
-        mono: Boolean,
-      },
-      template: `
-        <div class="min-w-0">
-          <dt class="text-xs font-medium text-[var(--ui-text-muted)]">{{ label }}</dt>
-          <dd class="mt-1 break-words text-sm" :class="mono ? 'font-mono text-xs' : ''">{{ value === null || value === undefined || value === '' ? '—' : value }}</dd>
-        </div>
-      `,
-    },
-  },
-}
-</script>

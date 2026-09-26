@@ -22,7 +22,9 @@
       </template>
 
       <div class="min-w-0">
-        <UTabs v-model="activeTab" :items="tabs" value-key="value" label-key="label" class="w-full px-4 pt-4" />
+        <div role="tablist" aria-label="Users & Access" class="workbench-page-tabs">
+          <UButton v-for="tab in tabs" :key="tab.value" role="tab" color="neutral" :aria-selected="activeTab === tab.value" :variant="activeTab === tab.value ? 'soft' : 'ghost'" @click="activeTab = tab.value">{{ tab.label }}</UButton>
+        </div>
 
         <div v-if="activeTab === 'users'" class="grid gap-3 p-4">
           <div class="flex justify-end"><UButton icon="i-tabler-plus" @click="openUserCreate">New user</UButton></div>
@@ -438,7 +440,7 @@ async function performDelete() { const target = deleteTarget.value; if (!target)
 </script>
 
 <style scoped>
-.user-action-column { width: 9rem !important; min-width: 9rem !important; max-width: 9rem !important; }
+.user-action-column { width: 1% !important; min-width: 0 !important; white-space: nowrap; }
 .users-table { border-collapse: separate; border-spacing: 0; }
 .users-table thead th { position: sticky; top: 0; z-index: 4; background: var(--ui-bg-muted); box-shadow: 0 1px 0 var(--ui-border); }
 .users-table .user-data-row { height: 57px; }
@@ -446,6 +448,14 @@ async function performDelete() { const target = deleteTarget.value; if (!target)
 .users-table thead > tr > th:last-child, .users-table .user-data-row > td:last-child, .keys-table :deep(th:last-child), .keys-table :deep(td:last-child) { position: sticky; right: 0; z-index: 2; background: var(--ui-bg); box-shadow: -1px 0 0 var(--ui-border); }
 .users-table thead > tr > th:last-child, .keys-table :deep(th:last-child) { z-index: 5; }
 .users-table .user-data-row > td:last-child { background: var(--ui-bg); }
+.model-binding-table { background: var(--ui-bg-elevated); }
+.model-binding-table :deep(thead) { background: color-mix(in oklch, var(--ui-bg-muted) 82%, var(--ui-bg-elevated)); }
+.model-binding-table :deep(th) { border-bottom: 1px solid var(--ui-border); background: transparent; }
+.model-binding-table :deep(tbody tr) { background: var(--ui-bg-elevated); }
+.model-binding-table :deep(tbody tr + tr td) { border-top: 1px solid var(--ui-border-muted); }
+.model-binding-table :deep(tbody tr:hover td) { background: color-mix(in oklch, var(--ui-hover) 55%, var(--ui-bg-elevated)); }
+.model-binding-table :deep(.table-action-head),
+.model-binding-table :deep(.table-action-cell) { background: inherit; }
 @media (max-width: 767px) {
   .users-table { min-width: 34rem !important; }
   .users-table th:nth-child(n+4):nth-child(-n+9), .users-table td:nth-child(n+4):nth-child(-n+9) { display: none; }

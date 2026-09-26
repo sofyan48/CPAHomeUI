@@ -100,52 +100,44 @@
 
 
 
-    <UModal v-model:open="modelsOpen" title="Available credential models"><template #body><UAlert v-if="modelsError" color="error" variant="subtle" :description="modelsError"/><div class="max-h-96 space-y-2 overflow-y-auto"><p v-for="model in credentialModels" :key="model.id" class="rounded-lg border border-[var(--ui-border)] px-3 py-2 text-sm">{{ model.display_name || model.id }} <span class="text-xs text-[var(--ui-text-muted)]">{{ model.id }}</span></p><p v-if="!credentialModels.length" class="text-sm text-[var(--ui-text-muted)]">No models found.</p></div></template></UModal>
+
     <USlideover v-model:open="detailsOpen" :title="detailsTarget?.label || detailsTarget?.name || 'Credential details'" :description="detailsTarget?.id || ''" :ui="{ content: 'sm:max-w-xl' }">
       <template #body>
         <div v-if="detailsTarget" class="space-y-5">
-          <div class="-mx-4 flex flex-wrap gap-1 border-b border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] px-4 py-2" role="tablist" aria-label="Credential details">
-            <UButton v-for="section in detailSections" :key="section" role="tab" :aria-selected="detailsTab === section" size="sm" color="neutral" :variant="detailsTab === section ? 'soft' : 'ghost'" @click="detailsTab = section">{{ section }}</UButton>
-          </div>
-          <div v-if="detailsTab === 'Overview'" class="space-y-4"><dl class="grid gap-3 text-sm"><div v-for="entry in overviewFields(detailsTarget)" :key="entry.label" class="rounded-md border border-[var(--ui-border)] px-3 py-2.5"><dt class="text-xs text-[var(--ui-text-muted)]">{{ entry.label }}</dt><dd class="mt-1 break-words font-mono text-xs">{{ entry.value }}</dd></div></dl><UAlert v-if="detailsTarget.status_message" color="warning" variant="subtle" :description="detailsTarget.status_message" /><div class="flex justify-end gap-2 border-t border-[var(--ui-border)] pt-4"><UButton size="sm" color="neutral" variant="outline" @click="detailsTab = 'Metadata'">Edit metadata</UButton><UButton size="sm" @click="detailsTab = 'Quota'">View quota</UButton></div></div>
-          <div v-else-if="detailsTab === 'Metadata'" class="space-y-4 text-sm">
-            <dl class="grid gap-3 sm:grid-cols-2"><div v-for="entry in metadataFields(detailsTarget)" :key="entry.label" class="rounded-md border border-[var(--ui-border)] px-3 py-2.5"><dt class="text-xs text-[var(--ui-text-muted)]">{{ entry.label }}</dt><dd class="mt-1 break-words font-mono text-xs">{{ entry.value }}</dd></div></dl>
-            <div class="flex flex-wrap justify-end gap-2 border-t border-[var(--ui-border)] pt-4"><UButton size="sm" color="neutral" variant="outline" @click="editFields(detailsTarget)">Edit metadata</UButton><UButton size="sm" color="neutral" variant="outline" @click="editPolicy(detailsTarget)">Concurrency policy</UButton></div>
-          </div>
-          <div v-else-if="detailsTab === 'Quota'" class="space-y-3 text-sm">
-            <div class="flex flex-wrap gap-2"><UBadge :color="quotaColor(quotaByID.get(detailsTarget.id)?.quota_status)" variant="subtle">{{ quotaByID.get(detailsTarget.id)?.quota_status || 'Not collected' }}</UBadge><UBadge color="neutral" variant="subtle">{{ quotaByID.get(detailsTarget.id)?.freshness || 'never' }}</UBadge></div>
-            <div v-for="window in quotaByID.get(detailsTarget.id)?.primary_windows || []" :key="window.id" class="rounded-md border border-[var(--ui-border)] p-3"><p class="font-medium">{{ window.label || window.id }}</p><p>{{ quotaWindowRemaining(window) }} · Reset: {{ window.reset_at ? new Date(window.reset_at).toLocaleString() : '—' }}</p></div>
-            <UButton size="sm" color="neutral" variant="outline" @click="openAccountQuota(detailsTarget)">View all quota windows</UButton>
-          </div>
-          <div v-else-if="detailsTab === 'Concurrency'" class="space-y-3 text-sm"><div class="rounded-md border border-[var(--ui-border)] px-3 py-2.5"><p class="text-xs text-[var(--ui-text-muted)]">In flight / limit</p><p class="mt-1 font-mono text-xs">{{ concurrency(detailsTarget).in_flight || 0 }} / {{ concurrency(detailsTarget).max_in_flight ?? '∞' }}</p></div><UButton size="sm" color="neutral" variant="outline" @click="showConcurrency(detailsTarget)">View in-flight requests</UButton></div>
-          <div v-else-if="detailsTab === 'Models'" class="space-y-3 text-sm"><UButton size="sm" color="neutral" variant="outline" @click="showModels(detailsTarget)">View available models</UButton></div>
-          <div v-else-if="detailsTab === 'Danger'" class="flex flex-wrap gap-2"><UButton size="sm" color="neutral" variant="outline" @click="downloadCredential(detailsTarget)">Download credential</UButton><UButton size="sm" color="error" variant="outline" @click="confirmDelete(detailsTarget)">Delete credential</UButton></div>
+          <div class="-mx-4 flex flex-wrap gap-1 border-b border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] px-4 py-2" role="tablist" aria-label="Credential details"><UButton v-for="section in detailSections" :key="section" role="tab" :aria-selected="detailsTab === section" size="sm" color="neutral" :variant="detailsTab === section ? 'soft' : 'ghost'" @click="selectDetailSection(section)">{{ section }}</UButton></div>
+          <section v-if="detailsTab === 'Overview'" class="space-y-3"><div><h3 class="font-semibold">Overview</h3><p class="text-xs text-[var(--ui-text-muted)]">Credential identity, routing, and runtime state.</p></div><dl class="grid gap-3 text-sm"><div v-for="entry in overviewFields(detailsTarget)" :key="entry.label" class="rounded-md border border-[var(--ui-border)] px-3 py-2.5"><dt class="text-xs text-[var(--ui-text-muted)]">{{ entry.label }}</dt><dd class="mt-1 break-words font-mono text-xs">{{ entry.value }}</dd></div></dl><UAlert v-if="detailsTarget.status_message" color="warning" variant="subtle" :description="detailsTarget.status_message" /></section>
+          <form v-else-if="detailsTab === 'Metadata'" class="space-y-4 text-sm" @submit.prevent="saveFields"><div><h3 class="font-semibold">Metadata</h3><p class="text-xs text-[var(--ui-text-muted)]">Edit routing and credential metadata directly.</p></div>
+            <p class="text-xs text-[var(--ui-text-muted)]">Only changed fields are saved. Leave optional text blank to clear it.</p>
+            <div class="grid gap-3 sm:grid-cols-2"><UFormField label="Prefix"><UInput v-model="fields.prefix" class="w-full" /></UFormField><UFormField label="Proxy URL"><UInput v-model="fields.proxy_url" class="w-full" placeholder="socks5://..." /></UFormField><UFormField label="Priority"><UInput v-model="fields.priority" type="number" step="1" class="w-full" /></UFormField><UFormField label="Request retries"><UInput v-model="fields.request_retry" type="number" min="0" step="1" class="w-full" placeholder="Default" /></UFormField></div>
+            <UFormField label="Note"><UTextarea v-model="fields.note" class="w-full" /></UFormField>
+            <UCheckbox v-if="supportsWebsockets(detailsTarget || {})" v-model="fields.websockets" label="WebSockets" />
+            <UFormField label="Cooling override"><USelect v-model="fields.disable_cooling" :items="coolingOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
+            <UAlert v-if="fieldsError" color="error" variant="subtle" :description="fieldsError" />
+            <div class="flex justify-end border-t border-[var(--ui-border)] pt-3"><UButton type="submit" size="sm" :loading="savingFields">Save changes</UButton></div>
+          </form>
+          <section v-else-if="detailsTab === 'Quota'" class="space-y-3 text-sm"><div><h3 class="font-semibold">Quota</h3><p class="text-xs text-[var(--ui-text-muted)]">All quota windows, collection state, and reset credits.</p></div>
+            <UAlert v-if="accountQuotaError" color="error" variant="subtle" :description="accountQuotaError" />
+            <p v-if="accountQuotaLoading" class="py-8 text-center text-[var(--ui-text-muted)]">Loading quota windows…</p>
+            <template v-else-if="accountQuotaDetail">
+              <div class="flex flex-wrap items-center gap-2"><UBadge color="neutral" variant="subtle">{{ accountQuotaDetail.credential?.provider || detailsTarget?.provider || 'Unknown provider' }}</UBadge><UBadge :color="quotaColor(accountQuotaDetail.credential?.quota_status)" variant="subtle">{{ accountQuotaDetail.credential?.quota_status || 'unknown' }}</UBadge><UBadge color="neutral" variant="subtle">{{ accountQuotaDetail.collection?.freshness || 'never' }}</UBadge><UBadge v-if="accountQuotaDetail.collection?.status" color="neutral" variant="subtle">{{ accountQuotaDetail.collection.status }}</UBadge></div>
+              <div v-for="window in accountQuotaDetail.windows || []" :key="window.id" class="rounded-md border border-[var(--ui-border)] p-3"><div class="flex items-start justify-between gap-3"><p class="font-medium">{{ window.label || window.id }}</p><UBadge :color="quotaColor(window.status)" variant="subtle">{{ window.status }}</UBadge></div><p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ quotaWindowRemaining(window) }} · Used: {{ window.used ?? '—' }} · Reset: {{ window.reset_at ? new Date(window.reset_at).toLocaleString() : '—' }}</p><div v-if="quotaWindowRatio(window) !== null" class="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--ui-bg-muted)]"><div class="h-full bg-[var(--ui-primary)]" :style="{ width: `${Math.round(quotaWindowRatio(window) * 100)}%` }" /></div></div>
+              <p v-if="accountQuotaDetail.collection?.error?.message" class="text-xs text-red-500">{{ accountQuotaDetail.collection.error.message }}</p><p v-if="!accountQuotaDetail.windows?.length" class="text-[var(--ui-text-muted)]">No quota windows recorded.</p>
+              <div v-if="accountQuotaDetail.reset_credits" class="rounded-md border border-[var(--ui-border)] p-3"><p class="font-medium">Reset credits: {{ accountQuotaDetail.reset_credits.available_count ?? '—' }} available</p><p v-if="accountQuotaDetail.reset_credits.observed_at" class="text-xs text-[var(--ui-text-muted)]">Observed {{ new Date(accountQuotaDetail.reset_credits.observed_at).toLocaleString() }}</p><p v-for="(credit, index) in accountQuotaDetail.reset_credits.credits || []" :key="index" class="mt-1 text-xs">{{ credit.status }} · Expires {{ credit.expires_at ? new Date(credit.expires_at).toLocaleString() : '—' }}</p></div>
+            </template>
+            <p class="text-xs text-[var(--ui-text-muted)]">Collection runs in the background. Refresh after it finishes to see updated snapshots.</p>
+            <div class="flex justify-end gap-2 border-t border-[var(--ui-border)] pt-3"><UButton size="sm" color="neutral" variant="outline" :loading="accountQuotaLoading" @click="refreshAccountQuota">Refresh</UButton><UButton size="sm" color="neutral" variant="outline" :loading="accountQuotaCollecting" @click="collectAccountQuota">Collect now</UButton></div>
+          </section>
+          <section v-else-if="detailsTab === 'Concurrency'" class="space-y-5 text-sm"><div><h3 class="font-semibold">Concurrency</h3><p class="text-xs text-[var(--ui-text-muted)]">Policy, admitted state, and observed requests.</p></div>
+            <UAlert v-if="policyError || concurrencyError" color="error" variant="subtle" :description="policyError || concurrencyError" />
+            <section class="space-y-3"><div class="flex items-center justify-between gap-2"><div><h3 class="font-semibold">Concurrency policy</h3><p class="text-xs text-[var(--ui-text-muted)]">Blank or 0 removes a limit.</p></div><UButton size="sm" color="neutral" variant="outline" :loading="loadingPolicy" @click="loadPolicy">Reload</UButton></div><div v-if="policyConflict" class="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-600 dark:text-amber-400">Policy changed elsewhere. Reload before saving.</div><form v-if="policy && !loadingPolicy" class="space-y-3" @submit.prevent="savePolicy"><p class="text-xs text-[var(--ui-text-muted)]">Version {{ policy.version }}</p><UFormField label="Total max in flight"><UInput v-model="policyTotal" type="number" min="0" step="1" placeholder="Unlimited" class="w-full" /></UFormField><div class="flex items-center justify-between"><h4 class="text-sm font-semibold">Per-model limits</h4><UButton size="sm" color="neutral" variant="outline" type="button" @click="policyModels.push({ key: ++modelKey, model: '', limit: '' })">Add model</UButton></div><div v-for="(entry, index) in policyModels" :key="entry.key" class="flex items-end gap-2"><UFormField label="Model" class="flex-1"><UInput v-model="entry.model" placeholder="Canonical model ID" class="w-full" /></UFormField><UFormField label="Max in flight" class="w-28"><UInput v-model="entry.limit" type="number" min="0" step="1" class="w-full" /></UFormField><UButton type="button" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove model limit" @click="policyModels.splice(index, 1)" /></div><div class="flex justify-end"><UButton type="submit" size="sm" :loading="savingPolicy" :disabled="policyConflict">Save policy</UButton></div></form><p v-else-if="loadingPolicy" class="py-4 text-center text-[var(--ui-text-muted)]">Loading policy…</p></section>
+            <section class="space-y-3 border-t border-[var(--ui-border)] pt-4"><div class="flex items-center justify-between gap-2"><div><h3 class="font-semibold">Current concurrency</h3><p class="text-xs text-[var(--ui-text-muted)]">Admitted state and observed in-flight requests.</p></div><UButton size="sm" color="neutral" variant="outline" :loading="loadingConcurrency" @click="loadConcurrency()">Refresh</UButton></div><div v-if="concurrencyState" class="space-y-2"><p>Admitted: <strong>{{ concurrencyState.admitted_in_flight }}</strong> / {{ concurrencyState.max_in_flight ?? '∞' }} <UBadge v-if="concurrencyState.total_saturated" color="warning" variant="subtle">Saturated</UBadge></p><p class="text-xs text-[var(--ui-text-muted)]">Remaining: {{ concurrencyState.remaining ?? 'unlimited' }} · Policy version: {{ concurrencyState.policy_version }} · Fully enforced: {{ concurrencyState.fully_enforced }}</p><div v-for="model in concurrencyState.models || []" :key="model.model" class="rounded-md border border-[var(--ui-border)] p-3"><span class="font-medium">{{ model.model }}</span> · {{ model.admitted_in_flight }} / {{ model.max_in_flight }} <UBadge v-if="model.saturated" color="warning" variant="subtle">Saturated</UBadge></div></div><p v-if="flightDetails?.stale || flightDetails?.details_truncated || flightDetails?.coverage_complete === false" class="text-xs text-amber-500">Observation may be stale or incomplete.</p><p v-if="flightDetails?.observed_at" class="text-xs text-[var(--ui-text-muted)]">Observed at {{ flightDetails.observed_at }} · {{ flightDetails.total }} request(s)</p><div v-for="request in flightDetails?.items || []" :key="request.request_id" class="rounded-md border border-[var(--ui-border)] p-3"><p class="break-all font-mono text-xs">{{ request.request_id }}</p><p>{{ request.model || 'Unknown model' }} · {{ request.request_kind || 'request' }}</p><p class="text-xs text-[var(--ui-text-muted)]">Started {{ request.started_at }}</p></div><p v-if="!loadingConcurrency && !flightDetails?.items?.length" class="text-[var(--ui-text-muted)]">No observed requests.</p><UButton v-if="flightDetails?.next_offset != null" color="neutral" variant="outline" :loading="loadingConcurrency" @click="loadConcurrency(flightDetails.next_offset)">Load more</UButton></section>
+          </section>
+          <section v-else-if="detailsTab === 'Models'" class="space-y-3 text-sm"><div><h3 class="font-semibold">Models</h3><p class="text-xs text-[var(--ui-text-muted)]">Models exposed by this credential.</p></div><UAlert v-if="modelsError" color="error" variant="subtle" :description="modelsError" /><div class="flex items-center justify-between gap-2"><div><h3 class="font-semibold">Available models</h3><p class="text-xs text-[var(--ui-text-muted)]">Models exposed by this credential.</p></div><UButton size="sm" color="neutral" variant="outline" :loading="modelsLoading" @click="loadModels(detailsTarget)">Refresh</UButton></div><p v-if="modelsLoading" class="py-8 text-center text-[var(--ui-text-muted)]">Loading models…</p><div v-else class="space-y-2"><div v-for="model in credentialModels" :key="model.id" class="rounded-md border border-[var(--ui-border)] px-3 py-2"><p class="font-medium">{{ model.display_name || model.id }}</p><p class="font-mono text-xs text-[var(--ui-text-muted)]">{{ model.id }}</p></div><p v-if="!credentialModels.length" class="py-6 text-center text-[var(--ui-text-muted)]">No models found.</p></div></section>
+          <section v-else class="space-y-3"><div><h3 class="font-semibold text-red-600 dark:text-red-400">Danger zone</h3><p class="text-xs text-[var(--ui-text-muted)]">Download a backup or permanently remove this credential.</p></div><div class="flex flex-wrap gap-2"><UButton size="sm" color="neutral" variant="outline" @click="downloadCredential(detailsTarget)">Download credential</UButton><UButton size="sm" color="error" variant="outline" @click="confirmDelete(detailsTarget)">Delete credential</UButton></div></section>
         </div>
       </template>
     </USlideover>
-    <USlideover v-model:open="accountQuotaOpen" :title="`Quota · ${accountQuotaTarget?.label || accountQuotaTarget?.name || accountQuotaTarget?.id || ''}`" :description="accountQuotaTarget?.id || ''" :ui="{ content: 'sm:max-w-xl' }">
-      <template #body>
-        <div class="max-h-[70vh] space-y-3 overflow-y-auto text-sm">
-          <UAlert v-if="accountQuotaError" color="error" variant="subtle" :description="accountQuotaError" />
-          <p v-if="accountQuotaLoading">Loading quota windows…</p>
-          <template v-else-if="accountQuotaDetail">
-            <div class="flex flex-wrap items-center gap-2"><UBadge color="neutral" variant="subtle">{{ accountQuotaDetail.credential?.provider || accountQuotaTarget?.provider || 'Unknown provider' }}</UBadge><UBadge :color="quotaColor(accountQuotaDetail.credential?.quota_status)" variant="subtle">{{ accountQuotaDetail.credential?.quota_status || 'unknown' }}</UBadge><UBadge color="neutral" variant="subtle">{{ accountQuotaDetail.collection?.freshness || 'never' }}</UBadge><UBadge v-if="accountQuotaDetail.collection?.status" color="neutral" variant="subtle">{{ accountQuotaDetail.collection.status }}</UBadge></div>
-            <div v-for="window in accountQuotaDetail.windows || []" :key="window.id" class="rounded-lg border border-[var(--ui-border)] p-3">
-              <p class="font-medium">{{ window.label || window.id }} <UBadge :color="quotaColor(window.status)" variant="subtle">{{ window.status }}</UBadge></p>
-              <p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ quotaWindowRemaining(window) }} · Used: {{ window.used ?? '—' }} · Reset: {{ window.reset_at ? new Date(window.reset_at).toLocaleString() : '—' }}</p><div v-if="quotaWindowRatio(window) !== null" class="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--ui-bg-muted)]"><div class="h-full bg-[var(--ui-primary)]" :style="{ width: `${Math.round(quotaWindowRatio(window) * 100)}%` }" /></div>
-            </div>
-            <p v-if="accountQuotaDetail.collection?.error?.message" class="text-xs text-red-500">{{ accountQuotaDetail.collection.error.message }}</p><p v-if="!accountQuotaDetail.windows?.length" class="text-[var(--ui-text-muted)]">No quota windows recorded.</p>
-            <div v-if="accountQuotaDetail.reset_credits" class="rounded-lg border border-[var(--ui-border)] p-3">
-              <p class="font-medium">Reset credits: {{ accountQuotaDetail.reset_credits.available_count ?? '—' }} available</p>
-              <p v-if="accountQuotaDetail.reset_credits.observed_at" class="text-xs text-[var(--ui-text-muted)]">Observed {{ new Date(accountQuotaDetail.reset_credits.observed_at).toLocaleString() }}</p>
-              <p v-for="(credit, index) in accountQuotaDetail.reset_credits.credits || []" :key="index" class="mt-1 text-xs">{{ credit.status }} · Expires {{ credit.expires_at ? new Date(credit.expires_at).toLocaleString() : '—' }}</p>
-            </div>
-          </template>
-          <p class="text-xs text-[var(--ui-text-muted)]">Collection runs in the background. Refresh after it finishes to see updated snapshots.</p>
-          <div class="flex justify-end gap-2"><UButton color="neutral" variant="outline" :loading="accountQuotaLoading" :disabled="!accountQuotaTarget" @click="refreshAccountQuota">Refresh</UButton><UButton color="neutral" variant="outline" :loading="accountQuotaCollecting" :disabled="!accountQuotaTarget" @click="collectAccountQuota">Collect now</UButton><UButton color="neutral" variant="ghost" @click="accountQuotaOpen = false">Close</UButton></div>
-        </div>
-      </template>
-    </USlideover>
+
     <UModal v-model:open="connectivityOpen" title="Test credential connectivity" description="Home sends a GET request using the selected credential for proxy selection and $TOKEN$ replacement.">
       <template #body>
         <form class="space-y-4" @submit.prevent="runConnectivity">
@@ -162,76 +154,7 @@
         </form>
       </template>
     </UModal>
-    <UModal v-model:open="fieldsOpen" :title="`Edit ${fieldsTarget?.label || fieldsTarget?.name || fieldsTarget?.id || 'credential'}`">
-      <template #body>
-        <form class="space-y-4" @submit.prevent="saveFields">
-          <p class="text-sm text-[var(--ui-text-muted)]">Only changed fields are saved. Leave optional text blank to clear it.</p>
-          <div class="grid gap-4 sm:grid-cols-2">
-            <UFormField label="Prefix"><UInput v-model="fields.prefix" class="w-full" /></UFormField>
-            <UFormField label="Proxy URL"><UInput v-model="fields.proxy_url" class="w-full" placeholder="socks5://..." /></UFormField>
-            <UFormField label="Priority"><UInput v-model="fields.priority" type="number" step="1" class="w-full" /></UFormField>
-            <UFormField label="Request retries"><UInput v-model="fields.request_retry" type="number" min="0" step="1" class="w-full" placeholder="Default" /></UFormField>
-          </div>
-          <UFormField label="Note"><UTextarea v-model="fields.note" class="w-full" /></UFormField>
-          <UCheckbox v-if="supportsWebsockets(fieldsTarget || {})" v-model="fields.websockets" label="WebSockets" />
-          <UFormField label="Cooling override"><USelect v-model="fields.disable_cooling" :items="coolingOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
-          <UAlert v-if="fieldsError" color="error" variant="subtle" :description="fieldsError" />
-          <div class="flex justify-end gap-2"><UButton type="button" color="neutral" variant="ghost" @click="fieldsOpen = false">Cancel</UButton><UButton type="submit" :loading="savingFields">Save changes</UButton></div>
-        </form>
-      </template>
-    </UModal>
 
-    <UModal v-model:open="policyOpen" :title="`Concurrency policy · ${policyTarget?.label || policyTarget?.name || policyTarget?.id || ''}`">
-      <template #body>
-        <div class="max-h-[70vh] space-y-4 overflow-y-auto">
-          <p class="text-sm text-[var(--ui-text-muted)]">Blank or 0 removes a limit. Model limits replace the entire per-model policy when saved.</p>
-          <UAlert v-if="policyError" color="error" variant="subtle" :description="policyError" />
-          <div v-if="policyConflict" class="flex items-center gap-3">
-            <span class="text-sm text-amber-500">Your edits were not saved.</span>
-            <UButton size="sm" color="neutral" variant="outline" :loading="loadingPolicy" @click="loadPolicy">Reload latest policy</UButton>
-          </div>
-          <form v-if="policy && !loadingPolicy" class="space-y-4" @submit.prevent="savePolicy">
-            <p class="text-xs text-[var(--ui-text-muted)]">Version {{ policy.version }}</p>
-            <UFormField label="Total max in flight"><UInput v-model="policyTotal" type="number" min="0" step="1" placeholder="Unlimited" class="w-full" /></UFormField>
-            <div class="flex items-center justify-between"><h3 class="font-semibold">Per-model limits</h3><UButton size="sm" color="neutral" variant="outline" type="button" @click="policyModels.push({ key: ++modelKey, model: '', limit: '' })">Add model</UButton></div>
-            <div v-for="(entry, index) in policyModels" :key="entry.key" class="flex items-end gap-2">
-              <UFormField label="Model" class="flex-1"><UInput v-model="entry.model" placeholder="Canonical model ID" class="w-full" /></UFormField>
-              <UFormField label="Max in flight" class="w-32"><UInput v-model="entry.limit" type="number" min="0" step="1" class="w-full" /></UFormField>
-              <UButton type="button" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove model limit" @click="policyModels.splice(index, 1)" />
-            </div>
-            <div class="flex justify-end gap-2"><UButton type="button" color="neutral" variant="ghost" @click="policyOpen = false">Cancel</UButton><UButton type="submit" :loading="savingPolicy" :disabled="policyConflict">Save policy</UButton></div>
-          </form>
-          <p v-else-if="loadingPolicy" class="text-sm text-[var(--ui-text-muted)]">Loading policy...</p>
-        </div>
-      </template>
-    </UModal>
-
-    <UModal v-model:open="concurrencyOpen" :title="`Concurrency · ${concurrencyTarget?.label || concurrencyTarget?.name || concurrencyTarget?.id || ''}`">
-      <template #body>
-        <div class="max-h-[70vh] space-y-5 overflow-y-auto">
-          <UAlert v-if="concurrencyError" color="error" variant="subtle" :description="concurrencyError" />
-          <div v-if="concurrencyState" class="space-y-2 text-sm">
-            <p>Admitted: <strong>{{ concurrencyState.admitted_in_flight }}</strong> / {{ concurrencyState.max_in_flight ?? '∞' }} <UBadge v-if="concurrencyState.total_saturated" color="warning" variant="subtle">Saturated</UBadge></p>
-            <p class="text-xs text-[var(--ui-text-muted)]">Remaining: {{ concurrencyState.remaining ?? 'unlimited' }} · Policy version: {{ concurrencyState.policy_version }} · Fully enforced: {{ concurrencyState.fully_enforced }}</p>
-            <div v-for="model in concurrencyState.models || []" :key="model.model" class="rounded-lg border border-[var(--ui-border)] p-3">
-              <span class="font-medium">{{ model.model }}</span> · {{ model.admitted_in_flight }} / {{ model.max_in_flight }} <UBadge v-if="model.saturated" color="warning" variant="subtle">Saturated</UBadge>
-            </div>
-          </div>
-          <div>
-            <div class="flex items-center justify-between gap-2"><h3 class="font-semibold">Observed requests</h3><UButton size="sm" color="neutral" variant="outline" :loading="loadingConcurrency" @click="loadConcurrency()">Refresh</UButton></div>
-            <p v-if="flightDetails?.stale || flightDetails?.details_truncated || flightDetails?.coverage_complete === false" class="mt-2 text-xs text-amber-500">Observation may be stale or incomplete; request counts may not match admitted concurrency.</p>
-            <p v-if="flightDetails?.observed_at" class="mt-1 text-xs text-[var(--ui-text-muted)]">Observed at {{ flightDetails.observed_at }} · {{ flightDetails.total }} request(s)</p>
-            <div v-for="request in flightDetails?.items || []" :key="request.request_id" class="mt-2 rounded-lg border border-[var(--ui-border)] p-3 text-sm">
-              <p class="break-all font-mono text-xs">{{ request.request_id }}</p>
-              <p>{{ request.model || 'Unknown model' }} · {{ request.request_kind || 'request' }}</p>
-              <p class="text-xs text-[var(--ui-text-muted)]">Started {{ request.started_at }}</p>
-            </div>
-            <p v-if="!loadingConcurrency && !flightDetails?.items?.length" class="mt-3 text-sm text-[var(--ui-text-muted)]">No observed requests.</p>
-            <UButton v-if="flightDetails?.next_offset != null" class="mt-3" color="neutral" variant="outline" :loading="loadingConcurrency" @click="loadConcurrency(flightDetails.next_offset)">Load more</UButton>
-          </div>
-        </div>
-      </template>
-    </UModal>
 
 
     <UModal v-model:open="bulkDeleteOpen" title="Delete selected credentials"><template #body><div class="space-y-5"><UAlert color="warning" variant="subtle" title="Delete selected credentials?" :description="`${selectedIDs.size} credential(s) will be removed. This cannot be undone.`"/><div class="flex justify-end gap-3"><UButton color="neutral" variant="ghost" :disabled="bulkBusy" @click="bulkDeleteOpen = false">Cancel</UButton><UButton color="error" :loading="bulkBusy" :disabled="!selectedIDs.size" @click="bulkDelete">Delete {{ selectedIDs.size }}</UButton></div></div></template></UModal>
@@ -290,8 +213,7 @@ function overviewFields(item) {
     ['Quota status', quotaByID.value.get(item.id)?.quota_status]
   ].map(([label, value]) => ({ label, value: value == null || value === '' ? fallback : String(value) }))
 }
-const accountQuotaOpen = ref(false)
-const accountQuotaTarget = ref(null)
+const accountQuotaTarget = computed(() => detailsTarget.value)
 const accountQuotaDetail = ref(null)
 const accountQuotaError = ref('')
 const accountQuotaLoading = ref(false)
@@ -307,8 +229,8 @@ const connectivityBody = computed(() => {
   const body = connectivityResult.value?.body || ''
   try { return JSON.stringify(JSON.parse(body), null, 2) } catch { return body }
 })
-const modelsOpen = ref(false)
 const modelsError = ref('')
+const modelsLoading = ref(false)
 const credentialModels = ref([])
 
 const deleteOpen = ref(false)
@@ -318,8 +240,7 @@ const selectedIDs = ref(new Set())
 const bulkBusy = ref(false)
 const bulkAction = ref('')
 const bulkDeleteOpen = ref(false)
-const fieldsOpen = ref(false)
-const fieldsTarget = ref(null)
+const fieldsTarget = computed(() => detailsTarget.value)
 const fields = reactive({ prefix: '', proxy_url: '', priority: '', request_retry: '', note: '', websockets: false, disable_cooling: 'inherit' })
 const coolingOptions = [
   { label: 'Inherit global setting', value: 'inherit' },
@@ -329,8 +250,7 @@ const coolingOptions = [
 const originalFields = ref({})
 const fieldsError = ref('')
 const savingFields = ref(false)
-const policyOpen = ref(false)
-const policyTarget = ref(null)
+const policyTarget = computed(() => detailsTarget.value)
 const policy = ref(null)
 const policyTotal = ref('')
 const policyModels = ref([])
@@ -340,8 +260,7 @@ const loadingPolicy = ref(false)
 const savingPolicy = ref(false)
 let policyRequest = 0
 let modelKey = 0
-const concurrencyOpen = ref(false)
-const concurrencyTarget = ref(null)
+const concurrencyTarget = computed(() => detailsTarget.value)
 const concurrencyState = ref(null)
 const flightDetails = ref(null)
 const concurrencyError = ref('')
@@ -434,10 +353,11 @@ function quotaWindowRemaining(window) {
   return ratio == null ? '—' : `${Math.round(ratio * 100)}% remaining`
 }
 async function openAccountQuota(item) {
-  accountQuotaTarget.value = item
+  detailsTarget.value = item
+  detailsTab.value = 'Quota'
+  detailsOpen.value = true
   accountQuotaDetail.value = null
   accountQuotaError.value = ''
-  accountQuotaOpen.value = true
   await refreshAccountQuota()
 }
 async function refreshAccountQuota() {
@@ -507,7 +427,7 @@ watch([() => route.query.credential, credentials], ([id, items]) => {
   if (id !== openedDeepLink && typeof id !== 'string') openedDeepLink = ''
   if (typeof id !== 'string' || !id || !items.length || id === openedDeepLink) return
   const item = items.find(entry => entry.id === id)
-  if (item) { openedDeepLink = id; editPolicy(item) }
+  if (item) { openedDeepLink = id; void showDetails(item, 'Concurrency') }
 }, { immediate: true })
 function toggleSelected(id, checked) {
   const next = new Set(selectedIDs.value)
@@ -633,7 +553,33 @@ async function retryUpload(item) { await runUploadItems([item], false) }
 async function retryFailedUploads() { await runUploadItems(failedUploads.value.filter(isRetryableUpload), false) }
 async function uploadDroppedFiles(event) { if (!uploadActive.value && !busy.value) await addUploadFiles(Array.from(event.dataTransfer?.files || [])) }
 async function toggleStatus(item) { changing.value = item.id; try { await fetchAPI('/auth-files/status', { method: 'PATCH', body: { name: item.id, disabled: !item.disabled } }); await refreshData() } catch (error) { toast.add({ title: 'Status update failed', description: message(error), color: 'error' }) } finally { changing.value = '' } }
-function showDetails(item) { detailsTarget.value = item; detailsTab.value = 'Overview'; detailsOpen.value = true }
+async function showDetails(item, section = 'Overview') {
+  detailsTarget.value = item
+  initializeFields(item)
+  detailsTab.value = section
+  accountQuotaDetail.value = null
+  accountQuotaError.value = ''
+  policy.value = null
+  policyError.value = ''
+  concurrencyState.value = null
+  flightDetails.value = null
+  credentialModels.value = []
+  modelsError.value = ''
+  detailsOpen.value = true
+  await selectDetailSection(section)
+}
+async function selectDetailSection(section) {
+  detailsTab.value = section
+  if (section === 'Metadata') initializeFields(detailsTarget.value)
+  if (section === 'Quota') await refreshAccountQuota()
+  if (section === 'Concurrency') {
+    policyError.value = ''
+    policyConflict.value = false
+    concurrencyError.value = ''
+    await Promise.all([loadPolicy(), loadConcurrency()])
+  }
+  if (section === 'Models') await loadModels(detailsTarget.value)
+}
 async function resetCooldown(item) {
   if (!item.id || resettingCooldown.value || !supports('credential_cooldown_reset', false)) return
   resettingCooldown.value = item.id
@@ -672,8 +618,8 @@ async function runConnectivity() {
   } catch (error) { connectivityError.value = message(error) }
   finally { testingConnectivity.value = false }
 }
-function editFields(item) {
-  fieldsTarget.value = item
+function initializeFields(item) {
+  if (!item) return
   fieldsError.value = ''
   Object.assign(fields, {
     prefix: item.prefix || '', proxy_url: item.proxy_url || '',
@@ -681,7 +627,6 @@ function editFields(item) {
     note: item.note || '', websockets: Boolean(item.websockets), disable_cooling: item['disable-cooling'] == null ? 'inherit' : item['disable-cooling'] ? 'disable' : 'enable'
   })
   originalFields.value = { ...fields }
-  fieldsOpen.value = true
 }
 async function saveFields() {
   if (!fieldsTarget.value) return
@@ -695,24 +640,18 @@ async function saveFields() {
     } else if (key === 'disable_cooling') body['disable-cooling'] = fields[key] === 'inherit' ? null : fields[key] === 'disable'
     else body[key] = fields[key]
   }
-  if (Object.keys(body).length === 1) { fieldsOpen.value = false; return }
+  if (Object.keys(body).length === 1) return
   savingFields.value = true; fieldsError.value = ''
   try {
     await fetchAPI('/auth-files/fields', { method: 'PATCH', body })
-    fieldsOpen.value = false
     await refreshData()
+    const updated = credentials.value.find(item => item.id === body.id)
+    if (updated) { detailsTarget.value = updated; initializeFields(updated) }
     toast.add({ title: 'Credential fields updated', color: 'success' })
   } catch (error) { fieldsError.value = message(error) }
   finally { savingFields.value = false }
 }
-async function editPolicy(item) {
-  policyTarget.value = item
-  policy.value = null
-  policyError.value = ''
-  policyConflict.value = false
-  policyOpen.value = true
-  await loadPolicy()
-}
+
 async function loadPolicy() {
   if (!policyTarget.value) return
   const requestID = ++policyRequest
@@ -752,14 +691,15 @@ async function savePolicy() {
     if (total !== policy.value.max_in_flight) body.max_in_flight = total
     const original = policy.value.max_in_flight_by_model || {}
     if (JSON.stringify(Object.entries(models).sort()) !== JSON.stringify(Object.entries(original).sort())) body.max_in_flight_by_model = models
-    if (Object.keys(body).length === 1) { policyOpen.value = false; return }
+    if (Object.keys(body).length === 1) return
   } catch (error) { policyError.value = message(error); return }
   savingPolicy.value = true
   policyError.value = ''
   try {
     const result = await fetchAPI(`/credentials/${encodeURIComponent(policyTarget.value.id)}/concurrency-policy`, { method: 'PATCH', body })
     policy.value = result
-    policyOpen.value = false
+    policyTotal.value = result.max_in_flight == null ? '' : String(result.max_in_flight)
+    policyModels.value = Object.entries(result.max_in_flight_by_model || {}).sort(([a], [b]) => a.localeCompare(b)).map(([model, limit]) => ({ key: ++modelKey, model, limit: String(limit) }))
     await refreshData()
     toast.add({ title: 'Concurrency policy updated', color: 'success' })
   } catch (error) {
@@ -767,15 +707,7 @@ async function savePolicy() {
     policyError.value = policyConflict.value ? 'Policy changed elsewhere. Reload the latest version before editing and saving again.' : message(error)
   } finally { savingPolicy.value = false }
 }
-async function showConcurrency(item) {
-  concurrencyRequest++
-  loadingConcurrency.value = false
-  concurrencyTarget.value = item
-  concurrencyState.value = null
-  flightDetails.value = null
-  concurrencyOpen.value = true
-  await loadConcurrency()
-}
+
 async function loadConcurrency(offset = 0) {
   if (!concurrencyTarget.value || loadingConcurrency.value) return
   const id = concurrencyTarget.value.id
@@ -809,10 +741,14 @@ async function importVertex() {
   } catch (error) { vertexError.value = message(error) }
   finally { importingVertex.value = false }
 }
-async function showModels(item) {
-  modelsOpen.value = true; modelsError.value = ''; credentialModels.value = []
-  try { const result = await fetchAPI('/auth-files/models', { query: { name: item.id } }); credentialModels.value = result.models || [] }
-  catch (error) { modelsError.value = message(error) }
+async function loadModels(item) {
+  if (!item?.id || modelsLoading.value) return
+  modelsLoading.value = true
+  modelsError.value = ''
+  credentialModels.value = []
+  try { const result = await fetchAPI('/auth-files/models', { query: { name: item.id } }); if (detailsTarget.value?.id === item.id) credentialModels.value = result.models || [] }
+  catch (error) { if (detailsTarget.value?.id === item.id) modelsError.value = message(error) }
+  finally { if (detailsTarget.value?.id === item.id) modelsLoading.value = false }
 }
 async function downloadCredential(item) {
   try {

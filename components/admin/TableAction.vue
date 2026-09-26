@@ -1,16 +1,20 @@
 <template>
-  <UButton
-    size="xs"
-    :color="destructive ? 'error' : 'neutral'"
-    variant="ghost"
-    :icon="resolvedIcon"
-    :aria-label="label"
-    :title="label"
-    :loading="loading"
-    :disabled="disabled"
-    class="admin-table-action"
-    @click="$emit('click', $event)"
-  />
+  <UTooltip :text="label" :delay-duration="250">
+    <span class="inline-flex" :tabindex="disabled ? 0 : undefined">
+      <UButton
+        size="xs"
+        :color="destructive ? 'error' : 'neutral'"
+        variant="ghost"
+        :icon="resolvedIcon"
+        :aria-label="label"
+        :title="label"
+        :loading="loading"
+        :disabled="disabled"
+        class="admin-table-action"
+        @click="$emit('click', $event)"
+      />
+    </span>
+  </UTooltip>
 </template>
 
 <script setup lang="ts">

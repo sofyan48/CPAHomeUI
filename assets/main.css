@@ -147,17 +147,17 @@ pre,
 
 .workbench-main {
   width: 100%;
-  max-width: 90rem;
-  margin-inline: auto;
-  padding: 1rem;
+  max-width: none;
+  margin-inline: 0;
+  padding: 1.25rem;
 }
 
 @media (min-width: 640px) {
-  .workbench-main { padding: 1.25rem; }
+  .workbench-main { padding: 1.5rem 1.75rem; }
 }
 
 @media (min-width: 1024px) {
-  .workbench-main { padding: 1.5rem 1.75rem; }
+  .workbench-main { padding: 1.75rem 2.25rem; }
 }
 
 /* Pull large page spacing back to legacy workbench density. */
@@ -404,7 +404,59 @@ pre,
   height: 1.75rem !important;
   min-height: 1.75rem !important;
   padding-inline: 0.375rem !important;
+  border: 1px solid transparent !important;
   border-radius: 0.25rem !important;
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+}
+
+.workbench-main .table-action-cell button:hover:not(:disabled),
+.workbench-main .table-action-cell button:focus-visible {
+  border-color: var(--ui-border) !important;
+  background: color-mix(in oklch, var(--ui-primary) 12%, var(--ui-bg-elevated)) !important;
+  color: var(--ui-primary) !important;
+  box-shadow: 0 1px 2px color-mix(in oklch, var(--ui-text) 12%, transparent);
+  transform: translateY(-1px);
+}
+
+.workbench-main .table-action-cell button:focus-visible {
+  outline: 2px solid color-mix(in oklch, var(--ui-primary) 45%, transparent);
+  outline-offset: 1px;
+}
+
+.workbench-main .table-action-cell button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* Fallback label for legacy table actions not yet using AdminTableAction. */
+.workbench-main .table-action-cell button:not(.admin-table-action)[aria-label] {
+  position: relative;
+}
+
+.workbench-main .table-action-cell button:not(.admin-table-action)[aria-label]::after {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.375rem);
+  z-index: 50;
+  display: none;
+  width: max-content;
+  max-width: 14rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 0.25rem;
+  background: var(--ui-bg-inverted);
+  color: var(--ui-text-inverted);
+  box-shadow: 0 4px 12px color-mix(in oklch, var(--ui-text) 16%, transparent);
+  content: attr(aria-label);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  line-height: 1rem;
+  pointer-events: none;
+  white-space: normal;
+}
+
+.workbench-main .table-action-cell button:not(.admin-table-action)[aria-label]:is(:hover, :focus-visible)::after {
+  display: block;
 }
 
 .workbench-main .table-action-cell button svg {
