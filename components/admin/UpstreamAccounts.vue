@@ -78,7 +78,7 @@
         </template>
         <template #cooling-cell="{ row }"><USwitch :model-value="!value(row)['disable-cooling']" :disabled="busy || !value(row).id" :loading="inlineChanging === value(row).id" :aria-label="`Cooling schedule for ${value(row).label || value(row).name || value(row).id}`" @update:model-value="setInlineField(value(row), 'disable_cooling', !$event)" /></template>
         <template #priority-cell="{ row }"><span class="font-mono text-xs tabular-nums">{{ value(row).priority ?? 'Not set' }}</span></template>
-        <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><AdminTableAction action="view" label="View credential details" @click="showDetails(value(row))" /><AdminTableAction action="test" label="Test connectivity" @click="openConnectivity(value(row))" /><AdminTableAction v-if="supports('credential_cooldown_reset', false)" action="refresh" label="Clear quota cooldown" :loading="resettingCooldown === value(row).id" :disabled="busy || !!resettingCooldown" @click="resetCooldown(value(row))" /><AdminTableAction action="download" label="Download credential" :disabled="busy" @click="downloadCredential(value(row))" /><AdminTableAction action="delete" label="Delete credential" destructive :disabled="busy" @click="confirmDelete(value(row))" /></div></template>
+        <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><AdminTableAction action="view" label="View credential details" @click="showDetails(value(row))" /><AdminTableAction action="test" label="Test connectivity" @click="openConnectivity(value(row))" /><AdminTableAction action="download" label="Download credential" :disabled="busy" @click="downloadCredential(value(row))" /><AdminTableAction action="delete" label="Delete credential" destructive :disabled="busy" @click="confirmDelete(value(row))" /></div></template>
         <template #empty><div class="py-14 text-center text-sm text-[var(--ui-text-muted)]"><p>{{ pending ? 'Loading accounts…' : pageError ? 'Could not load accounts. Check the connection and refresh.' : hasActiveFilters ? 'No matching credentials.' : 'No credentials have been added.' }}</p><UButton v-if="hasActiveFilters && !pending" class="mt-3" color="neutral" variant="outline" size="sm" @click="clearFilters">Clear filters</UButton></div></template>
       </UTable>
         </div>
@@ -122,11 +122,11 @@
               <div class="flex flex-wrap items-center gap-2"><UBadge color="neutral" variant="subtle">{{ accountQuotaDetail.credential?.provider || detailsTarget?.provider || 'Unknown provider' }}</UBadge><UBadge :color="quotaColor(accountQuotaDetail.credential?.quota_status)" variant="subtle">{{ accountQuotaDetail.credential?.quota_status || 'unknown' }}</UBadge><UBadge color="neutral" variant="subtle">{{ accountQuotaDetail.collection?.freshness || 'never' }}</UBadge><UBadge v-if="accountQuotaDetail.collection?.status" color="neutral" variant="subtle">{{ accountQuotaDetail.collection.status }}</UBadge></div>
               <div v-for="window in accountQuotaDetail.windows || []" :key="window.id" class="rounded-md border border-[var(--ui-border)] p-3"><div class="flex items-start justify-between gap-3"><p class="font-medium">{{ window.label || window.id }}</p><UBadge :color="quotaColor(window.status)" variant="subtle">{{ window.status }}</UBadge></div><p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ quotaWindowRemaining(window) }} · Used: {{ window.used ?? '—' }} · Reset: {{ window.reset_at ? new Date(window.reset_at).toLocaleString() : '—' }}</p><div v-if="quotaWindowRatio(window) !== null" class="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--ui-bg-muted)]"><div class="h-full bg-[var(--ui-primary)]" :style="{ width: `${Math.round(quotaWindowRatio(window) * 100)}%` }" /></div></div>
               <p v-if="accountQuotaDetail.collection?.error?.message" class="text-xs text-red-500">{{ accountQuotaDetail.collection.error.message }}</p><p v-if="!accountQuotaDetail.windows?.length" class="text-[var(--ui-text-muted)]">No quota windows recorded.</p>
-              <div v-if="accountQuotaDetail.reset_credits" class="rounded-md border border-[var(--ui-border)] p-3"><p class="font-medium">Reset credits: {{ accountQuotaDetail.reset_credits.available_count ?? '—' }} available</p><p v-if="accountQuotaDetail.reset_credits.observed_at" class="text-xs text-[var(--ui-text-muted)]">Observed {{ new Date(accountQuotaDetail.reset_credits.observed_at).toLocaleString() }}</p><p v-for="(credit, index) in accountQuotaDetail.reset_credits.credits || []" :key="index" class="mt-1 text-xs">{{ credit.status }} · Expires {{ credit.expires_at ? new Date(credit.expires_at).toLocaleString() : '—' }}</p></div>
+              <div v-if="accountQuotaDetail.reset_credits" class="rounded-md border border-[var(--ui-border)] p-3"><p class="font-medium">Reset credits: {{ accountQuotaDetail.reset_credits.available_count ?? '—' }} available</p><p v-if="accountQuotaDetail.reset_credits.observed_at" class="text-xs text-[var(--ui-text-muted)]">Observed {{ new Date(accountQuotaDetail.reset_credits.observed_at).toLocaleString() }}</p><p v-for="(credit, index) in accountQuotaDetail.reset_credits.credits || []" :key="index" class="mt-1 text-xs">{{ credit.status }} · Expires {{ credit.expires_at ? new Date(credit.expires_at).toLocaleString() : '—' }}</p><UButton v-if="canResetCredit && !resetCreditAttempts[detailsTarget?.id]" size="sm" color="neutral" variant="outline" class="mt-3" :disabled="resetCreditSubmitting" @click="openResetCredit">Reset Codex quota with one credit</UButton></div>
             </template>
+            <UAlert v-if="resetCreditNotice && resetCreditNoticeCredential === detailsTarget?.id" :color="resetCreditNoticeColor" variant="subtle" :description="resetCreditNotice" />
             <p class="text-xs text-[var(--ui-text-muted)]">Collection runs in the background. Refresh after it finishes to see updated snapshots.</p>
-            <p v-if="detailsTarget?.provider === 'codex' && supports('credential_cooldown_reset', false)" class="text-xs text-[var(--ui-text-muted)]">Clearing the local quota cooldown allows Home to retry Codex requests. It does not reset Codex's upstream quota or consume reset credits.</p>
-            <div class="flex flex-wrap justify-end gap-2 border-t border-[var(--ui-border)] pt-3"><UButton v-if="detailsTarget?.provider === 'codex' && supports('credential_cooldown_reset', false)" size="sm" color="warning" variant="outline" :loading="resettingCooldown === detailsTarget.id" :disabled="busy || !!resettingCooldown" @click="resetCooldown(detailsTarget)">Clear local quota cooldown</UButton><UButton size="sm" color="neutral" variant="outline" :loading="accountQuotaLoading" @click="refreshAccountQuota">Refresh</UButton><UButton size="sm" color="neutral" variant="outline" :loading="accountQuotaCollecting" @click="collectAccountQuota">Collect now</UButton></div>
+            <div class="flex flex-wrap justify-end gap-2 border-t border-[var(--ui-border)] pt-3"><UButton size="sm" color="neutral" variant="outline" :loading="accountQuotaLoading" @click="refreshAccountQuota">Refresh</UButton><UButton size="sm" color="neutral" variant="outline" :loading="accountQuotaCollecting" @click="collectAccountQuota">Collect now</UButton></div>
           </section>
           <section v-else-if="detailsTab === 'Concurrency'" class="space-y-5 text-sm"><div><h3 class="font-semibold">Concurrency</h3><p class="text-xs text-[var(--ui-text-muted)]">Policy, admitted state, and observed requests.</p></div>
             <UAlert v-if="policyError || concurrencyError" color="error" variant="subtle" :description="policyError || concurrencyError" />
@@ -138,6 +138,16 @@
         </div>
       </template>
     </USlideover>
+
+    <UModal v-model:open="resetCreditOpen" title="Reset Codex quota" description="Confirm the credit redemption for this credential." @update:open="handleResetCreditOpen">
+      <template #body>
+        <div class="space-y-4">
+          <UAlert color="info" variant="subtle" title="This consumes one reset credit" :description="`Resetting ${resetCreditTarget?.label || resetCreditTarget?.name || resetCreditTarget?.id || 'this credential'} uses one available credit. This action cannot be undone.`" />
+          <UAlert v-if="resetCreditError" color="error" variant="subtle" :description="resetCreditError" />
+          <div class="flex justify-end gap-2"><UButton color="neutral" variant="ghost" :disabled="resetCreditSubmitting" @click="resetCreditOpen = false">Cancel</UButton><UButton color="primary" :loading="resetCreditSubmitting" :disabled="!canConfirmResetCredit" @click="redeemResetCredit">Consume one credit</UButton></div>
+        </div>
+      </template>
+    </UModal>
 
     <UModal v-model:open="connectivityOpen" title="Test credential connectivity" description="Home sends a GET request using the selected credential for proxy selection and $TOKEN$ replacement.">
       <template #body>
@@ -219,7 +229,26 @@ const accountQuotaDetail = ref(null)
 const accountQuotaError = ref('')
 const accountQuotaLoading = ref(false)
 const accountQuotaCollecting = ref(false)
-const resettingCooldown = ref('')
+const resetCreditOpen = ref(false)
+const resetCreditTarget = ref(null)
+const resetCreditAttempts = ref({})
+const resetCreditAttempt = computed(() => resetCreditAttempts.value[resetCreditTarget.value?.id] || null)
+const resetCreditSubmitting = ref(false)
+const resetCreditError = ref('')
+const resetCreditNotice = ref('')
+const resetCreditNoticeColor = ref('success')
+const resetCreditNoticeCredential = ref('')
+const canResetCredit = computed(() => {
+  const detail = accountQuotaDetail.value
+  return supports('codex_reset_credit_consume', false) &&
+    String(detail?.credential?.provider || detailsTarget.value?.provider || '').toLowerCase() === 'codex' &&
+    detail?.collection?.status === 'success' && detail.collection.freshness === 'fresh' &&
+    Number(detail.reset_credits?.available_count) > 0 &&
+    Array.isArray(detail.reset_credits?.credits) && detail.reset_credits.credits.length > 0
+})
+const canConfirmResetCredit = computed(() => !resetCreditSubmitting.value && !accountQuotaLoading.value &&
+  !resetCreditAttempts.value[resetCreditTarget.value?.id] && resetCreditTarget.value?.id === detailsTarget.value?.id && canResetCredit.value)
+
 const connectivityOpen = ref(false)
 const connectivityTarget = ref(null)
 const connectivityURL = ref('')
@@ -372,6 +401,43 @@ async function refreshAccountQuota() {
     await refreshQuotaSummary()
   } catch (error) { if (accountQuotaTarget.value?.id === id) accountQuotaError.value = message(error) }
   finally { if (accountQuotaTarget.value?.id === id) accountQuotaLoading.value = false }
+}
+function openResetCredit() {
+  if (!canResetCredit.value || !detailsTarget.value?.id || resetCreditSubmitting.value || resetCreditAttempts.value[detailsTarget.value.id]) return
+  resetCreditTarget.value = detailsTarget.value
+  resetCreditError.value = ''
+  resetCreditOpen.value = true
+}
+function handleResetCreditOpen(open) {
+  if (!open && resetCreditSubmitting.value) nextTick(() => { resetCreditOpen.value = true })
+}
+async function redeemResetCredit() {
+  if (!canConfirmResetCredit.value) return
+  const id = resetCreditTarget.value.id
+  resetCreditSubmitting.value = true
+  resetCreditError.value = ''
+  resetCreditNotice.value = ''
+  try {
+    if (!resetCreditAttempt.value) {
+      resetCreditAttempts.value = { ...resetCreditAttempts.value, [id]: { credentialId: id, id: crypto.randomUUID() } }
+    }
+    const result = await fetchAPI(`/quota/credentials/${encodeURIComponent(id)}/reset-credits/consume`, {
+      method: 'POST', body: { idempotency_key: resetCreditAttempt.value.id }
+    })
+    resetCreditAttempts.value = Object.fromEntries(Object.entries(resetCreditAttempts.value).filter(([credentialId]) => credentialId !== id))
+    resetCreditOpen.value = false
+    resetCreditNoticeCredential.value = id
+    resetCreditNoticeColor.value = 'success'
+    resetCreditNotice.value = result?.outcome === 'alreadyRedeemed' ? 'This reset credit was already redeemed.' : 'Codex accepted the reset. Recollecting quota in the background.'
+    toast.add({ title: 'Reset credit request completed', description: resetCreditNotice.value, color: 'success' })
+    if (detailsTarget.value?.id === id) accountQuotaDetail.value = null
+    await collectAccountQuota()
+    if (detailsTarget.value?.id === id) await refreshAccountQuota()
+  } catch (error) {
+    resetCreditError.value = resetCreditAttempt.value
+      ? `${message(error)}. The request may have consumed a credit. Check Codex quota before trying again; this session will not submit a second reset for this credential.`
+      : message(error)
+  } finally { resetCreditSubmitting.value = false }
 }
 async function collectAccountQuota() {
   if (!accountQuotaTarget.value) return
@@ -581,16 +647,7 @@ async function selectDetailSection(section) {
   }
   if (section === 'Models') await loadModels(detailsTarget.value)
 }
-async function resetCooldown(item) {
-  if (!item.id || resettingCooldown.value || !supports('credential_cooldown_reset', false)) return
-  resettingCooldown.value = item.id
-  try {
-    const result = await fetchAPI(`/credentials/${encodeURIComponent(item.id)}/cooldown`, { method: 'DELETE' })
-    toast.add({ title: result.cleared ? 'Quota cooldown cleared' : 'No active quota cooldown', description: result.cleared ? 'Quota cooldowns cleared for this credential.' : 'There were no quota cooldowns to clear for this credential.', color: result.cleared ? 'success' : 'neutral' })
-    if (result.cleared) { await refreshCredentialsData(); emit('changed') }
-  } catch (error) { toast.add({ title: 'Could not clear quota cooldown', description: message(error), color: 'error' }) }
-  finally { resettingCooldown.value = '' }
-}
+
 function openConnectivity(item) {
   connectivityTarget.value = item
   connectivityURL.value = ''
