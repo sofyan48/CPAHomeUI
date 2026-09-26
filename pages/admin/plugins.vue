@@ -66,7 +66,7 @@ const emptyAuth = () => ({ name: '', match: '', apply_to: [], auth_type: 'bearer
 const authForm = reactive(emptyAuth())
 const authTypes = [{ label: 'No authentication', value: 'none' }, { label: 'Bearer token', value: 'bearer' }, { label: 'Basic authentication', value: 'basic' }, { label: 'Custom header', value: 'header' }, { label: 'GitHub token', value: 'github-token' }]
 const authScopes = ['registry', 'metadata', 'artifact']
-const authColumns = [{ accessorKey: 'identity', header: 'Rule' }, { accessorKey: 'type', header: 'Type' }, { accessorKey: 'scope', header: 'Scope' }, { accessorKey: 'status', header: 'Status' }, { accessorKey: 'actions', header: '' }]
+const authColumns = [{ accessorKey: 'identity', header: 'Rule' }, { accessorKey: 'type', header: 'Type' }, { accessorKey: 'scope', header: 'Scope' }, { accessorKey: 'status', header: 'Status' }, { accessorKey: 'actions', header: '', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }]
 async function loadAll() { pageError.value = ''; const result = {}; const failures = []; await Promise.all([['plugins', '/plugins'], ['store', '/plugin-store'], ['auth', '/plugin-store-auth']].map(async ([key, path]) => { try { result[key] = await fetchAPI(path) } catch (error) { failures.push(`${key}: ${message(error)}`); result[key] = key === 'auth' ? { items: [] } : { plugins: [] } } })); pageError.value = failures.join(' · '); return result }
 const { data, pending, refresh: refreshData } = await useAsyncData('management-plugins', loadAll)
 const nodesResponse = ref(null)

@@ -228,7 +228,7 @@ const sortOptions = [
 const refreshOptions = [{ label: '5s', value: '5' }, { label: '15s', value: '15' }, { label: '30s', value: '30' }, { label: '60s', value: '60' }]
 const exportOptions = [{ label: 'CSV spreadsheet', value: 'csv' }, { label: 'JSON Lines', value: 'jsonl' }]
 const columns = [
-  { accessorKey: 'timestamp', header: 'Time / Request' }, { accessorKey: 'status', header: 'Status' }, { accessorKey: 'model', header: 'Provider / Model' }, { accessorKey: 'client', header: 'Client' }, { accessorKey: 'runtime', header: 'CPA / Home' }, { accessorKey: 'tokens', header: 'Tokens' }, { accessorKey: 'performance', header: 'Performance' }, { accessorKey: 'actions', header: '' }
+  { accessorKey: 'timestamp', header: 'Time / Request' }, { accessorKey: 'status', header: 'Status' }, { accessorKey: 'model', header: 'Provider / Model' }, { accessorKey: 'client', header: 'Client' }, { accessorKey: 'runtime', header: 'CPA / Home' }, { accessorKey: 'tokens', header: 'Tokens' }, { accessorKey: 'performance', header: 'Performance' }, { accessorKey: 'actions', header: '', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }
 ]
 const events = computed(() => Array.isArray(response.value?.items) ? response.value.items : [])
 const total = computed(() => Number(response.value?.total) || 0)

@@ -173,12 +173,12 @@ const detailForm = ref({ auth_id: '', suggested_auth_id: '' })
 const groupColumns = [
   { accessorKey: 'identity', header: 'Channel group' },
   { accessorKey: 'status', header: 'Status' },
-  { accessorKey: 'actions', header: '' }
+  { accessorKey: 'actions', header: '', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }
 ]
 const detailColumns = [
   { accessorKey: 'credential', header: 'Credential' },
   { accessorKey: 'provider', header: 'Provider' },
-  { accessorKey: 'actions', header: '' }
+  { accessorKey: 'actions', header: '', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }
 ]
 
 async function loadWorkspace() {

@@ -494,7 +494,7 @@ const recordColumns = [
   { accessorKey: 'tokens', header: 'Tokens' },
   { accessorKey: 'performance', header: 'Performance' },
   { accessorKey: 'client', header: 'Client / Node' },
-  { accessorKey: 'actions', header: '' },
+  { accessorKey: 'actions', header: '', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } },
 ]
 
 const loading = computed(() => overviewLoading.value || recordsLoading.value)

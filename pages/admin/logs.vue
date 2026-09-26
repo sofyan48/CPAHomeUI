@@ -496,14 +496,14 @@ const eventColumns = [
   { accessorKey: 'model', header: 'Provider / Model' },
   { accessorKey: 'client', header: 'Client / Node' },
   { accessorKey: 'tokens', header: 'Tokens / Latency' },
-  { accessorKey: 'actions', header: '' },
+  { accessorKey: 'actions', header: '', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } },
 ]
 
 const errorLogColumns = [
   { accessorKey: 'name', header: 'File' },
   { accessorKey: 'modified', header: 'Modified' },
   { accessorKey: 'size', header: 'Size' },
-  { accessorKey: 'actions', header: '' }
+  { accessorKey: 'actions', header: '', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }
 ]
 
 const requestLogColumns = [
@@ -512,7 +512,7 @@ const requestLogColumns = [
   { accessorKey: 'model', header: 'Provider / Model' },
   { accessorKey: 'home_ip', header: 'Home' },
   { accessorKey: 'available', header: 'Availability' },
-  { accessorKey: 'actions', header: '' },
+  { accessorKey: 'actions', header: '', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } },
 ]
 
 const applicationColumns = [
@@ -521,7 +521,7 @@ const applicationColumns = [
   { accessorKey: 'line', header: 'Log line' },
   { accessorKey: 'source', header: 'Home / Client' },
   { accessorKey: 'request_id', header: 'Request ID' },
-  { accessorKey: 'actions', header: '' }
+  { accessorKey: 'actions', header: '', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }
 ]
 
 const loading = computed(() => {

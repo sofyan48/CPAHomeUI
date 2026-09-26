@@ -108,7 +108,7 @@ const form = ref(emptyForm())
 const pools = computed(() => Array.isArray(poolsResponse.value?.items) ? poolsResponse.value.items : [])
 const columns = [
   { accessorKey: 'identity', header: 'Proxy' }, { accessorKey: 'status', header: 'Status' },
-  { accessorKey: 'priority', header: 'Priority' }, { accessorKey: 'note', header: 'Note' }, { accessorKey: 'actions', header: '' }
+  { accessorKey: 'priority', header: 'Priority' }, { accessorKey: 'note', header: 'Note' }, { accessorKey: 'actions', header: '', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }
 ]
 const value = row => row?.original || row
 const formatDate = input => input ? new Date(input).toLocaleString() : '—'

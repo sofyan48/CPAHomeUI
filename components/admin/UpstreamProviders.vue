@@ -321,7 +321,7 @@ const providerColumns = [
   { accessorKey: 'prefix', header: 'Prefix' },
   { accessorKey: 'models', header: 'Models' },
   { accessorKey: 'status', header: 'Status' },
-  { accessorKey: 'actions', header: 'Actions' }
+  { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }
 ]
 
 const selectedProvider = computed(() => providerCategories.find(item => item.value === selectedProviderRoute.value) || providerCategories[0])

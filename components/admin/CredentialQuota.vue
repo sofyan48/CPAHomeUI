@@ -53,7 +53,7 @@ const detailOpen = ref(false)
 const detailLoading = ref(false)
 const detailError = ref('')
 const detail = ref(null)
-const columns = [{ accessorKey: 'identity', header: 'Credential' }, { accessorKey: 'provider', header: 'Provider' }, { accessorKey: 'quota', header: 'Quota' }, { accessorKey: 'collection', header: 'Collection' }, { accessorKey: 'observed', header: 'Observed / reset' }, { accessorKey: 'actions', header: '' }]
+const columns = [{ accessorKey: 'identity', header: 'Credential' }, { accessorKey: 'provider', header: 'Provider' }, { accessorKey: 'quota', header: 'Quota' }, { accessorKey: 'collection', header: 'Collection' }, { accessorKey: 'observed', header: 'Observed / reset' }, { accessorKey: 'actions', header: '', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }]
 async function loadQuota() { pageError.value = ''; try { return await fetchAPI('/quota/credentials', { query: { limit, offset: offset.value, search: appliedSearch.value || undefined, provider: appliedProvider.value || undefined, quota_status: appliedQuotaStatus.value || undefined } }) } catch (error) { pageError.value = message(error); return { items: [], total: 0 } } }
 const { data, pending, refresh: refreshQuota } = await useAsyncData('management-quota', loadQuota, { watch: [offset] })
 const items = computed(() => Array.isArray(data.value?.items) ? data.value.items : [])

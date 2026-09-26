@@ -154,7 +154,7 @@ const keyForm = reactive({ api_key: '', channels: [] as string[], modelGroups: [
 const channelIDOptions = computed(() => [...new Set(keys.value.flatMap(key => key.channels.map(String)))].sort((a, b) => Number(a) - Number(b)))
 const modelGroupIDOptions = computed(() => [...new Set(keys.value.flatMap(key => key.model_groups.map(String)))].sort((a, b) => Number(a) - Number(b)))
 const passwordForm = reactive({ password: '', confirm: '' }); const email = ref(''); const totpSetup = ref<any>(null); const totpCode = ref(''); const passkeyName = ref('')
-const chargeColumns = [{ accessorKey: 'created_at', header: 'Date' }, { accessorKey: 'model', header: 'Model' }, { accessorKey: 'tokens', header: 'Tokens' }, { accessorKey: 'amount', header: 'Charge' }, { id: 'actions', header: '' }]
+const chargeColumns = [{ accessorKey: 'created_at', header: 'Date' }, { accessorKey: 'model', header: 'Model' }, { accessorKey: 'tokens', header: 'Tokens' }, { accessorKey: 'amount', header: 'Charge' }, { id: 'actions', header: '', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }]
 const rowValue = (row: any): BillingCharge => row?.original ?? row
 function openChargeDetail(charge: BillingCharge) { selectedCharge.value = charge; chargeDetailOpen.value = true }
 const openPassword = () => { modalError.value = ''; passwordOpen.value = true }

@@ -430,7 +430,7 @@ const chargeColumns = [
   { accessorKey: 'model', header: 'Provider / Model' },
   { accessorKey: 'tokens', header: 'Tokens' },
   { accessorKey: 'amount', header: 'Charge / Balance' },
-  { accessorKey: 'actions', header: '' }
+  { accessorKey: 'actions', header: '', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }
 ]
 const balanceColumns = [
   { accessorKey: 'created_at', header: 'Time / Record' },
@@ -439,7 +439,7 @@ const balanceColumns = [
   { accessorKey: 'amount', header: 'Amount' },
   { accessorKey: 'balance', header: 'Balance after' },
   { accessorKey: 'note', header: 'Note / Operator' },
-  { accessorKey: 'actions', header: '' }
+  { accessorKey: 'actions', header: '', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }
 ]
 const priceColumns = [
   { accessorKey: 'provider', header: 'Model provider' },
@@ -453,7 +453,7 @@ const priceColumns = [
   { accessorKey: 'source', header: 'Source' },
   { accessorKey: 'state', header: 'State' },
   { accessorKey: 'updated', header: 'Updated' },
-  { accessorKey: 'actions', header: '' }
+  { accessorKey: 'actions', header: '', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }
 ]
 const enabledOptions = [{ label: 'All rules', value: allOptionValue }, { label: 'Enabled', value: 'true' }, { label: 'Disabled', value: 'false' }]
 const sourceOptions = [{ label: 'Manual', value: 'manual' }, { label: 'Default', value: 'default' }, { label: 'Synchronized', value: 'sync' }]

@@ -349,7 +349,41 @@ pre,
   scrollbar-color: var(--ui-border) transparent;
 }
 
-.workbench-main td:last-child button {
+.workbench-main .table-action-head,
+.workbench-main .table-action-cell {
+  position: sticky;
+  right: 0;
+  width: 6rem;
+  min-width: 6rem;
+  max-width: 6rem;
+  padding-inline: 0.5rem !important;
+  text-align: right !important;
+  white-space: nowrap;
+  background: var(--glass-card-strong);
+  box-shadow: -1px 0 0 var(--ui-border-muted);
+}
+
+.workbench-main .table-action-head {
+  z-index: 4;
+  background: color-mix(in oklch, var(--glass-card-strong) 84%, var(--ui-bg-muted));
+}
+
+.workbench-main .table-action-cell {
+  z-index: 2;
+}
+
+.workbench-main tbody tr:hover .table-action-cell,
+.workbench-main tbody tr[data-selected="true"] .table-action-cell {
+  background: color-mix(in oklch, var(--ui-hover) 86%, var(--glass-card-strong));
+}
+
+.workbench-main .table-action-cell > * {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+
+.workbench-main .table-action-cell button {
   min-height: 1.75rem;
 }
 

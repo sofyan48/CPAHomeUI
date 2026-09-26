@@ -4,7 +4,7 @@
       <div class="min-w-0">
         <div class="flex flex-wrap items-center gap-2">
           <h1 class="text-2xl font-bold text-[var(--ui-text-highlighted)]">Client access keys</h1>
-          <UBadge color="primary" variant="subtle">{{ keys.length }} keys configured</UBadge>
+          <UBadge color="primary" variant="subtle">{{ resources.length }} keys configured</UBadge>
         </div>
       </div>
       <div class="flex flex-wrap gap-2">
@@ -15,14 +15,22 @@
       </div>
     </header>
 
-    <UAlert
-      v-if="primaryError"
-      color="error"
-      variant="subtle"
-      icon="i-heroicons-exclamation-triangle"
-      title="Access keys could not be loaded"
-      :description="primaryError"
-    />
+    <UCard v-if="primaryError">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 class="font-semibold text-[var(--ui-text-highlighted)]">Access keys could not be loaded</h2>
+          <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Check the management endpoint, key, and /api-keys route.</p>
+        </div>
+        <UButton color="neutral" variant="outline" icon="i-heroicons-arrow-path" :loading="loading" @click="syncData">Retry</UButton>
+      </div>
+    </UCard>
+
+    <UCard v-else-if="loading && !hasLoaded">
+      <div class="py-8 text-center">
+        <h2 class="font-semibold text-[var(--ui-text-highlighted)]">Loading access keys</h2>
+        <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Reading client access keys and related ownership metadata from the Management API.</p>
+      </div>
+    </UCard>
 
     <AdminDataPanel
       v-else
@@ -46,9 +54,6 @@
         >
           <span class="text-sm font-medium">{{ selectedIDs.size }} keys selected</span>
           <div class="flex flex-wrap gap-2">
-            <UButton color="neutral" variant="outline" size="sm" :disabled="allFilteredSelected || !filteredKeys.length || bulkDeleting" @click="toggleAllFiltered(true)">
-              Select filtered
-            </UButton>
             <UButton color="neutral" variant="ghost" size="sm" :disabled="bulkDeleting" @click="clearSelection">Clear selection</UButton>
             <UButton color="error" variant="ghost" size="sm" icon="i-heroicons-trash" :disabled="bulkDeleting" @click="openBulkDelete">
               Delete selected
@@ -57,12 +62,18 @@
         </div>
 
         <div class="overflow-x-auto rounded-md border border-[var(--ui-border)]">
-          <UTable :columns="columns" :data="filteredKeys" :loading="loading" class="access-keys-table table-fixed sm:min-w-[952px]">
+          <UTable
+            :columns="columns"
+            :data="filteredResources"
+            :loading="loading"
+            class="access-keys-table sm:min-w-[952px]"
+            :class="{ 'table-fixed': !wideTable }"
+          >
             <template #select-header>
               <UCheckbox
                 :model-value="allFilteredSelected"
                 :indeterminate="someFilteredSelected"
-                :disabled="loading || bulkDeleting || !filteredKeys.length"
+                :disabled="loading || bulkDeleting || !filteredResources.length"
                 aria-label="Select all keys in the current list"
                 @update:model-value="toggleAllFiltered(Boolean($event))"
               />
@@ -70,64 +81,60 @@
 
             <template #select-cell="{ row }">
               <UCheckbox
-                :model-value="selectedIDs.has(keyIdentity(rowValue(row)))"
+                :model-value="selectedIDs.has(rowValue(row).id)"
                 :disabled="bulkDeleting"
-                :aria-label="`Select access key ${keySummary(rowValue(row))}`"
+                :aria-label="`Select access key ${resourceSummary(rowValue(row))}`"
                 @update:model-value="toggleSelected(rowValue(row), Boolean($event))"
               />
             </template>
 
             <template #number-cell="{ row }">
-              <span class="font-mono text-xs text-[var(--ui-text-muted)]">#{{ rowValue(row)._number }}</span>
+              <span class="font-mono text-xs text-[var(--ui-text-muted)]">#{{ rowValue(row).index + 1 }}</span>
+            </template>
+
+            <template #identity-header>
+              <div class="flex items-center gap-1.5">
+                <span>Name / key</span>
+                <UTooltip text="The display name is an editable label and does not affect authentication. The stable identifier (api-key-N) survives renames and key rotations, and links the same key across usage, billing, and request records.">
+                  <UIcon name="i-heroicons-information-circle" class="size-4 text-[var(--ui-text-muted)]" />
+                </UTooltip>
+              </div>
             </template>
 
             <template #identity-cell="{ row }">
               <div class="min-w-0">
-                <button
-                  v-if="rowValue(row).display_name"
-                  type="button"
-                  class="block max-w-full truncate text-left text-sm font-medium hover:underline"
-                  @click="openDetail(rowValue(row))"
-                >
-                  {{ rowValue(row).display_name }}
-                </button>
-                <button
-                  v-if="stableIdentifier(rowValue(row))"
-                  type="button"
-                  class="block max-w-full truncate text-left font-mono text-xs font-medium hover:underline"
-                  @click="openDetail(rowValue(row))"
-                >
-                  {{ stableIdentifier(rowValue(row)) }}
-                </button>
+                <p v-if="rowValue(row).displayName" class="truncate text-sm font-medium">{{ rowValue(row).displayName }}</p>
+                <p v-if="rowValue(row).identifier" class="truncate font-mono text-xs font-medium">{{ rowValue(row).identifier }}</p>
                 <p v-else class="truncate text-xs text-[var(--ui-text-muted)]">No stable identifier</p>
                 <div class="mt-1 flex min-w-0 items-center gap-1.5">
-                  <p class="min-w-0 truncate font-mono text-xs text-[var(--ui-text-muted)]">{{ maskKey(rowValue(row).api_key) }}</p>
+                  <p class="min-w-0 truncate font-mono text-xs text-[var(--ui-text-muted)]">{{ rowValue(row).maskedValue }}</p>
                   <UButton
                     color="neutral"
                     variant="ghost"
                     size="xs"
                     icon="i-heroicons-clipboard"
-                    :aria-label="`Copy key ${maskKey(rowValue(row).api_key)}`"
-                    @click="copyText(rowValue(row).api_key, 'Access key copied.')"
+                    :aria-label="`Copy key ${rowValue(row).maskedValue}`"
+                    @click="copyText(rowValue(row).value, 'Access key copied.')"
                   />
                 </div>
               </div>
             </template>
 
             <template #owner-cell="{ row }">
-              <span v-if="rowValue(row).user_id">{{ ownerLabel(rowValue(row)) }}</span>
-              <span v-else class="text-[var(--ui-text-muted)]">Unassigned</span>
+              <span :class="{ 'text-[var(--ui-text-muted)]': rowValue(row).userId == null || rowValue(row).userId === 0 }">
+                {{ ownerName(rowValue(row)) }}
+              </span>
             </template>
 
-            <template #channels-cell="{ row }">
-              <span class="block max-w-[220px] truncate">{{ groupList(rowValue(row).channels, channelName) }}</span>
+            <template #credential-scope-cell="{ row }">
+              <span class="block max-w-[220px] truncate">{{ credentialScope(rowValue(row)) }}</span>
             </template>
 
-            <template #model_groups-cell="{ row }">
-              <span class="block max-w-[220px] truncate">{{ groupList(rowValue(row).model_groups, modelGroupName) }}</span>
+            <template #model-scope-cell="{ row }">
+              <span class="block max-w-[220px] truncate">{{ modelScope(rowValue(row)) }}</span>
             </template>
 
-            <template #length-cell="{ row }">{{ rowValue(row).api_key.length }}</template>
+            <template #length-cell="{ row }">{{ rowValue(row).length }}</template>
 
             <template #status-cell>
               <span class="inline-flex items-center gap-1.5 rounded-md border border-primary-500/30 bg-primary-500/10 px-2 py-1 text-xs font-medium text-primary-500">
@@ -144,7 +151,7 @@
                     variant="ghost"
                     size="sm"
                     icon="i-heroicons-ellipsis-horizontal"
-                    :aria-label="`Actions for ${keySummary(rowValue(row))}`"
+                    :aria-label="`Actions for ${resourceSummary(rowValue(row))}`"
                   />
                 </UDropdownMenu>
               </div>
@@ -158,28 +165,29 @@
       </div>
     </AdminDataPanel>
 
-    <USlideover
-      v-model:open="formOpen"
-      :title="editingKey ? 'Update downstream key' : 'New downstream key'"
-      :description="editingKey ? keySummary(editingKey) : 'Create access key'"
-      :ui="{ content: 'sm:max-w-xl' }"
-    >
+    <USlideover v-model:open="detailOpen" :title="detailTitle" :description="detailDescription" :ui="{ content: 'sm:max-w-xl' }" @update:open="handleDetailOpen">
       <template #body>
-        <form id="access-key-form" class="grid gap-4" @submit.prevent="submitKey">
-          <UFormField v-if="displayNameSupported" label="Display name" hint="Optional, up to 128 characters. Renaming does not change the key value, owner, or scopes.">
-            <UInput v-model="form.display_name" class="w-full" maxlength="128" placeholder="e.g. Production key" :disabled="submitting" />
+        <form v-if="sheetMode === 'create' || sheetMode === 'edit'" class="grid gap-4" @submit.prevent="submitKey">
+          <p v-if="sheetMode === 'create'" class="text-xs font-semibold uppercase tracking-wide text-[var(--ui-text-muted)]">Create access key</p>
+
+          <UFormField
+            v-if="supportsDisplayNames"
+            label="Display name"
+            hint="Optional, up to 128 characters. Renaming does not change the key value, owner, or scopes."
+            :error="displayNameError"
+          >
+            <UInput v-model="form.displayName" class="w-full" placeholder="e.g. Production key" :disabled="submitting" @input="displayNameError = ''" />
           </UFormField>
 
-          <UFormField label="Key value" required :error="formFieldError">
+          <UFormField label="Key value" required :error="keyValueError">
             <div class="flex gap-2">
               <UInput
-                v-model="form.api_key"
+                v-model="form.value"
                 :type="formSecretVisible ? 'text' : 'password'"
                 class="min-w-0 flex-1 font-mono"
                 autocomplete="off"
-                placeholder="sk-..."
                 :disabled="submitting"
-                @input="formFieldError = ''"
+                @input="keyValueError = ''"
               />
               <UButton
                 type="button"
@@ -196,52 +204,58 @@
             Generate key
           </UButton>
 
-          <UAlert v-if="formError" color="error" variant="subtle" :description="formError" />
-
           <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <UButton type="button" color="neutral" variant="outline" :disabled="submitting" @click="cancelForm">Cancel</UButton>
-            <UButton type="submit" :loading="submitting">{{ editingKey ? 'Save key' : 'Create key' }}</UButton>
+            <UButton type="submit" :loading="submitting">{{ sheetMode === 'edit' ? 'Save key' : 'Create key' }}</UButton>
           </div>
         </form>
-      </template>
-    </USlideover>
 
-    <USlideover v-model:open="detailOpen" title="Key detail" :description="detailTarget ? keySummary(detailTarget) : 'Select a key or create a new one.'" :ui="{ content: 'sm:max-w-xl' }">
-      <template #body>
-        <div v-if="detailTarget" class="space-y-5">
+        <div v-else-if="selectedResource" class="space-y-5">
           <div class="rounded-md border border-[var(--ui-border)] p-3">
             <p class="text-xs text-[var(--ui-text-muted)]">Secret value</p>
-            <p class="mt-2 break-all font-mono text-sm">{{ detailSecretVisible ? detailTarget.api_key : maskKey(detailTarget.api_key) }}</p>
+            <p class="mt-2 break-all font-mono text-sm">{{ detailSecretVisible ? selectedResource.value : selectedResource.maskedValue }}</p>
             <div class="mt-3 flex gap-2">
               <UButton color="neutral" variant="outline" size="sm" :icon="detailSecretVisible ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'" @click="detailSecretVisible = !detailSecretVisible">
                 {{ detailSecretVisible ? 'Hide' : 'Reveal' }}
               </UButton>
-              <UButton color="neutral" variant="outline" size="sm" icon="i-heroicons-clipboard" @click="copyText(detailTarget.api_key, 'Access key copied.')">Copy</UButton>
+              <UButton color="neutral" variant="outline" size="sm" icon="i-heroicons-clipboard" @click="copyText(selectedResource.value, 'Access key copied.')">Copy</UButton>
             </div>
           </div>
 
           <dl class="grid gap-3 text-sm">
-            <div v-if="displayNameSupported" class="rounded-md border border-[var(--ui-border)] px-3 py-2.5">
+            <div v-if="supportsDisplayNames" class="rounded-md border border-[var(--ui-border)] px-3 py-2.5">
               <dt class="text-xs text-[var(--ui-text-muted)]">Display name</dt>
-              <dd class="mt-1 break-words font-mono text-xs">{{ detailTarget.display_name || 'No display name' }}</dd>
+              <dd class="mt-1 break-words font-mono text-xs">{{ selectedResource.displayName || 'No display name' }}</dd>
+            </div>
+            <div class="rounded-md border border-[var(--ui-border)] px-3 py-2.5">
+              <dt class="text-xs text-[var(--ui-text-muted)]">Prefix</dt>
+              <dd class="mt-1 break-words font-mono text-xs">{{ selectedResource.prefix }}</dd>
+            </div>
+            <div class="rounded-md border border-[var(--ui-border)] px-3 py-2.5">
+              <dt class="text-xs text-[var(--ui-text-muted)]">Suffix</dt>
+              <dd class="mt-1 break-words font-mono text-xs">{{ selectedResource.suffix }}</dd>
+            </div>
+            <div class="rounded-md border border-[var(--ui-border)] px-3 py-2.5">
+              <dt class="text-xs text-[var(--ui-text-muted)]">Length</dt>
+              <dd class="mt-1 break-words font-mono text-xs">{{ selectedResource.length }}</dd>
             </div>
             <div class="rounded-md border border-[var(--ui-border)] px-3 py-2.5">
               <dt class="text-xs text-[var(--ui-text-muted)]">Owner</dt>
-              <dd class="mt-1 break-words font-mono text-xs">{{ detailTarget.user_id ? ownerLabel(detailTarget) : 'Unassigned' }}</dd>
+              <dd class="mt-1 break-words font-mono text-xs">{{ ownerName(selectedResource) }}</dd>
             </div>
             <div class="rounded-md border border-[var(--ui-border)] px-3 py-2.5">
               <dt class="text-xs text-[var(--ui-text-muted)]">Credential scope</dt>
-              <dd class="mt-1 break-words font-mono text-xs">{{ groupList(detailTarget.channels, channelName) }}</dd>
+              <dd class="mt-1 break-words font-mono text-xs">{{ credentialScope(selectedResource) }}</dd>
             </div>
             <div class="rounded-md border border-[var(--ui-border)] px-3 py-2.5">
               <dt class="text-xs text-[var(--ui-text-muted)]">Model scope</dt>
-              <dd class="mt-1 break-words font-mono text-xs">{{ groupList(detailTarget.model_groups, modelGroupName) }}</dd>
+              <dd class="mt-1 break-words font-mono text-xs">{{ modelScope(selectedResource) }}</dd>
             </div>
           </dl>
 
           <div class="grid gap-2">
-            <UButton icon="i-heroicons-pencil-square" @click="openEdit(detailTarget)">Edit</UButton>
-            <UButton color="error" variant="outline" icon="i-heroicons-trash" @click="openDelete(detailTarget)">Delete</UButton>
+            <UButton icon="i-heroicons-pencil-square" @click="openEdit(selectedResource)">Edit</UButton>
+            <UButton color="error" variant="outline" icon="i-heroicons-trash" @click="openDelete(selectedResource)">Delete</UButton>
           </div>
         </div>
       </template>
@@ -252,9 +266,10 @@
       title="Replace all access keys"
       description="This uses PUT /api-keys and replaces the entire downstream key list. Enter one key per line."
       :ui="{ content: 'sm:max-w-xl' }"
+      @update:open="handleReplaceOpen"
     >
       <template #body>
-        <div class="space-y-5">
+        <form class="space-y-5" @submit.prevent="openReplaceConfirmation">
           <UAlert
             color="warning"
             variant="subtle"
@@ -264,42 +279,19 @@
           <UFormField label="Keys">
             <UTextarea v-model="replaceText" :rows="14" class="w-full font-mono text-xs" :disabled="replacing" />
           </UFormField>
-          <UAlert v-if="replaceError" color="error" variant="subtle" :description="replaceError" />
           <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <UButton color="neutral" variant="outline" :disabled="replacing" @click="closeReplace">Cancel</UButton>
-            <UButton color="warning" icon="i-heroicons-arrows-right-left" :disabled="replacing" @click="openReplaceConfirmation">Replace all</UButton>
+            <UButton type="button" color="neutral" variant="outline" :disabled="replacing" @click="closeReplace">Cancel</UButton>
+            <UButton type="submit" color="warning" icon="i-heroicons-arrows-right-left" :disabled="replacing">Replace all</UButton>
           </div>
-        </div>
+        </form>
       </template>
     </USlideover>
 
-    <UModal
-      v-model:open="replaceConfirmOpen"
-      title="Replace all access keys"
-      description="Replace all access keys with the entered list? Existing scope bindings are preserved only for unchanged keys."
-    >
+    <UModal v-model:open="confirmationOpen" :title="confirmationTitle" :description="confirmationDescription">
       <template #body>
         <div class="flex justify-end gap-2">
-          <UButton color="neutral" variant="outline" :disabled="replacing" @click="replaceConfirmOpen = false">Cancel</UButton>
-          <UButton color="error" :loading="replacing" @click="replaceAll">Replace all</UButton>
-        </div>
-      </template>
-    </UModal>
-
-    <UModal v-model:open="deleteOpen" title="Delete access key?" :description="deleteTarget ? `Delete access key ${keySummary(deleteTarget)}?` : ''">
-      <template #body>
-        <div class="flex justify-end gap-2">
-          <UButton color="neutral" variant="outline" :disabled="deleting" @click="deleteOpen = false">Cancel</UButton>
-          <UButton color="error" :loading="deleting" @click="deleteOne">Delete</UButton>
-        </div>
-      </template>
-    </UModal>
-
-    <UModal v-model:open="bulkDeleteOpen" title="Delete selected access keys?" :description="`Delete ${selectedKeys.length} selected access keys?`">
-      <template #body>
-        <div class="flex justify-end gap-2">
-          <UButton color="neutral" variant="outline" :disabled="bulkDeleting" @click="bulkDeleteOpen = false">Cancel</UButton>
-          <UButton color="error" :loading="bulkDeleting" @click="deleteSelected">Delete selected</UButton>
+          <UButton color="neutral" variant="outline" :disabled="confirmationBusy" @click="closeConfirmation">Cancel</UButton>
+          <UButton color="error" :loading="confirmationBusy" @click="confirmDestructiveAction">{{ confirmationActionLabel }}</UButton>
         </div>
       </template>
     </UModal>
@@ -311,119 +303,248 @@ const { fetchAPI, fetchRaw } = useApi()
 const { supports } = useCapabilities()
 const toast = useToast()
 
+const MAX_DISPLAY_NAME_LENGTH = 128
 const rowValue = row => row?.original ?? row
+
 const search = ref('')
 const loading = ref(false)
+const hasLoaded = ref(false)
 const primaryError = ref('')
-const keysResponse = ref(null)
-const usersResponse = ref(null)
-const channelsResponse = ref(null)
-const modelGroupsResponse = ref(null)
-const collectionETag = ref('')
+const resources = ref([])
+const users = ref([])
+const channelGroups = ref([])
+const modelGroups = ref([])
+const collectionETag = ref(null)
+const supportsDisplayNames = ref(true)
 const selectedIDs = ref(new Set())
-
-const formOpen = ref(false)
-const formError = ref('')
-const formFieldError = ref('')
-const formSecretVisible = ref(false)
-const submitting = ref(false)
-const editingKey = ref(null)
-const form = reactive({ api_key: '', display_name: '' })
+const wideTable = ref(false)
 
 const detailOpen = ref(false)
-const detailTarget = ref(null)
+const sheetMode = ref('detail')
+const selectedResource = ref(null)
 const detailSecretVisible = ref(false)
+const formSecretVisible = ref(false)
+const submitting = ref(false)
+const keyValueError = ref('')
+const displayNameError = ref('')
+const form = reactive({ value: '', displayName: '' })
 
 const replaceOpen = ref(false)
-const replaceConfirmOpen = ref(false)
 const replaceText = ref('')
-const replaceError = ref('')
+const replaceSnapshot = ref(null)
 const replacing = ref(false)
-const replaceSnapshot = ref([])
-const replaceETag = ref('')
 
-const deleteOpen = ref(false)
-const deleteTarget = ref(null)
+const confirmationOpen = ref(false)
+const confirmationType = ref(null)
+const confirmationResources = ref([])
 const deleting = ref(false)
-
-const bulkDeleteOpen = ref(false)
 const bulkDeleting = ref(false)
 
-const columns = [
+const compactColumns = [
+  { accessorKey: 'select', header: '' },
+  { accessorKey: 'identity', header: 'Name / key' },
+  { accessorKey: 'status', header: 'Status' },
+  { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }
+]
+
+const fullColumns = [
   { accessorKey: 'select', header: '' },
   { accessorKey: 'number', header: 'No.' },
   { accessorKey: 'identity', header: 'Name / key' },
   { accessorKey: 'owner', header: 'Owner' },
-  { accessorKey: 'channels', header: 'Credential scope' },
-  { accessorKey: 'model_groups', header: 'Model scope' },
+  { accessorKey: 'credential-scope', header: 'Credential scope' },
+  { accessorKey: 'model-scope', header: 'Model scope' },
   { accessorKey: 'length', header: 'Length' },
   { accessorKey: 'status', header: 'Status' },
-  { accessorKey: 'actions', header: 'Actions' }
+  { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }
 ]
 
-const rawEntries = computed(() => {
-  const payload = keysResponse.value
-  if (Array.isArray(payload?.items)) return payload.items
-  if (Array.isArray(payload?.api_key_entries)) return payload.api_key_entries
-  const legacy = payload?.['api-keys'] || payload?.api_keys
-  return Array.isArray(legacy) ? legacy.map((apiKey, index) => ({ api_key: apiKey, _legacyIndex: index })) : []
+const columns = computed(() => wideTable.value ? fullColumns : compactColumns)
+const detailTitle = computed(() => sheetMode.value === 'create' ? 'New downstream key' : sheetMode.value === 'edit' ? 'Update downstream key' : 'Key detail')
+const detailDescription = computed(() => {
+  if (sheetMode.value === 'create') return 'Create access key'
+  return selectedResource.value ? resourceSummary(selectedResource.value) : 'Select a key or create a new one.'
 })
 
-const displayNameSupported = computed(() => {
-  const payload = keysResponse.value
-  return Boolean(payload && (Object.prototype.hasOwnProperty.call(payload, 'items') || Object.prototype.hasOwnProperty.call(payload, 'api_key_entries')))
-})
-
-const keys = computed(() => rawEntries.value.map((entry, index) => ({
-  ...entry,
-  id: entry.id ?? entry.api_key_id ?? null,
-  identifier: entry.identifier ?? entry.api_key_identifier ?? null,
-  api_key: String(entry.api_key ?? entry['api-key'] ?? entry.key ?? entry.value ?? ''),
-  display_name: entry.display_name ?? '',
-  user_id: entry.user_id ?? entry['user-id'] ?? null,
-  channels: Array.isArray(entry.channels) ? entry.channels : [],
-  model_groups: Array.isArray(entry.model_groups) ? entry.model_groups : (Array.isArray(entry['model-groups']) ? entry['model-groups'] : []),
-  _index: Number.isInteger(entry._legacyIndex) ? entry._legacyIndex : index,
-  _number: index + 1
-})).filter(entry => entry.api_key))
-
-const users = computed(() => Array.isArray(usersResponse.value?.users) ? usersResponse.value.users : [])
-const channels = computed(() => Array.isArray(channelsResponse.value?.channel_groups) ? channelsResponse.value.channel_groups : [])
-const modelGroups = computed(() => Array.isArray(modelGroupsResponse.value?.model_groups) ? modelGroupsResponse.value.model_groups : [])
-
-const filteredKeys = computed(() => {
+const filteredResources = computed(() => {
   const query = search.value.trim().toLowerCase()
-  if (!query) return keys.value
-  return keys.value.filter(key => [
-    key.display_name,
-    key.api_key,
-    maskKey(key.api_key),
-    stableIdentifier(key),
-    String(key._number),
-    ownerLabel(key),
-    ...key.channels.map(channelName),
-    ...key.model_groups.map(modelGroupName)
-  ].some(value => String(value || '').toLowerCase().includes(query)))
+  if (!query) return resources.value
+  return resources.value.filter(resource => [
+    resource.value,
+    resource.maskedValue,
+    resource.identifier ?? '',
+    resource.displayName ?? '',
+    resource.prefix,
+    resource.suffix,
+    String(resource.index),
+    resource.userId == null || resource.userId === 0 ? '' : ownerName(resource),
+    credentialScope(resource),
+    modelScope(resource)
+  ].some(value => String(value).toLowerCase().includes(query)))
 })
 
-const selectedKeys = computed(() => keys.value.filter(key => selectedIDs.value.has(keyIdentity(key))))
-const selectedFilteredKeys = computed(() => filteredKeys.value.filter(key => selectedIDs.value.has(keyIdentity(key))))
-const allFilteredSelected = computed(() => Boolean(filteredKeys.value.length) && selectedFilteredKeys.value.length === filteredKeys.value.length)
-const someFilteredSelected = computed(() => selectedFilteredKeys.value.length > 0 && !allFilteredSelected.value)
-const replacementKeys = computed(() => replaceText.value.split(/\r?\n/).map(value => value.trim()).filter(Boolean))
+const selectedResources = computed(() => resources.value.filter(resource => selectedIDs.value.has(resource.id)))
+const selectedFilteredResources = computed(() => filteredResources.value.filter(resource => selectedIDs.value.has(resource.id)))
+const allFilteredSelected = computed(() => filteredResources.value.length > 0 && selectedFilteredResources.value.length === filteredResources.value.length)
+const someFilteredSelected = computed(() => selectedFilteredResources.value.length > 0 && !allFilteredSelected.value)
+const confirmationBusy = computed(() => replacing.value || deleting.value || bulkDeleting.value)
+const confirmationTitle = computed(() => confirmationType.value === 'replace' ? 'Replace all access keys' : confirmationType.value === 'bulk' ? 'Delete selected access keys?' : 'Delete access key?')
+const confirmationDescription = computed(() => {
+  if (confirmationType.value === 'replace') return 'Replace all access keys with the entered list? Existing scope bindings are preserved only for unchanged keys.'
+  if (confirmationType.value === 'bulk') return `Delete ${confirmationResources.value.length} selected access keys?`
+  const resource = confirmationResources.value[0]
+  return resource ? `Delete access key ${resourceSummary(resource)}?` : ''
+})
+const confirmationActionLabel = computed(() => confirmationType.value === 'replace' ? 'Replace all' : confirmationType.value === 'bulk' ? 'Delete selected' : 'Delete')
+
+let mediaQuery
+let mediaQueryListener
+
+onMounted(() => {
+  mediaQuery = window.matchMedia('(min-width: 640px)')
+  mediaQueryListener = event => { wideTable.value = event.matches }
+  wideTable.value = mediaQuery.matches
+  mediaQuery.addEventListener?.('change', mediaQueryListener)
+})
+
+onBeforeUnmount(() => {
+  mediaQuery?.removeEventListener?.('change', mediaQueryListener)
+})
+
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
+
+function firstString(object, keys) {
+  for (const key of keys) {
+    if (typeof object?.[key] === 'string') return object[key]
+  }
+  return null
+}
+
+function firstNumber(object, keys) {
+  for (const key of keys) {
+    const value = object?.[key]
+    if (typeof value === 'number' && Number.isFinite(value)) return value
+  }
+  return null
+}
+
+function numericArray(value) {
+  return Array.isArray(value) ? value.filter(item => typeof item === 'number' && Number.isFinite(item)) : []
+}
+
+function selectAPIKeyEntries(payload) {
+  const entries = payload?.api_key_entries ?? payload?.items
+  if (Array.isArray(entries) && entries.length > 0) return entries
+  const legacy = payload?.['api-keys'] ?? payload?.api_keys
+  return Array.isArray(legacy) ? legacy.filter(value => typeof value === 'string') : []
+}
+
+function normalizeResource(raw, index) {
+  const object = isPlainObject(raw) ? raw : null
+  const value = (object ? firstString(object, ['api_key', 'api-key', 'key', 'value']) ?? '' : typeof raw === 'string' ? raw : '').trim()
+  const numericId = object ? firstNumber(object, ['id', 'api_key_id', 'api-key-id']) : null
+  const displayNameValue = object ? firstString(object, ['display_name']) : null
+  const displayName = displayNameValue?.trim() || null
+  const modelGroupValue = object ? object.model_groups ?? object['model-groups'] : null
+  return {
+    id: numericId != null ? String(numericId) : `${index}:${value}`,
+    index,
+    numericId,
+    identifier: numericId != null ? `api-key-${numericId}` : null,
+    displayName,
+    value,
+    maskedValue: value ? value.length <= 10 ? `${value.slice(0, 2)}***` : `${value.slice(0, 6)}...${value.slice(-4)}` : '',
+    prefix: value.slice(0, 6),
+    suffix: value.slice(-4),
+    length: value.length,
+    userId: object ? firstNumber(object, ['user_id', 'user-id']) : null,
+    channelGroupIds: numericArray(object?.channels),
+    modelGroupIds: numericArray(modelGroupValue),
+    raw
+  }
+}
+
+function serializeEntry(resource, displayName) {
+  return {
+    api_key: resource.value.trim(),
+    ...(displayName === undefined ? {} : { display_name: displayName.trim() || null }),
+    user_id: resource.userId ?? 0,
+    channels: resource.channelGroupIds ?? [],
+    model_groups: resource.modelGroupIds ?? []
+  }
+}
+
+function topLevelArray(payload, keys) {
+  if (Array.isArray(payload)) return payload
+  for (const key of keys) {
+    if (Array.isArray(payload?.[key])) return payload[key]
+  }
+  return []
+}
+
+function normalizeUsers(payload) {
+  return topLevelArray(payload, ['users', 'items', 'records', 'data']).map(item => {
+    if (!isPlainObject(item)) return null
+    const id = firstNumber(item, ['id', 'user_id', 'userId'])
+    if (id == null) return null
+    return { id, name: firstString(item, ['username', 'user_name', 'userName', 'name'])?.trim() || String(id) }
+  }).filter(Boolean)
+}
+
+function normalizeGroups(payload, kind) {
+  const topLevelKey = kind === 'channel' ? 'channel_groups' : 'model_groups'
+  const nameKeys = kind === 'channel' ? ['channel_name', 'name', 'label'] : ['group_name', 'name', 'label']
+  const fallbackPrefix = kind === 'channel' ? 'channel-group' : 'model-group'
+  return topLevelArray(payload, [topLevelKey, 'items']).map((item, index) => {
+    const object = isPlainObject(item) ? item : {}
+    const id = firstNumber(object, ['id']) ?? index + 1
+    return { id, name: firstString(object, nameKeys)?.trim() || `${fallbackPrefix}-${index + 1}` }
+  })
+}
 
 async function loadPrimary() {
   const response = await fetchRaw('/api-keys')
-  keysResponse.value = response._data
-  collectionETag.value = response.headers?.get?.('etag') || ''
+  const payload = response._data
+  const entries = selectAPIKeyEntries(payload)
+  resources.value = entries.map(normalizeResource).filter(resource => resource.value)
+  supportsDisplayNames.value = entries.length === 0 || entries.some(entry => isPlainObject(entry) && Object.prototype.hasOwnProperty.call(entry, 'display_name'))
+  collectionETag.value = response.headers?.get?.('etag')?.trim() || null
 }
 
-async function loadSupplemental(path, target) {
+async function supplementalRequest(path) {
   try {
-    target.value = await fetchAPI(path)
+    return await fetchAPI(path)
   } catch {
-    target.value = null
+    return null
   }
+}
+
+async function loadSupplemental() {
+  const tasks = []
+  let usersIndex = -1
+  let channelGroupsIndex = -1
+  let modelGroupsIndex = -1
+
+  if (supports('users', true)) {
+    usersIndex = tasks.length
+    tasks.push(supplementalRequest('/users'))
+  }
+
+  if (supports('access_groups', true)) {
+    channelGroupsIndex = tasks.length
+    tasks.push(supplementalRequest('/channel-groups'))
+    tasks.push(supplementalRequest('/channel-group-details'))
+    modelGroupsIndex = tasks.length
+    tasks.push(supplementalRequest('/model-groups'))
+    tasks.push(supplementalRequest('/model-group-details'))
+  }
+
+  const results = await Promise.all(tasks)
+  users.value = usersIndex >= 0 ? normalizeUsers(results[usersIndex]) : []
+  channelGroups.value = channelGroupsIndex >= 0 ? normalizeGroups(results[channelGroupsIndex], 'channel') : []
+  modelGroups.value = modelGroupsIndex >= 0 ? normalizeGroups(results[modelGroupsIndex], 'model') : []
 }
 
 async function syncData() {
@@ -431,22 +552,17 @@ async function syncData() {
   primaryError.value = ''
   try {
     await loadPrimary()
-    const tasks = []
-    if (supports('users', true)) tasks.push(loadSupplemental('/users', usersResponse))
-    else usersResponse.value = null
-    if (supports('access_groups', true)) {
-      tasks.push(loadSupplemental('/channel-groups', channelsResponse))
-      tasks.push(loadSupplemental('/model-groups', modelGroupsResponse))
-    } else {
-      channelsResponse.value = null
-      modelGroupsResponse.value = null
-    }
-    await Promise.all(tasks)
-    const validIdentities = new Set(keys.value.map(keyIdentity))
-    selectedIDs.value = new Set([...selectedIDs.value].filter(identity => validIdentities.has(identity)))
+    await loadSupplemental()
+    const validIDs = new Set(resources.value.map(resource => resource.id))
+    selectedIDs.value = new Set([...selectedIDs.value].filter(id => validIDs.has(id)))
+    if (selectedResource.value) selectedResource.value = resources.value.find(resource => resource.id === selectedResource.value.id) ?? null
+    hasLoaded.value = true
   } catch (error) {
-    keysResponse.value = null
-    collectionETag.value = ''
+    resources.value = []
+    users.value = []
+    channelGroups.value = []
+    modelGroups.value = []
+    collectionETag.value = null
     primaryError.value = errorMessage(error)
   } finally {
     loading.value = false
@@ -454,201 +570,313 @@ async function syncData() {
 }
 
 function openCreate() {
-  editingKey.value = null
-  form.api_key = generatedKey()
-  form.display_name = ''
-  formError.value = ''
-  formFieldError.value = ''
-  formSecretVisible.value = false
-  formOpen.value = true
+  selectedResource.value = null
+  sheetMode.value = 'create'
+  form.value = ''
+  form.displayName = ''
+  resetFormState()
+  detailOpen.value = true
 }
 
-function openEdit(key) {
-  detailOpen.value = false
-  editingKey.value = key
-  form.api_key = key.api_key
-  form.display_name = key.display_name || ''
-  formError.value = ''
-  formFieldError.value = ''
+function openDetail(resource) {
+  selectedResource.value = resource
+  sheetMode.value = 'detail'
+  detailSecretVisible.value = false
+  detailOpen.value = true
+}
+
+function openEdit(resource) {
+  selectedResource.value = resource
+  sheetMode.value = 'edit'
+  form.value = resource.value
+  form.displayName = resource.displayName || ''
+  resetFormState()
+  detailOpen.value = true
+}
+
+function resetFormState() {
+  keyValueError.value = ''
+  displayNameError.value = ''
   formSecretVisible.value = false
-  formOpen.value = true
 }
 
 function cancelForm() {
-  if (editingKey.value) {
-    formOpen.value = false
-    openDetail(editingKey.value)
+  if (sheetMode.value === 'edit') {
+    sheetMode.value = 'detail'
+    resetFormState()
     return
   }
-  formOpen.value = false
+  detailOpen.value = false
+}
+
+function handleDetailOpen(open) {
+  if (!open) {
+    sheetMode.value = 'detail'
+    detailSecretVisible.value = false
+    resetFormState()
+  }
+}
+
+function validateForm() {
+  const value = form.value.trim()
+  const displayName = form.displayName.trim()
+  if (!value) keyValueError.value = 'Key value is required.'
+  if (supportsDisplayNames.value && Array.from(displayName).length > MAX_DISPLAY_NAME_LENGTH) {
+    displayNameError.value = 'The display name must not exceed 128 characters.'
+  }
+  return Boolean(value) && !displayNameError.value
 }
 
 async function submitKey() {
-  formError.value = ''
-  formFieldError.value = ''
-  const apiKey = form.api_key.trim()
-  if (!apiKey) {
-    formFieldError.value = 'Key value is required.'
-    return
-  }
+  keyValueError.value = ''
+  displayNameError.value = ''
+  if (!validateForm()) return
 
   submitting.value = true
-  const wasEditing = Boolean(editingKey.value)
   try {
-    if (editingKey.value) {
-      const value = { api_key: apiKey }
-      if (displayNameSupported.value) value.display_name = form.display_name.trim() || null
-      if (editingKey.value.id !== null) {
-        await fetchAPI('/api-keys', { method: 'PATCH', body: { api_key_id: editingKey.value.id, value } })
-      } else {
-        await fetchAPI('/api-keys', { method: 'PATCH', body: { index: editingKey.value._index, value } })
+    if (sheetMode.value === 'edit' && selectedResource.value) {
+      const changed = await updateResource(selectedResource.value)
+      if (!changed) {
+        sheetMode.value = 'detail'
+        return
       }
+      await syncData()
+      selectedResource.value = resources.value.find(resource => resource.id === selectedResource.value?.id) ?? null
+      sheetMode.value = 'detail'
+      toast.add({ title: 'Access key updated.', color: 'success' })
     } else {
-      const body = { api_key: apiKey }
-      if (displayNameSupported.value && form.display_name.trim()) body.display_name = form.display_name.trim()
-      await fetchAPI('/api-keys', { method: 'POST', body })
+      await createResource()
+      detailOpen.value = false
+      await syncData()
+      toast.add({ title: 'Access key created.', color: 'success' })
     }
-    formOpen.value = false
-    await syncData()
-    toast.add({ title: wasEditing ? 'Access key updated.' : 'Access key created.', color: 'success' })
   } catch (error) {
-    formError.value = errorMessage(error)
+    showErrorToast(error)
   } finally {
     submitting.value = false
   }
 }
 
-function openDetail(key) {
-  detailTarget.value = key
-  detailSecretVisible.value = false
-  detailOpen.value = true
+async function createResource() {
+  const response = await fetchRaw('/api-keys')
+  const entries = selectAPIKeyEntries(response._data)
+  const existingResources = entries.map(normalizeResource).filter(resource => resource.value)
+  const newResource = { value: form.value.trim(), userId: 0, channelGroupIds: [], modelGroupIds: [] }
+  const newEntry = serializeEntry(newResource, supportsDisplayNames.value ? form.displayName : undefined)
+
+  if (existingResources.length === 0 || existingResources.every(resource => resource.numericId != null)) {
+    try {
+      await fetchAPI('/api-keys', { method: 'POST', body: newEntry })
+      return
+    } catch (error) {
+      if (error?.statusCode !== 404 && error?.statusCode !== 405) throw error
+    }
+  }
+
+  await fetchAPI('/api-keys', {
+    method: 'PUT',
+    body: {
+      api_key_entries: [
+        ...existingResources.map(resource => serializeEntry(resource, supportsDisplayNames.value ? resource.displayName || '' : undefined)),
+        newEntry
+      ]
+    }
+  })
+}
+
+async function updateResource(resource) {
+  const nextValue = form.value.trim()
+  const nextDisplayName = form.displayName.trim()
+  const valueChanged = nextValue !== resource.value
+  const displayNameChanged = supportsDisplayNames.value && nextDisplayName !== (resource.displayName || '')
+  if (!valueChanged && !displayNameChanged) return false
+
+  if (valueChanged) {
+    await fetchAPI('/api-keys', {
+      method: 'PATCH',
+      body: {
+        ...(resource.numericId != null ? { id: resource.numericId } : { index: resource.index }),
+        value: {
+          api_key: nextValue,
+          user_id: resource.userId ?? 0,
+          channels: resource.channelGroupIds,
+          model_groups: resource.modelGroupIds
+        },
+        ...(displayNameChanged ? { display_name: nextDisplayName || null } : {})
+      }
+    })
+  } else {
+    await fetchAPI('/api-keys', {
+      method: 'PATCH',
+      body: {
+        ...(resource.numericId != null ? { id: resource.numericId } : { api_key: resource.value }),
+        display_name: nextDisplayName || null
+      }
+    })
+  }
+  return true
 }
 
 function openReplace() {
-  replaceSnapshot.value = keys.value.map(key => ({ ...key, channels: [...key.channels], model_groups: [...key.model_groups] }))
-  replaceETag.value = collectionETag.value
-  replaceText.value = replaceSnapshot.value.map(key => key.api_key).join('\n')
-  replaceError.value = ''
-  replaceConfirmOpen.value = false
+  replaceSnapshot.value = {
+    resources: resources.value.map(resource => ({
+      ...resource,
+      channelGroupIds: [...resource.channelGroupIds],
+      modelGroupIds: [...resource.modelGroupIds]
+    })),
+    etag: collectionETag.value
+  }
+  replaceText.value = replaceSnapshot.value.resources.map(resource => resource.value).join('\n')
   replaceOpen.value = true
+}
+
+function handleReplaceOpen(open) {
+  if (!open && !confirmationOpen.value) clearReplaceSnapshot()
 }
 
 function closeReplace() {
   replaceOpen.value = false
-  replaceConfirmOpen.value = false
-  replaceSnapshot.value = []
-  replaceETag.value = ''
+  clearReplaceSnapshot()
+}
+
+function clearReplaceSnapshot() {
+  replaceSnapshot.value = null
+  replaceText.value = ''
 }
 
 function openReplaceConfirmation() {
-  replaceError.value = ''
-  replaceConfirmOpen.value = true
+  confirmationType.value = 'replace'
+  confirmationResources.value = []
+  confirmationOpen.value = true
+}
+
+function openDelete(resource) {
+  confirmationType.value = 'delete'
+  confirmationResources.value = [resource]
+  confirmationOpen.value = true
+}
+
+function openBulkDelete() {
+  confirmationType.value = 'bulk'
+  confirmationResources.value = [...selectedResources.value]
+  confirmationOpen.value = true
+}
+
+function closeConfirmation() {
+  confirmationOpen.value = false
+  confirmationType.value = null
+  confirmationResources.value = []
+}
+
+async function confirmDestructiveAction() {
+  if (confirmationType.value === 'replace') await replaceAll()
+  else if (confirmationType.value === 'bulk') await deleteSelected()
+  else await deleteOne()
 }
 
 async function replaceAll() {
+  if (!replaceSnapshot.value) return
   replacing.value = true
-  replaceError.value = ''
   try {
-    const existingBySecret = new Map(replaceSnapshot.value.map(key => [key.api_key, key]))
-    const entries = replacementKeys.value.map(apiKey => {
-      const existing = existingBySecret.get(apiKey)
-      if (!existing) return { api_key: apiKey }
-      return {
-        api_key: apiKey,
-        ...(displayNameSupported.value ? { display_name: existing.display_name || null } : {}),
-        user_id: existing.user_id ?? null,
-        channels: [...existing.channels],
-        model_groups: [...existing.model_groups]
-      }
+    const existingByValue = new Map(replaceSnapshot.value.resources.map(resource => [resource.value, resource]))
+    const values = replaceText.value.split('\n').map(value => value.trim()).filter(Boolean)
+    const entries = values.map(value => {
+      const existing = existingByValue.get(value)
+      return serializeEntry({
+        value,
+        userId: existing?.userId ?? null,
+        channelGroupIds: existing?.channelGroupIds ?? [],
+        modelGroupIds: existing?.modelGroupIds ?? []
+      })
     })
-    const headers = replaceETag.value ? { 'If-Match': replaceETag.value } : {}
-    await fetchAPI('/api-keys', { method: 'PUT', headers, body: { api_key_entries: entries } })
-    closeReplace()
-    selectedIDs.value = new Set()
+    await fetchAPI('/api-keys', {
+      method: 'PUT',
+      ...(replaceSnapshot.value.etag ? { headers: { 'If-Match': replaceSnapshot.value.etag } } : {}),
+      body: { api_key_entries: entries }
+    })
+    selectedResource.value = null
+    sheetMode.value = 'detail'
+    replaceOpen.value = false
+    detailOpen.value = false
+    confirmationOpen.value = false
+    clearReplaceSnapshot()
     await syncData()
     toast.add({ title: 'Access key list replaced.', color: 'success' })
   } catch (error) {
-    replaceConfirmOpen.value = false
-    replaceError.value = error?.statusCode === 412
-      ? 'The access key list changed after this sheet was opened. Sync data and try again.'
-      : errorMessage(error)
+    showErrorToast(error)
   } finally {
     replacing.value = false
   }
 }
 
-function openDelete(key) {
-  detailOpen.value = false
-  deleteTarget.value = key
-  deleteOpen.value = true
-}
-
-async function requestDelete(key) {
-  const query = key.id !== null ? `id=${encodeURIComponent(key.id)}` : `index=${encodeURIComponent(key._index)}`
-  await fetchAPI(`/api-keys?${query}`, { method: 'DELETE' })
+async function requestDelete(resource) {
+  await fetchAPI('/api-keys', {
+    method: 'DELETE',
+    query: resource.numericId != null ? { id: resource.numericId } : { index: resource.index }
+  })
 }
 
 async function deleteOne() {
-  if (!deleteTarget.value) return
+  const resource = confirmationResources.value[0]
+  if (!resource) return
   deleting.value = true
   try {
-    const identity = keyIdentity(deleteTarget.value)
-    await requestDelete(deleteTarget.value)
-    selectedIDs.value = new Set([...selectedIDs.value].filter(value => value !== identity))
-    deleteOpen.value = false
+    await requestDelete(resource)
+    selectedIDs.value = new Set([...selectedIDs.value].filter(id => id !== resource.id))
+    selectedResource.value = null
+    sheetMode.value = 'detail'
+    detailOpen.value = false
+    closeConfirmation()
     await syncData()
     toast.add({ title: 'Access key deleted.', color: 'success' })
   } catch (error) {
-    toast.add({ title: 'Access key could not be deleted', description: errorMessage(error), color: 'error' })
+    showErrorToast(error)
   } finally {
     deleting.value = false
   }
 }
 
-function openBulkDelete() {
-  bulkDeleteOpen.value = true
-}
-
 async function deleteSelected() {
-  const targets = [...selectedKeys.value].sort((left, right) => right._index - left._index)
+  const targets = [...confirmationResources.value].sort((left, right) => right.index - left.index)
   if (!targets.length) return
   bulkDeleting.value = true
   try {
-    for (const key of targets) await requestDelete(key)
-    bulkDeleteOpen.value = false
+    for (const resource of targets) await requestDelete(resource)
     selectedIDs.value = new Set()
+    selectedResource.value = null
+    sheetMode.value = 'detail'
+    detailOpen.value = false
+    closeConfirmation()
     await syncData()
     toast.add({ title: `${targets.length} access keys deleted.`, color: 'success' })
   } catch (error) {
-    toast.add({ title: 'Selected access keys could not be deleted', description: errorMessage(error), color: 'error' })
-    await syncData()
+    showErrorToast(error)
   } finally {
     bulkDeleting.value = false
   }
 }
 
-function rowActions(key) {
+function rowActions(resource) {
   return [[
-    { label: 'View', icon: 'i-heroicons-eye', onSelect: () => openDetail(key) },
-    { label: 'Edit', icon: 'i-heroicons-pencil-square', onSelect: () => openEdit(key) },
-    ...(stableIdentifier(key) ? [{ label: 'Copy identifier', icon: 'i-heroicons-clipboard-document', onSelect: () => copyText(stableIdentifier(key), 'Identifier copied.') }] : []),
-    { label: 'Delete', icon: 'i-heroicons-trash', color: 'error', onSelect: () => openDelete(key) }
+    { label: 'View', icon: 'i-heroicons-eye', onSelect: () => openDetail(resource) },
+    { label: 'Edit', icon: 'i-heroicons-pencil-square', onSelect: () => openEdit(resource) },
+    ...(resource.identifier ? [{ label: 'Copy identifier', icon: 'i-heroicons-clipboard-document', onSelect: () => copyText(resource.identifier, 'Identifier copied.') }] : []),
+    { label: 'Delete', icon: 'i-heroicons-trash', color: 'error', onSelect: () => openDelete(resource) }
   ]]
 }
 
-function toggleSelected(key, checked) {
+function toggleSelected(resource, checked) {
   const next = new Set(selectedIDs.value)
-  const identity = keyIdentity(key)
-  if (checked) next.add(identity)
-  else next.delete(identity)
+  if (checked) next.add(resource.id)
+  else next.delete(resource.id)
   selectedIDs.value = next
 }
 
 function toggleAllFiltered(checked) {
   const next = new Set(selectedIDs.value)
-  for (const key of filteredKeys.value) {
-    if (checked) next.add(keyIdentity(key))
-    else next.delete(keyIdentity(key))
+  for (const resource of filteredResources.value) {
+    if (checked) next.add(resource.id)
+    else next.delete(resource.id)
   }
   selectedIDs.value = next
 }
@@ -659,70 +887,53 @@ function clearSelection() {
 
 function generatedKey() {
   const bytes = new Uint8Array(24)
-  crypto.getRandomValues(bytes)
-  return `sk-${Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('')}`
+  window.crypto.getRandomValues(bytes)
+  const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('')
+  return `sk-${hex}`
 }
 
 function generateKey() {
-  form.api_key = generatedKey()
-  formFieldError.value = ''
+  form.value = generatedKey()
+  keyValueError.value = ''
 }
 
-async function copyText(value, title) {
+async function copyText(value, successMessage) {
   try {
-    await navigator.clipboard.writeText(String(value || ''))
-    toast.add({ title, color: 'success' })
-  } catch {
-    toast.add({ title: 'Could not copy value', color: 'error' })
+    await navigator.clipboard.writeText(value)
+    toast.add({ title: successMessage, color: 'success' })
+  } catch (error) {
+    showErrorToast(error)
   }
 }
 
-function keyIdentity(key) {
-  return key.id !== null ? `id:${key.id}` : `value:${key.api_key}`
+function resourceSummary(resource) {
+  const identity = resource.identifier ? `${resource.identifier} · ${resource.maskedValue}` : resource.maskedValue
+  return resource.displayName ? `${resource.displayName} · ${identity}` : identity
 }
 
-function stableIdentifier(key) {
-  if (key.identifier) return String(key.identifier)
-  return key.id !== null ? `api-key-${key.id}` : ''
+function ownerName(resource) {
+  if (resource.userId == null || resource.userId === 0) return 'Unassigned'
+  return users.value.find(user => user.id === resource.userId)?.name || String(resource.userId)
 }
 
-function keySummary(key) {
-  const identifier = stableIdentifier(key)
-  const masked = maskKey(key.api_key)
-  const identity = identifier ? `${identifier} · ${masked}` : masked
-  return key.display_name ? `${key.display_name} · ${identity}` : identity
+function groupName(id, groups) {
+  return groups.find(group => group.id === id)?.name || String(id)
 }
 
-function maskKey(value) {
-  const text = String(value || '')
-  if (text.length <= 10) return '•'.repeat(Math.max(text.length, 6))
-  return `${text.slice(0, 5)}${'•'.repeat(Math.min(16, text.length - 9))}${text.slice(-4)}`
+function credentialScope(resource) {
+  return resource.channelGroupIds.length ? resource.channelGroupIds.map(id => groupName(id, channelGroups.value)).join(', ') : 'Unrestricted'
 }
 
-function ownerLabel(key) {
-  if (!key.user_id) return 'Unassigned'
-  const user = users.value.find(item => Number(item.id) === Number(key.user_id))
-  return user?.username || user?.display_name || `#${key.user_id}`
-}
-
-function channelName(id) {
-  const group = channels.value.find(item => Number(item.id) === Number(id))
-  return group?.channel_name || group?.name || `#${id}`
-}
-
-function modelGroupName(id) {
-  const group = modelGroups.value.find(item => Number(item.id) === Number(id))
-  return group?.group_name || group?.name || `#${id}`
-}
-
-function groupList(ids, resolveName) {
-  return ids.length ? ids.map(resolveName).join(', ') : 'Unrestricted'
+function modelScope(resource) {
+  return resource.modelGroupIds.length ? resource.modelGroupIds.map(id => groupName(id, modelGroups.value)).join(', ') : 'Unrestricted'
 }
 
 function errorMessage(error) {
-  const data = error?.data
-  if (typeof data === 'string' && data.trim()) return data
-  return data?.message || data?.error || error?.response?._data?.message || error?.response?._data?.error || error?.message || 'Unexpected request error.'
+  return typeof error?.message === 'string' && error.message.trim() ? error.message : 'Management API request failed'
+}
+
+function showErrorToast(error) {
+  toast.add({ title: errorMessage(error), color: 'error' })
 }
 
 await syncData()
@@ -731,7 +942,19 @@ await syncData()
 <style scoped>
 .access-keys-table :deep(th:first-child),
 .access-keys-table :deep(td:first-child) {
-  width: 44px;
+  width: 2.75rem;
+  min-width: 2.75rem;
+}
+
+.access-keys-table.table-fixed :deep(th:nth-child(2)),
+.access-keys-table.table-fixed :deep(td:nth-child(2)) {
+  width: 220px;
+}
+
+.access-keys-table :deep(th:nth-last-child(2)),
+.access-keys-table :deep(td:nth-last-child(2)) {
+  width: 7rem;
+  min-width: 7rem;
 }
 
 .access-keys-table :deep(th:last-child),
@@ -739,29 +962,27 @@ await syncData()
   position: sticky;
   right: 0;
   z-index: 2;
-  width: 88px;
-  min-width: 88px;
+  width: 4.5rem;
+  min-width: 4.5rem;
   text-align: right;
   background: var(--ui-bg);
   box-shadow: -1px 0 0 var(--ui-border);
 }
 
-@media (max-width: 1023px) {
-  .access-keys-table :deep(th:nth-child(2)),
-  .access-keys-table :deep(td:nth-child(2)),
-  .access-keys-table :deep(th:nth-child(4)),
-  .access-keys-table :deep(td:nth-child(4)),
-  .access-keys-table :deep(th:nth-child(5)),
-  .access-keys-table :deep(td:nth-child(5)),
-  .access-keys-table :deep(th:nth-child(6)),
-  .access-keys-table :deep(td:nth-child(6)),
-  .access-keys-table :deep(th:nth-child(7)),
-  .access-keys-table :deep(td:nth-child(7)) {
-    display: none;
+.access-keys-table :deep(th:last-child) {
+  z-index: 3;
+}
+
+@media (min-width: 640px) {
+  .access-keys-table :deep(th:nth-child(3)),
+  .access-keys-table :deep(td:nth-child(3)) {
+    width: 220px;
   }
 
-  .access-keys-table {
-    min-width: 0;
+  .access-keys-table :deep(th:last-child),
+  .access-keys-table :deep(td:last-child) {
+    width: 20.5rem;
+    min-width: 20.5rem;
   }
 }
 </style>

@@ -182,7 +182,7 @@ const columns = [
   { accessorKey: 'priority', header: 'Priority' },
   { accessorKey: 'last_test', header: 'Last test' },
   { accessorKey: 'note', header: 'Note' },
-  { accessorKey: 'actions', header: 'Actions' }
+  { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }
 ]
 
 const pools = ref<ProxyPool[]>([])

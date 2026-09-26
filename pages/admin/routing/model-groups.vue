@@ -190,12 +190,12 @@ const detailForm = ref({ model_id: '', suggested_model_id: '', channels: [] })
 const groupColumns = [
   { accessorKey: 'identity', header: 'Model group' },
   { accessorKey: 'status', header: 'Status' },
-  { accessorKey: 'actions', header: '' }
+  { accessorKey: 'actions', header: '', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }
 ]
 const detailColumns = [
   { accessorKey: 'model', header: 'Model' },
   { accessorKey: 'channels', header: 'Credential scope' },
-  { accessorKey: 'actions', header: '' }
+  { accessorKey: 'actions', header: '', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }
 ]
 
 async function loadWorkspace() {
