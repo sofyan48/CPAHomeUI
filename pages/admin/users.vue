@@ -45,7 +45,7 @@
                   <th scope="col" class="px-4 py-3 font-medium">Credential scope</th>
                   <th scope="col" class="px-4 py-3 font-medium">Model scope</th>
                   <th scope="col" class="px-4 py-3 font-medium">Updated</th>
-                  <th scope="col" class="w-20 px-4 py-3 text-right font-medium">Actions</th>
+                  <th scope="col" class="table-action-head font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -60,7 +60,7 @@
                   <td class="px-4 py-3"><span class="block max-w-52 truncate" :title="effectiveChannelScopes(filteredUsers[virtualRow.index].id).join(', ')">{{ scopeSummary(effectiveChannelScopes(filteredUsers[virtualRow.index].id)) }}</span></td>
                   <td class="px-4 py-3"><span class="block max-w-52 truncate" :title="effectiveModelScopes(filteredUsers[virtualRow.index].id).join(', ')">{{ scopeSummary(effectiveModelScopes(filteredUsers[virtualRow.index].id)) }}</span></td>
                   <td class="px-4 py-3"><span class="whitespace-nowrap text-[var(--ui-text-muted)]">{{ formatDate(filteredUsers[virtualRow.index].updated_at) }}</span></td>
-                  <td class="px-4 py-3"><RowMenu :label="filteredUsers[virtualRow.index].username" :items="userMenuItems(filteredUsers[virtualRow.index])" /></td>
+                  <td class="table-action-cell"><RowMenu :label="filteredUsers[virtualRow.index].username" :items="userMenuItems(filteredUsers[virtualRow.index])" /></td>
                 </tr>
                 <tr v-if="userVirtualPaddingBottom" class="user-spacer-row" aria-hidden="true"><td :colspan="userColumnCount" :style="{ height: `${userVirtualPaddingBottom}px` }" /></tr>
                 <tr v-if="!filteredUsers.length"><td :colspan="userColumnCount"><EmptyState icon="i-heroicons-users" text="No users match the current filter." /></td></tr>
@@ -94,10 +94,36 @@
 
         <div v-else class="grid gap-3 p-4">
           <UnsupportedScopes v-if="!accessGroupsSupported" />
-          <template v-else>
-            <div class="flex justify-end"><UButton icon="i-heroicons-plus" @click="openGroupForm('model')">New model scope</UButton></div>
-            <GroupCards kind="model" :groups="filteredModelGroups" :details="modelDetailsData" :channel-groups="channelGroups" :channel-bindings-supported="modelChannelBindingsSupported" @edit="openGroupForm('model', $event)" @delete="confirmGroupDelete('model', $event)" @add="openBindings('model', $event)" @delete-detail="confirmDetailDelete('model', $event)" />
-          </template>
+          <section v-else class="grid gap-4 xl:grid-cols-[240px_minmax(0,1fr)]">
+            <aside class="self-start rounded-lg border border-[var(--ui-border)] bg-[var(--glass-card)] p-3 max-xl:hidden" aria-label="Model scopes">
+              <div class="flex items-center justify-between px-2 pb-2"><p class="text-xs font-medium uppercase text-[var(--ui-text-muted)]">Model scopes</p><UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-plus" aria-label="New model scope" @click="openGroupForm('model')" /></div>
+              <nav class="grid gap-1" aria-label="Model scopes">
+                <button v-for="group in filteredModelGroups" :key="group.id" type="button" :aria-current="Number(selectedModelGroup?.id) === Number(group.id) ? 'page' : undefined" class="flex w-full min-w-0 items-center justify-between gap-3 rounded-md border px-3 py-3 text-left transition-colors" :class="Number(selectedModelGroup?.id) === Number(group.id) ? 'border-[var(--ui-primary)] bg-[var(--ui-primary)]/10 text-[var(--ui-primary)]' : 'border-transparent hover:border-[var(--ui-border)] hover:bg-[var(--ui-bg-elevated)]'" @click="selectedModelGroupId = group.id">
+                  <span class="flex min-w-0 items-center gap-2.5"><span class="flex size-6 shrink-0 items-center justify-center rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] text-[10px] font-semibold">M</span><span class="min-w-0"><span class="block truncate text-sm font-medium">{{ group.group_name }}</span><span class="mt-0.5 block text-xs text-[var(--ui-text-muted)]">{{ modelDetailsFor(group.id).length }} models</span></span></span>
+                  <UIcon v-if="group.disabled" name="i-heroicons-exclamation-triangle" class="size-4 shrink-0 text-[var(--ui-warning)]" /><span v-else class="shrink-0 rounded-md border border-[var(--ui-border)] px-2 py-1 text-xs">{{ modelDetailsFor(group.id).length }}</span>
+                </button>
+                <p v-if="!filteredModelGroups.length" class="px-3 py-8 text-center text-sm text-[var(--ui-text-muted)]">No model scopes match.</p>
+              </nav>
+            </aside>
+
+            <div class="min-w-0">
+              <AdminDataPanel :title="selectedModelGroup?.group_name || 'Model scopes'" :description="selectedModelGroup ? `Scope #${selectedModelGroup.id} · ${selectedModelBindings.length} model bindings` : 'Select or create a model scope'">
+                <template #actions>
+                  <USelectMenu v-model="selectedModelGroupId" :items="modelScopeOptions" value-key="value" label-key="label" :search-input="{ placeholder: 'Search model scopes...' }" class="w-56 xl:hidden" />
+                  <UButton v-if="selectedModelGroup" size="sm" color="neutral" variant="outline" icon="i-heroicons-pencil-square" aria-label="Edit model scope" @click="openGroupForm('model', selectedModelGroup)" />
+                  <UButton v-if="selectedModelGroup" size="sm" color="error" variant="ghost" icon="i-heroicons-trash" aria-label="Delete model scope" @click="confirmGroupDelete('model', selectedModelGroup)" />
+                  <UButton size="sm" icon="i-heroicons-plus" @click="selectedModelGroup ? openBindings('model', selectedModelGroup) : openGroupForm('model')">{{ selectedModelGroup ? 'Add models' : 'New scope' }}</UButton>
+                </template>
+                <UTable :columns="modelBindingColumns" :data="selectedModelBindings" :loading="loading" class="min-w-[760px]">
+                  <template #model-cell="{ row }"><div class="min-w-0"><p class="truncate font-mono text-xs" :title="rowValue(row).model_id">{{ rowValue(row).model_id }}</p></div></template>
+                  <template #channels-cell="{ row }"><span class="block max-w-64 truncate text-xs text-[var(--ui-text-muted)]" :title="modelBindingChannelLabel(rowValue(row))">{{ modelBindingChannelLabel(rowValue(row)) }}</span></template>
+                  <template #updated-cell="{ row }"><span class="whitespace-nowrap text-xs text-[var(--ui-text-muted)]">{{ formatDate(rowValue(row).updated_at) }}</span></template>
+                  <template #actions-cell="{ row }"><UButton size="sm" color="error" variant="ghost" icon="i-heroicons-x-mark" @click="confirmDetailDelete('model', rowValue(row))">Remove</UButton></template>
+                  <template #empty><EmptyState icon="i-heroicons-cube" :text="selectedModelGroup ? 'No models are bound to this scope.' : 'Select a model scope.'" /></template>
+                </UTable>
+              </AdminDataPanel>
+            </div>
+          </section>
         </div>
       </div>
     </AdminDataPanel>
@@ -206,6 +232,16 @@ watch(search, () => userRowVirtualizer.value.scrollToOffset(0))
 const filteredKeys = computed(() => keys.value.filter(key => matches([key.api_key, userById(key.user_id)?.username, ...keyChannelNames(key), ...keyModelNames(key)])))
 const filteredChannelGroups = computed(() => channelGroups.value.filter(group => matches([group.id, group.channel_name, ...channelDetailsFor(group.id).map(item => item.auth_id)])))
 const filteredModelGroups = computed(() => modelGroups.value.filter(group => matches([group.id, group.group_name, ...modelDetailsFor(group.id).map(item => item.model_id)])))
+const modelScopeOptions = computed(() => filteredModelGroups.value.map(group => ({ label: `${group.group_name} · ${modelDetailsFor(group.id).length} models`, value: Number(group.id) })))
+const selectedModelGroup = computed(() => modelGroups.value.find(group => Number(group.id) === Number(selectedModelGroupId.value)) || filteredModelGroups.value[0] || null)
+const selectedModelBindings = computed(() => selectedModelGroup.value ? modelDetailsFor(selectedModelGroup.value.id) : [])
+const modelBindingColumns = [
+  { accessorKey: 'model', header: 'Model ID' },
+  { accessorKey: 'channels', header: 'Credential scope' },
+  { accessorKey: 'updated', header: 'Updated' },
+  { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }
+]
+watch(filteredModelGroups, groups => { if (!groups.length) selectedModelGroupId.value = null; else if (!groups.some(group => Number(group.id) === Number(selectedModelGroupId.value))) selectedModelGroupId.value = Number(groups[0].id) }, { immediate: true })
 
 
 async function safeLoad(label, request, fallback) { try { return await request() } catch (error) { pageErrors.value.push(`${label}: ${errorMessage(error)}`); return fallback } }
@@ -230,6 +266,7 @@ function effectiveModelScopes(id) { const owned = keysForUser(id); if (!owned.le
 function scopeSummary(names) { return names.length ? names.join(', ') : 'Unrestricted' }
 function channelDetailsFor(id) { return channelDetailsData.value.filter(item => Number(item.channel_group_id) === Number(id) && !item.deleted_at) }
 function modelDetailsFor(id) { return modelDetailsData.value.filter(item => Number(item.model_group_id) === Number(id) && !item.deleted_at) }
+function modelBindingChannelLabel(detail) { const ids = Array.isArray(detail?.channels) ? detail.channels : []; return ids.length ? ids.map(channelName).join(', ') : 'Inherits key scope' }
 function periodWindows(user) { return user.period_limits_summary?.enabled_windows || user.periodLimitsSummary?.enabledWindows || [] }
 function zeroPeriodWindows(user) { return user.period_limits_summary?.zero_limit_windows || user.periodLimitsSummary?.zeroLimitWindows || [] }
 function formatCredits(value) { return new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 }).format(Number(value || 0)) }

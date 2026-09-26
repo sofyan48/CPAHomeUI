@@ -40,9 +40,7 @@
     >
       <template #actions>
         <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-          <UButton color="neutral" variant="outline" icon="i-heroicons-arrows-right-left" :disabled="loading" @click="openReplace">
-            Replace all
-          </UButton>
+
           <UInput v-model="search" icon="i-heroicons-magnifying-glass" placeholder="Filter keys" class="w-full sm:w-72" />
         </div>
       </template>
@@ -261,31 +259,6 @@
       </template>
     </USlideover>
 
-    <USlideover
-      v-model:open="replaceOpen"
-      title="Replace all access keys"
-      description="This uses PUT /api-keys and replaces the entire downstream key list. Enter one key per line."
-      :ui="{ content: 'sm:max-w-xl' }"
-      @update:open="handleReplaceOpen"
-    >
-      <template #body>
-        <form class="space-y-5" @submit.prevent="openReplaceConfirmation">
-          <UAlert
-            color="warning"
-            variant="subtle"
-            icon="i-heroicons-exclamation-triangle"
-            description="Submitting this will overwrite the key list. Existing ownership and access scopes are preserved for unchanged keys; new keys start unrestricted."
-          />
-          <UFormField label="Keys">
-            <UTextarea v-model="replaceText" :rows="14" class="w-full font-mono text-xs" :disabled="replacing" />
-          </UFormField>
-          <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <UButton type="button" color="neutral" variant="outline" :disabled="replacing" @click="closeReplace">Cancel</UButton>
-            <UButton type="submit" color="warning" icon="i-heroicons-arrows-right-left" :disabled="replacing">Replace all</UButton>
-          </div>
-        </form>
-      </template>
-    </USlideover>
 
     <UModal v-model:open="confirmationOpen" :title="confirmationTitle" :description="confirmationDescription">
       <template #body>
@@ -314,7 +287,7 @@ const resources = ref([])
 const users = ref([])
 const channelGroups = ref([])
 const modelGroups = ref([])
-const collectionETag = ref(null)
+
 const supportsDisplayNames = ref(true)
 const selectedIDs = ref(new Set())
 const wideTable = ref(false)
@@ -329,10 +302,6 @@ const keyValueError = ref('')
 const displayNameError = ref('')
 const form = reactive({ value: '', displayName: '' })
 
-const replaceOpen = ref(false)
-const replaceText = ref('')
-const replaceSnapshot = ref(null)
-const replacing = ref(false)
 
 const confirmationOpen = ref(false)
 const confirmationType = ref(null)
@@ -387,15 +356,14 @@ const selectedResources = computed(() => resources.value.filter(resource => sele
 const selectedFilteredResources = computed(() => filteredResources.value.filter(resource => selectedIDs.value.has(resource.id)))
 const allFilteredSelected = computed(() => filteredResources.value.length > 0 && selectedFilteredResources.value.length === filteredResources.value.length)
 const someFilteredSelected = computed(() => selectedFilteredResources.value.length > 0 && !allFilteredSelected.value)
-const confirmationBusy = computed(() => replacing.value || deleting.value || bulkDeleting.value)
-const confirmationTitle = computed(() => confirmationType.value === 'replace' ? 'Replace all access keys' : confirmationType.value === 'bulk' ? 'Delete selected access keys?' : 'Delete access key?')
+const confirmationBusy = computed(() => deleting.value || bulkDeleting.value)
+const confirmationTitle = computed(() => confirmationType.value === 'bulk' ? 'Delete selected access keys?' : 'Delete access key?')
 const confirmationDescription = computed(() => {
-  if (confirmationType.value === 'replace') return 'Replace all access keys with the entered list? Existing scope bindings are preserved only for unchanged keys.'
   if (confirmationType.value === 'bulk') return `Delete ${confirmationResources.value.length} selected access keys?`
   const resource = confirmationResources.value[0]
   return resource ? `Delete access key ${resourceSummary(resource)}?` : ''
 })
-const confirmationActionLabel = computed(() => confirmationType.value === 'replace' ? 'Replace all' : confirmationType.value === 'bulk' ? 'Delete selected' : 'Delete')
+const confirmationActionLabel = computed(() => confirmationType.value === 'bulk' ? 'Delete selected' : 'Delete')
 
 let mediaQuery
 let mediaQueryListener
@@ -510,7 +478,7 @@ async function loadPrimary() {
   const entries = selectAPIKeyEntries(payload)
   resources.value = entries.map(normalizeResource).filter(resource => resource.value)
   supportsDisplayNames.value = entries.length === 0 || entries.some(entry => isPlainObject(entry) && Object.prototype.hasOwnProperty.call(entry, 'display_name'))
-  collectionETag.value = response.headers?.get?.('etag')?.trim() || null
+
 }
 
 async function supplementalRequest(path) {
@@ -562,7 +530,7 @@ async function syncData() {
     users.value = []
     channelGroups.value = []
     modelGroups.value = []
-    collectionETag.value = null
+
     primaryError.value = errorMessage(error)
   } finally {
     loading.value = false
@@ -717,38 +685,6 @@ async function updateResource(resource) {
   return true
 }
 
-function openReplace() {
-  replaceSnapshot.value = {
-    resources: resources.value.map(resource => ({
-      ...resource,
-      channelGroupIds: [...resource.channelGroupIds],
-      modelGroupIds: [...resource.modelGroupIds]
-    })),
-    etag: collectionETag.value
-  }
-  replaceText.value = replaceSnapshot.value.resources.map(resource => resource.value).join('\n')
-  replaceOpen.value = true
-}
-
-function handleReplaceOpen(open) {
-  if (!open && !confirmationOpen.value) clearReplaceSnapshot()
-}
-
-function closeReplace() {
-  replaceOpen.value = false
-  clearReplaceSnapshot()
-}
-
-function clearReplaceSnapshot() {
-  replaceSnapshot.value = null
-  replaceText.value = ''
-}
-
-function openReplaceConfirmation() {
-  confirmationType.value = 'replace'
-  confirmationResources.value = []
-  confirmationOpen.value = true
-}
 
 function openDelete(resource) {
   confirmationType.value = 'delete'
@@ -769,44 +705,8 @@ function closeConfirmation() {
 }
 
 async function confirmDestructiveAction() {
-  if (confirmationType.value === 'replace') await replaceAll()
-  else if (confirmationType.value === 'bulk') await deleteSelected()
+  if (confirmationType.value === 'bulk') await deleteSelected()
   else await deleteOne()
-}
-
-async function replaceAll() {
-  if (!replaceSnapshot.value) return
-  replacing.value = true
-  try {
-    const existingByValue = new Map(replaceSnapshot.value.resources.map(resource => [resource.value, resource]))
-    const values = replaceText.value.split('\n').map(value => value.trim()).filter(Boolean)
-    const entries = values.map(value => {
-      const existing = existingByValue.get(value)
-      return serializeEntry({
-        value,
-        userId: existing?.userId ?? null,
-        channelGroupIds: existing?.channelGroupIds ?? [],
-        modelGroupIds: existing?.modelGroupIds ?? []
-      })
-    })
-    await fetchAPI('/api-keys', {
-      method: 'PUT',
-      ...(replaceSnapshot.value.etag ? { headers: { 'If-Match': replaceSnapshot.value.etag } } : {}),
-      body: { api_key_entries: entries }
-    })
-    selectedResource.value = null
-    sheetMode.value = 'detail'
-    replaceOpen.value = false
-    detailOpen.value = false
-    confirmationOpen.value = false
-    clearReplaceSnapshot()
-    await syncData()
-    toast.add({ title: 'Access key list replaced.', color: 'success' })
-  } catch (error) {
-    showErrorToast(error)
-  } finally {
-    replacing.value = false
-  }
 }
 
 async function requestDelete(resource) {
