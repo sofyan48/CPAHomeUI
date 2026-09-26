@@ -59,6 +59,7 @@ export interface UserServerInfo {
 
 export interface UserApiKey {
   id?: number
+  display_name?: string | null
   api_key: string
   channels: number[]
   model_groups: number[]

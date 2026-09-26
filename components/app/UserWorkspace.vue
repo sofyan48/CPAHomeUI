@@ -116,17 +116,34 @@
         </div>
         <UButton icon="i-tabler-plus" @click="openKeyForm()">Create key</UButton>
       </div>
-      <section class="overflow-hidden rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)]">
-        <div class="overflow-x-auto">
-          <UTable :data="keys" :columns="keyColumns" :loading="keysLoading" class="user-keys-table min-w-[980px]">
-            <template #identity-cell="{ row }"><div class="flex min-w-0 items-center gap-3"><span class="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary-500/10 text-primary-500"><UIcon name="i-tabler-key" class="size-4" /></span><div class="min-w-0"><code class="block truncate text-xs font-semibold">{{ maskKey(keyRow(row).api_key) }}</code><p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ keyRow(row).id != null ? `Key #${keyRow(row).id}` : `Key ${keyRow(row).index + 1}` }}</p></div></div></template>
-
-            <template #updated_at-cell="{ row }"><div class="whitespace-nowrap"><p class="text-sm">{{ formatDate(keyRow(row).updated_at || keyRow(row).created_at) }}</p><p v-if="keyRow(row).created_at" class="mt-1 text-xs text-[var(--ui-text-muted)]">Created {{ formatDate(keyRow(row).created_at) }}</p></div></template>
-            <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><AdminTableAction action="copy" :label="`Copy ${maskKey(keyRow(row).api_key)}`" @click="copyKey(keyRow(row).api_key)" /><AdminTableAction action="edit" :label="`Edit ${maskKey(keyRow(row).api_key)}`" @click="openKeyForm(keyRow(row))" /><AdminTableAction action="delete" :label="`Delete ${maskKey(keyRow(row).api_key)}`" destructive @click="confirmKeyDelete(keyRow(row))" /></div></template>
-            <template #empty><div class="py-14 text-center"><UIcon name="i-tabler-key" class="mx-auto size-8 text-[var(--ui-text-dimmed)]" /><p class="mt-3 font-medium">No client access keys</p><p class="mt-1 text-sm text-[var(--ui-text-muted)]">Create a key to authenticate client requests.</p></div></template>
-          </UTable>
-        </div>
-      </section>
+      <div v-if="keysLoading && !keys.length" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <USkeleton v-for="index in 4" :key="index" class="h-44 rounded-xl" />
+      </div>
+      <div v-else-if="keys.length" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <UCard v-for="key in keys" :key="key.id ?? key.api_key" class="min-w-0" :ui="{ body: 'flex h-full flex-col p-4' }">
+          <div class="flex min-w-0 items-center gap-3">
+            <span class="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary-500/10 text-primary-500"><UIcon name="i-tabler-key" class="size-5" /></span>
+            <div class="min-w-0">
+              <p class="truncate text-sm font-semibold" :title="key.display_name || undefined">{{ key.display_name || 'Unnamed key' }}</p>
+              <code class="block truncate text-xs text-[var(--ui-text-muted)]" :title="maskKey(key.api_key)">{{ maskKey(key.api_key) }}</code>
+            </div>
+          </div>
+          <div class="mt-4 text-xs text-[var(--ui-text-muted)]">
+            <p>Updated {{ formatDate(key.updated_at || key.created_at) }}</p>
+            <p v-if="key.created_at" class="mt-1">Created {{ formatDate(key.created_at) }}</p>
+          </div>
+          <div class="mt-auto flex justify-end gap-1 pt-4">
+            <AdminTableAction action="copy" :label="`Copy ${maskKey(key.api_key)}`" @click="copyKey(key.api_key)" />
+            <AdminTableAction action="edit" :label="`Edit ${maskKey(key.api_key)}`" @click="openKeyForm(key)" />
+            <AdminTableAction action="delete" :label="`Delete ${maskKey(key.api_key)}`" destructive @click="confirmKeyDelete(key)" />
+          </div>
+        </UCard>
+      </div>
+      <div v-else class="rounded-xl border border-dashed border-[var(--ui-border)] py-14 text-center">
+        <UIcon name="i-tabler-key" class="mx-auto size-8 text-[var(--ui-text-dimmed)]" />
+        <p class="mt-3 font-medium">No client access keys</p>
+        <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Create a key to authenticate client requests.</p>
+      </div>
     </section>
 
     <section v-if="section === 'settings'" class="space-y-4" aria-labelledby="security-title">
@@ -210,11 +227,12 @@
       </div>
     </section>
 
-    <UModal v-model:open="keyFormOpen" :title="editingKey ? 'Edit client access key' : 'Create client access key'" :description="editingKey ? 'Enter a non-empty replacement key. Existing scopes remain unchanged.' : 'Leave the key blank to let Home generate a secure value.'">
+    <UModal v-model:open="keyFormOpen" :title="editingKey ? 'Edit client access key' : 'Create client access key'" :description="editingKey ? 'Rename the key or change its value. Existing scopes remain unchanged.' : 'Give the key a name; leave its value blank to generate a secure one.'">
       <template #body>
         <form class="space-y-5" @submit.prevent="saveKey">
           <UAlert v-if="keyFormError" color="error" variant="subtle" :description="keyFormError" />
-          <UFormField label="Key" :hint="editingKey ? 'Required when editing' : 'Optional; blank is generated by the server'">
+          <UFormField label="Name" hint="Optional; up to 128 characters"><UInput v-model="keyName" class="w-full" maxlength="128" placeholder="e.g. My laptop" /></UFormField>
+          <UFormField label="Key" :hint="editingKey ? 'Leave unchanged to keep this key' : 'Optional; blank is generated by the server'">
             <UInput v-model="keyValue" class="w-full font-mono" autocomplete="off" />
           </UFormField>
 
@@ -300,6 +318,7 @@ const keyFormError = ref('')
 const keySaving = ref(false)
 const editingKey = ref<WorkspaceKey | null>(null)
 const keyValue = ref('')
+const keyName = ref('')
 const keyDeleteOpen = ref(false)
 const keyDeleteTarget = ref<WorkspaceKey | null>(null)
 const keyDeleting = ref(false)
@@ -333,11 +352,7 @@ const chargeColumns = [
   { accessorKey: 'amount', header: 'Charge' },
   { accessorKey: 'balance_after', header: 'Balance after' }
 ]
-const keyColumns = [
-  { accessorKey: 'identity', header: 'Client key' },
-  { accessorKey: 'updated_at', header: 'Updated' },
-  { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head table-action-wide', td: 'table-action-cell table-action-wide' } } }
-]
+
 
 
 const billingMetrics = computed(() => [
@@ -371,7 +386,7 @@ function overviewValue(response: any): WorkspaceBillingOverview {
   return (response?.overview && typeof response.overview === 'object' ? response.overview : response || {}) as WorkspaceBillingOverview
 }
 function rowValue(row: any): BillingCharge { return row?.original ?? row }
-function keyRow(row: any): WorkspaceKey { return row?.original ?? row }
+
 function isObject(value: unknown): value is Record<string, any> { return Boolean(value) && typeof value === 'object' && !Array.isArray(value) }
 function keyEntries(payload: any): unknown[] {
   if (Array.isArray(payload)) return payload
@@ -399,6 +414,7 @@ function normalizeKey(entry: unknown, index: number): WorkspaceKey | null {
     id: Number.isInteger(numericID) && numericID > 0 ? numericID : null,
     index,
     api_key: value,
+    display_name: typeof source.display_name === 'string' ? source.display_name.trim() || null : null,
     channels: numericArray(source.channels),
     model_groups: numericArray(source.model_groups ?? source['model-groups']),
     created_at: typeof source.created_at === 'string' ? source.created_at : undefined,
@@ -497,6 +513,7 @@ function changeChargePage(delta: number) {
 function openKeyForm(key?: WorkspaceKey) {
   editingKey.value = key || null
   keyValue.value = key?.api_key || ''
+  keyName.value = key?.display_name || ''
   keyFormError.value = ''
   keyFormOpen.value = true
 }
@@ -508,6 +525,11 @@ function closePasskeyDelete() { passkeyDeleteOpen.value = false }
 async function saveKey() {
   keyFormError.value = ''
   const nextValue = keyValue.value.trim()
+  const nextName = keyName.value.trim()
+  if ([...nextName].length > 128) {
+    keyFormError.value = 'Name must be 128 characters or fewer.'
+    return
+  }
   if (editingKey.value && !nextValue) {
     keyFormError.value = 'A non-empty key is required when editing.'
     return
@@ -516,12 +538,12 @@ async function saveKey() {
   try {
     if (editingKey.value) {
       if (editingKey.value.id != null) {
-        await fetchAPI(`/api-keys/${editingKey.value.id}`, { method: 'PATCH', body: { api_key: nextValue } })
+        await fetchAPI(`/api-keys/${editingKey.value.id}`, { method: 'PATCH', body: { api_key: nextValue, display_name: nextName } })
       } else {
-        await fetchAPI('/api-keys', { method: 'PATCH', body: { old: editingKey.value.api_key, new_api_key: nextValue } })
+        await fetchAPI('/api-keys', { method: 'PATCH', body: { old: editingKey.value.api_key, new_api_key: nextValue, display_name: nextName } })
       }
     } else {
-      await fetchAPI('/api-keys', { method: 'POST', body: nextValue ? { api_key: nextValue } : {} })
+      await fetchAPI('/api-keys', { method: 'POST', body: { ...(nextValue ? { api_key: nextValue } : {}), display_name: nextName } })
     }
     keyFormOpen.value = false
     await loadKeys()
