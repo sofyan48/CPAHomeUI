@@ -46,7 +46,8 @@ export const useApi = () => {
     secure: import.meta.client && window.location.protocol === 'https:'
   })
 
-  const configuredOrigin = String(config.public.apiUrl || '').replace(/\/+$/, '')
+  // Home often listens on IPv4 only; localhost may resolve to ::1 in browsers.
+  const configuredOrigin = String(config.public.apiUrl || '').replace(/\/+$/, '').replace(/^(https?:\/\/)localhost(?=:\d+|\/|$)/i, (_, scheme: string) => `${scheme}127.0.0.1`)
   const configuredBase = `/${trimSlashes(String(config.public.apiBase || '/v0/management'))}`
 
   const apiBase = (() => {
@@ -56,7 +57,14 @@ export const useApi = () => {
   })()
 
   const resolveUrl = (path: string) => {
-    if (/^https?:\/\//i.test(path)) return path
+    if (/^https?:\/\//i.test(path)) {
+      const requested = new URL(path)
+      const allowed = new URL(apiBase, import.meta.client ? window.location.origin : 'http://localhost')
+      if (requested.origin !== allowed.origin || !requested.pathname.startsWith(`${allowed.pathname.replace(/\/$/, '')}/`)) {
+        throw new ManagementApiError('Refusing to send the management key outside the Management API', 400)
+      }
+      return path
+    }
     let cleanPath = path.trim()
     if (!cleanPath || cleanPath === '/') return apiBase
     if (cleanPath.startsWith(configuredBase)) cleanPath = cleanPath.slice(configuredBase.length)

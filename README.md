@@ -1,6 +1,8 @@
-# Nuxt Minimal Starter
+# CLIProxyHomeUI
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+The native Nuxt management UI runs separately from CLIProxyAPIHome. Open `http://localhost:3000/admin/upstream` for the new Upstream screen (Accounts and Providers tabs), or `/app/login` for the user workspace. Opening Home's `http://127.0.0.1:8327/management.html` still displays the legacy embedded UI; building this repository does **not** replace Home's embedded panel.
+
+Configure `NUXT_PUBLIC_API_URL` to reach Home from the browser (for example `http://127.0.0.1:8327`); `NUXT_PUBLIC_API_BASE` defaults to `/v0/management`. The management secret is entered at `/admin/connect`. Home must allow requests from the UI origin. Never put the management secret in a public runtime environment variable.
 
 ## Setup
 

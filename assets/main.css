@@ -1,2 +1,446 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+
+:root {
+  color-scheme: light;
+  --ui-radius: 0.3125rem;
+  --ui-container: 90rem;
+  --ui-bg: #f7f7f6;
+  --ui-bg-muted: #ececea;
+  --ui-bg-elevated: #fcfcfb;
+  --ui-bg-accented: #e5e5e2;
+  --ui-border: #d8d8d4;
+  --ui-border-muted: #e5e5e2;
+  --ui-text: #343431;
+  --ui-text-highlighted: #1c1c1a;
+  --ui-text-muted: #656560;
+  --ui-text-dimmed: #858580;
+  --ui-primary: #0f766e;
+  --ui-hover: rgba(28, 28, 26, 0.045);
+  --ui-active: rgba(28, 28, 26, 0.075);
+  --ui-selected: rgba(15, 118, 110, 0.09);
+  --ui-focus: rgba(15, 118, 110, 0.28);
+  --ui-overlay: rgba(255, 255, 255, 0.88);
+  --glass-card: rgba(255, 255, 255, 0.66);
+  --glass-card-strong: rgba(255, 255, 255, 0.80);
+  --glass-soft: rgba(247, 247, 246, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.72);
+  --glass-shadow: 0 12px 36px rgba(31, 38, 36, 0.07), 0 2px 8px rgba(31, 38, 36, 0.04);
+  --workbench-sidebar: rgba(244, 244, 242, 0.76);
+  --workbench-sidebar-accent: #e6e6e3;
+  --workbench-sidebar-border: #d8d8d4;
+  --workbench-sidebar-text: #292927;
+  --workbench-sidebar-muted: #6f6f69;
+  --workbench-sidebar-primary: #0f766e;
+}
+
+.dark {
+  color-scheme: dark;
+  --ui-bg: #171816;
+  --ui-bg-muted: #222320;
+  --ui-bg-elevated: #1e1f1d;
+  --ui-bg-accented: #2b2c29;
+  --ui-border: #363733;
+  --ui-border-muted: #2b2c29;
+  --ui-text: #d8d9d4;
+  --ui-text-highlighted: #f0f1ec;
+  --ui-text-muted: #a8aaa2;
+  --ui-text-dimmed: #898b84;
+  --ui-primary: #5db5aa;
+  --ui-hover: rgba(240, 241, 236, 0.055);
+  --ui-active: rgba(240, 241, 236, 0.09);
+  --ui-selected: rgba(93, 181, 170, 0.13);
+  --ui-focus: rgba(93, 181, 170, 0.34);
+  --ui-overlay: rgba(37, 38, 36, 0.92);
+  --glass-card: rgba(31, 33, 31, 0.68);
+  --glass-card-strong: rgba(31, 33, 31, 0.84);
+  --glass-soft: rgba(23, 24, 22, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 16px 42px rgba(0, 0, 0, 0.20), 0 2px 8px rgba(0, 0, 0, 0.16);
+  --workbench-sidebar: rgba(20, 21, 19, 0.78);
+  --workbench-sidebar-accent: #20211e;
+  --workbench-sidebar-border: #2b2c29;
+  --workbench-sidebar-text: #e4e5df;
+  --workbench-sidebar-muted: #979991;
+  --workbench-sidebar-primary: #5db5aa;
+}
+
+html {
+  font-family: "Inter Variable", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--ui-bg);
+}
+
+body {
+  min-width: 320px;
+  background:
+    radial-gradient(circle at 8% 8%, color-mix(in oklch, var(--ui-primary) 10%, transparent) 0, transparent 28rem),
+    radial-gradient(circle at 92% 16%, color-mix(in oklch, #7c8cff 7%, transparent) 0, transparent 30rem),
+    linear-gradient(145deg, color-mix(in oklch, var(--ui-bg-muted) 30%, var(--ui-bg)) 0%, var(--ui-bg) 48%, color-mix(in oklch, var(--ui-primary) 3%, var(--ui-bg)) 100%);
+  background-attachment: fixed;
+  color: var(--ui-text);
+  font-size: 0.875rem;
+}
+
+code,
+pre,
+.font-mono {
+  font-family: "IBM Plex Mono", "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* Legacy-inspired compact workbench primitives. */
+.workbench-shell {
+  background: transparent;
+}
+
+.workbench-sidebar {
+  background: var(--workbench-sidebar);
+  color: var(--workbench-sidebar-text);
+  border-color: var(--glass-border);
+  -webkit-backdrop-filter: blur(18px) saturate(115%);
+  backdrop-filter: blur(18px) saturate(115%);
+  box-shadow: 8px 0 32px rgba(20, 20, 18, 0.04);
+}
+
+.workbench-sidebar .workbench-brand,
+.workbench-sidebar .workbench-section-title {
+  color: var(--workbench-sidebar-text);
+}
+
+.workbench-sidebar .workbench-muted {
+  color: var(--workbench-sidebar-muted);
+}
+
+.workbench-sidebar nav a,
+.workbench-sidebar nav button {
+  min-height: 2rem;
+  border-radius: 0.375rem;
+  color: var(--workbench-sidebar-muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.workbench-sidebar nav a:hover,
+.workbench-sidebar nav button:hover {
+  color: var(--workbench-sidebar-text);
+  background: var(--workbench-sidebar-accent);
+}
+
+.workbench-sidebar nav a.router-link-active,
+.workbench-sidebar nav a[aria-current="page"] {
+  color: var(--workbench-sidebar-text);
+  background: color-mix(in oklch, var(--workbench-sidebar-primary) 11%, transparent);
+  font-weight: 600;
+}
+
+.workbench-sidebar nav a.router-link-active svg,
+.workbench-sidebar nav a[aria-current="page"] svg {
+  color: var(--workbench-sidebar-primary);
+}
+
+.workbench-header {
+  background: var(--glass-soft);
+  border-color: var(--glass-border);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  backdrop-filter: blur(16px) saturate(120%);
+  box-shadow: 0 1px 0 color-mix(in oklch, var(--glass-border) 80%, transparent), 0 8px 24px rgba(20, 20, 18, 0.035);
+}
+
+.workbench-main {
+  width: 100%;
+  max-width: 90rem;
+  margin-inline: auto;
+  padding: 1rem;
+}
+
+@media (min-width: 640px) {
+  .workbench-main { padding: 1.25rem; }
+}
+
+@media (min-width: 1024px) {
+  .workbench-main { padding: 1.5rem 1.75rem; }
+}
+
+/* Pull large page spacing back to legacy workbench density. */
+.workbench-main > * > .space-y-6,
+.workbench-main > .space-y-6 {
+  row-gap: 1rem;
+}
+
+.workbench-main > * > .space-y-7,
+.workbench-main > .space-y-7 {
+  row-gap: 1.125rem;
+}
+
+.workbench-main h1 {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  letter-spacing: -0.015em;
+}
+
+.workbench-main h2,
+.workbench-main h3 {
+  letter-spacing: -0.005em;
+}
+
+/* Modern compact surfaces: restrained radius, crisp borders, minimal elevation. */
+.workbench-main .rounded-md { border-radius: 0.3125rem; }
+.workbench-main .rounded-lg { border-radius: 0.4375rem; }
+.workbench-main .rounded-xl,
+.workbench-main .rounded-2xl,
+.workbench-main .rounded-3xl { border-radius: 0.625rem; }
+
+.workbench-main input:not([type="checkbox"]):not([type="radio"]),
+.workbench-main textarea,
+.workbench-main select,
+.workbench-main button:not([role="switch"]):not([role="checkbox"]) {
+  border-radius: 0.3125rem;
+  transition: border-color 120ms ease, background-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
+}
+
+.workbench-main :is(button, a, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 2px;
+}
+
+[role="dialog"] {
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 0.875rem !important;
+  background: var(--ui-overlay) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(120%);
+  backdrop-filter: blur(20px) saturate(120%);
+  box-shadow: 0 20px 60px rgba(20, 20, 18, 0.16), 0 8px 24px rgba(20, 20, 18, 0.10) !important;
+}
+
+[role="dialog"] input:not([type="checkbox"]):not([type="radio"]),
+[role="dialog"] textarea,
+[role="dialog"] select,
+[role="dialog"] button:not([role="switch"]):not([role="checkbox"]) {
+  border-radius: 0.3125rem;
+}
+
+/* Glass cards: translucent enough to separate surfaces, solid enough for readability. */
+.workbench-main [data-slot="root"]:has(> [data-slot="body"]) {
+  background: var(--glass-card);
+  border-color: var(--glass-border);
+  -webkit-backdrop-filter: blur(14px) saturate(112%);
+  backdrop-filter: blur(14px) saturate(112%);
+  box-shadow: var(--glass-shadow);
+}
+
+.workbench-main [data-slot="header"] {
+  padding: 0.6875rem 0.875rem;
+}
+
+.workbench-main [data-slot="body"] {
+  padding: 0.875rem;
+}
+
+.workbench-main [data-slot="footer"] {
+  padding: 0.6875rem 0.875rem;
+}
+
+/* Keep modal bodies comfortable while making page panels compact. */
+[role="dialog"] [data-slot="body"] {
+  padding: 1.25rem;
+}
+
+/* Compact forms and controls. */
+.workbench-main input:not([type="checkbox"]):not([type="radio"]),
+.workbench-main select,
+.workbench-main button:not([role="switch"]):not([role="checkbox"]) {
+  min-height: 2rem;
+}
+
+/* Reka checkbox geometry: one consistent compact control across tables and forms. */
+.workbench-main button[role="checkbox"],
+[role="dialog"] button[role="checkbox"] {
+  width: 0.875rem !important;
+  min-width: 0.875rem !important;
+  height: 0.875rem !important;
+  min-height: 0.875rem !important;
+  padding: 0 !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+}
+
+/* Reka switch geometry: long, thin track with a compact thumb. */
+.workbench-main button[role="switch"],
+[role="dialog"] button[role="switch"] {
+  width: 2rem !important;
+  min-width: 2rem !important;
+  height: 0.875rem !important;
+  min-height: 0.875rem !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 9999px !important;
+  box-shadow: none !important;
+}
+
+.workbench-main button[role="switch"] > span,
+[role="dialog"] button[role="switch"] > span {
+  width: 0.625rem !important;
+  height: 0.625rem !important;
+  min-width: 0.625rem !important;
+  min-height: 0.625rem !important;
+  border-radius: 9999px !important;
+  box-shadow: none !important;
+}
+
+.workbench-main textarea { border-radius: 0.4375rem; }
+.workbench-main fieldset { border-radius: 0.4375rem; }
+
+/* Separate information cards from data panels. */
+.workbench-main [data-slot="root"]:has(> [data-slot="body"]) {
+  border-color: var(--glass-border);
+  border-radius: 0.625rem;
+  background: var(--glass-card);
+}
+
+/* Card containing a table: one quiet, cohesive data panel. */
+.workbench-main [data-slot="root"]:has(> [data-slot="body"] table) {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 0.5rem !important;
+  background: var(--glass-card-strong);
+  box-shadow: none !important;
+}
+
+
+.workbench-main [data-slot="root"]:has(> [data-slot="body"] table) > [data-slot="header"] {
+  min-height: 3.5rem;
+  padding: 0.875rem 1rem 0.75rem;
+  border-bottom: 1px solid var(--glass-border);
+  background: color-mix(in oklch, var(--glass-card-strong) 92%, var(--ui-bg-muted));
+}
+
+.workbench-main [data-slot="root"]:has(> [data-slot="body"] table) > [data-slot="body"] {
+  padding: 0;
+  background: var(--glass-card-strong);
+}
+
+.workbench-main [data-slot="root"]:has(> [data-slot="body"] table) > [data-slot="footer"] {
+  border-top: 1px solid var(--ui-border);
+  background: color-mix(in oklch, var(--ui-bg-muted) 28%, var(--ui-bg-elevated));
+}
+
+/* UTable itself is only a viewport, never another card. */
+.workbench-main [data-slot="root"]:has(> table) {
+  overflow: auto;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 0.5rem !important;
+  background: var(--glass-card-strong);
+  box-shadow: none !important;
+}
+
+.workbench-main [data-slot="body"] > [data-slot="root"]:has(> table) {
+  margin: 0;
+}
+
+.workbench-main table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.8125rem;
+}
+
+.workbench-main [data-slot="root"]:has(table) .overflow-x-auto {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ui-border) transparent;
+}
+
+.workbench-main td:last-child button {
+  min-height: 1.75rem;
+}
+
+.workbench-main table + [class*="border-t"],
+.workbench-main [data-slot="body"] > [class*="border-t"]:last-child {
+  background: color-mix(in oklch, var(--ui-bg-muted) 24%, var(--ui-bg-elevated));
+}
+
+/* Data surfaces stay flat; information cards retain a subtle lift. */
+.workbench-main [data-slot="root"]:has(table),
+.workbench-main [data-slot="root"]:has(> [data-slot="body"] table) {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+[data-reka-popper-content-wrapper] > *,
+[role="menu"],
+[role="listbox"] {
+  border: 1px solid var(--ui-border) !important;
+  border-radius: 0.625rem !important;
+  background: var(--ui-overlay) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(118%);
+  backdrop-filter: blur(18px) saturate(118%);
+  box-shadow: 0 14px 38px rgba(20, 20, 18, 0.12), 0 4px 12px rgba(20, 20, 18, 0.07) !important;
+}
+
+[data-highlighted] {
+  outline: none;
+  background: var(--ui-hover) !important;
+  color: var(--ui-text-highlighted) !important;
+}
+
+[data-state="checked"],
+[data-state="on"] {
+  color: var(--ui-primary);
+}
+
+[data-state="open"] > svg,
+button[aria-expanded="true"] > svg {
+  color: var(--ui-primary);
+}
+
+::selection {
+  background: var(--ui-selected);
+  color: var(--ui-text-highlighted);
+}
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .workbench-sidebar,
+  .workbench-header,
+  .workbench-main [data-slot="root"]:has(> [data-slot="body"]),
+  [role="dialog"],
+  [data-reka-popper-content-wrapper] > * {
+    background: var(--ui-bg-elevated) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.workbench-page-tabs {
+  display: flex;
+  gap: 0.25rem;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--ui-border-muted);
+}
+
+.workbench-page-tabs > button {
+  border-radius: 0 !important;
+  border-bottom: 2px solid transparent;
+}
+
+.workbench-page-tabs > button[aria-selected="true"] {
+  border-bottom-color: var(--ui-primary);
+  background: transparent !important;
+  color: var(--ui-text-highlighted);
+}
+
+.workbench-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.625rem;
+  padding: 0.75rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 0.4375rem;
+  background: var(--ui-bg-elevated);
+}
