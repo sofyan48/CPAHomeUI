@@ -6,7 +6,7 @@
         <h1 class="mt-3 text-4xl font-bold tracking-tight text-[var(--ui-text-highlighted)]">Find the right model</h1>
         <p class="mt-2 max-w-2xl text-[var(--ui-text-muted)]">Browse the complete public catalog. Sign in to see which models your API keys can use, plus pricing and observed availability.</p>
       </div>
-      <UButton color="neutral" variant="outline" icon="i-heroicons-arrow-path" :loading="loading || capabilityLoading" @click="refreshCatalog">Refresh</UButton>
+      <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading || capabilityLoading" @click="refreshCatalog">Refresh</UButton>
     </section>
 
     <UAlert v-if="capabilityError && !catalogEnabled" color="error" variant="subtle" title="Unable to check model catalog support" :description="capabilityError" />
@@ -21,7 +21,7 @@
       </div>
 
       <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <UInput v-model="search" aria-label="Search models" icon="i-heroicons-magnifying-glass" placeholder="Search models, providers, or capabilities..." />
+        <UInput v-model="search" aria-label="Search models" icon="i-tabler-search" placeholder="Search models, providers, or capabilities..." />
         <USelectMenu :model-value="provider || noFilterValue" @update:model-value="provider = $event === noFilterValue ? '' : String($event)" aria-label="Provider" :items="providerOptions" value-key="value" label-key="label" :search-input="{ placeholder: 'Search providers...' }" />
         <USelect :model-value="inputModality || noFilterValue" @update:model-value="inputModality = $event === noFilterValue ? '' : String($event)" aria-label="Input modality" :items="modalityOptions" value-key="value" label-key="label" />
         <USelect v-model="sortBy" aria-label="Sort models" :items="sortOptions" value-key="value" label-key="label" />

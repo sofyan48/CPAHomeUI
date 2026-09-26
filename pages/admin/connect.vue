@@ -6,7 +6,7 @@
       <section class="hidden lg:block">
         <div class="mb-8 inline-flex items-center gap-3 rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)]/80 px-4 py-3 shadow-sm backdrop-blur">
           <div class="flex size-10 items-center justify-center rounded-xl bg-primary-500 text-white shadow-lg shadow-primary-500/25">
-            <UIcon name="i-heroicons-command-line" class="size-6" />
+            <UIcon name="i-tabler-terminal-2" class="size-6" />
           </div>
           <div>
             <p class="font-semibold text-[var(--ui-text-highlighted)]">CLIProxyAPI Home</p>
@@ -34,7 +34,7 @@
         <template #header>
           <div class="text-center">
             <div class="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl bg-primary-500 text-white lg:hidden">
-              <UIcon name="i-heroicons-command-line" class="size-7" />
+              <UIcon name="i-tabler-terminal-2" class="size-7" />
             </div>
             <h2 class="text-2xl font-bold text-[var(--ui-text-highlighted)]">Management sign in</h2>
             <p class="mt-2 text-sm text-[var(--ui-text-muted)]">Validate your management key against this Home instance.</p>
@@ -46,7 +46,7 @@
             v-if="errorMessage"
             color="error"
             variant="subtle"
-            icon="i-heroicons-exclamation-triangle"
+            icon="i-tabler-alert-triangle"
             title="Connection failed"
             :description="errorMessage"
           />
@@ -59,7 +59,7 @@
               type="password"
               autocomplete="current-password"
               placeholder="Enter the management secret"
-              icon="i-heroicons-key"
+              icon="i-tabler-key"
               size="lg"
               class="w-full"
               :disabled="loading"
@@ -88,10 +88,10 @@ import { useCapabilities as useManagementCapabilities } from '~/composables/useC
 definePageMeta({ layout: false })
 
 const highlights = [
-  { icon: 'i-heroicons-signal', title: 'Live topology', description: 'See Home and CPA health at a glance.' },
-  { icon: 'i-heroicons-chart-bar-square', title: 'Usage insights', description: 'Track requests, tokens, and failures.' },
-  { icon: 'i-heroicons-shield-check', title: 'Access control', description: 'Manage users, keys, and routing scopes.' },
-  { icon: 'i-heroicons-wrench-screwdriver', title: 'Operations', description: 'Inspect capabilities, nodes, and logs.' }
+  { icon: 'i-tabler-antenna-bars-5', title: 'Live topology', description: 'See Home and CPA health at a glance.' },
+  { icon: 'i-tabler-chart-bar', title: 'Usage insights', description: 'Track requests, tokens, and failures.' },
+  { icon: 'i-tabler-shield-check', title: 'Access control', description: 'Manage users, keys, and routing scopes.' },
+  { icon: 'i-tabler-tools', title: 'Operations', description: 'Inspect capabilities, nodes, and logs.' }
 ]
 
 const router = useRouter()

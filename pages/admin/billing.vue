@@ -6,7 +6,7 @@
         <p class="mt-1 max-w-3xl text-sm text-[var(--ui-text-muted)]">Review Home multi-user billing: charge facts, balance records, and model prices.</p>
       </div>
       <div class="flex flex-wrap gap-2">
-        <UButton color="neutral" variant="outline" icon="i-heroicons-arrow-path" :loading="loading" @click="refreshCurrent">
+        <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" @click="refreshCurrent">
           Refresh
         </UButton>
 
@@ -17,7 +17,7 @@
       v-if="pageError"
       color="error"
       variant="subtle"
-      icon="i-heroicons-exclamation-triangle"
+      icon="i-tabler-alert-triangle"
       title="Billing request failed"
       :description="pageError"
     />
@@ -184,7 +184,7 @@
           <template #model-cell="{ row }"><div class="min-w-40"><p class="font-medium">{{ rowValue(row).model || 'Unknown' }}</p><p class="text-xs text-[var(--ui-text-muted)]">{{ rowValue(row).provider || 'Unknown' }}<span v-if="rowValue(row).original_model && rowValue(row).original_model !== rowValue(row).model"> · from {{ rowValue(row).original_model }}</span></p></div></template>
           <template #tokens-cell="{ row }"><div class="min-w-28 text-sm tabular-nums"><p>{{ formatNumber(totalChargeTokens(rowValue(row))) }} total</p><p class="text-xs text-[var(--ui-text-muted)]">{{ formatNumber(rowValue(row).input_tokens) }} in / {{ formatNumber(rowValue(row).output_tokens) }} out</p></div></template>
           <template #amount-cell="{ row }"><div class="text-right"><p class="font-mono font-semibold">{{ formatCredits(rowValue(row).amount) }}</p><p class="text-xs text-[var(--ui-text-muted)]">Bal. {{ formatCredits(rowValue(row).balance_after) }}</p></div></template>
-          <template #actions-cell="{ row }"><div class="flex justify-end"><UButton size="sm" color="neutral" variant="ghost" icon="i-heroicons-eye" @click="openChargeDetail(rowValue(row))">Details</UButton></div></template>
+          <template #actions-cell="{ row }"><div class="flex justify-end"><UButton size="sm" color="neutral" variant="ghost" icon="i-tabler-eye" @click="openChargeDetail(rowValue(row))">Details</UButton></div></template>
           <template #empty><div class="py-12 text-center text-sm text-[var(--ui-text-muted)]">No charges match these filters.</div></template>
         </UTable>
         <template v-if="chargesTotal > 0" #footer><div class="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"><p class="text-sm text-[var(--ui-text-muted)]">{{ chargeRangeStart }}–{{ chargeRangeEnd }} / {{ formatNumber(chargesTotal) }} total</p><div class="flex flex-wrap items-center gap-2"><span class="text-xs text-[var(--ui-text-muted)]">Rows per page</span><USelect v-model="chargePageSize" :items="pageSizeOptions" value-key="value" label-key="label" class="w-24" @update:model-value="changePageSize('charges')" /><UButton size="sm" color="neutral" variant="outline" :disabled="chargePage <= 1 || chargesLoading" @click="changeChargePage(-1)">Previous</UButton><UButton size="sm" color="neutral" variant="outline" :disabled="chargePage >= chargePageCount || chargesLoading" @click="changeChargePage(1)">Next</UButton></div></div></template>
@@ -210,7 +210,7 @@
           <template #amount-cell="{ row }"><span class="font-mono font-semibold" :class="rowValue(row).type === 'recharge' ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'">{{ rowValue(row).type === 'recharge' ? '+' : '−' }}{{ formatCredits(rowValue(row).amount) }}</span></template>
           <template #balance-cell="{ row }"><div class="text-sm tabular-nums"><p>{{ formatCredits(rowValue(row).balance_after) }}</p><p class="text-xs text-[var(--ui-text-muted)]">from {{ formatCredits(rowValue(row).balance_before) }}</p></div></template>
           <template #note-cell="{ row }"><div class="max-w-72"><p class="truncate text-sm">{{ rowValue(row).note || '—' }}</p><p class="text-xs text-[var(--ui-text-muted)]">{{ rowValue(row).operator || '—' }}</p></div></template>
-                    <template #actions-cell="{ row }"><UButton size="sm" color="neutral" variant="ghost" icon="i-heroicons-eye" @click="openBalanceDetail(rowValue(row))">Details</UButton></template>
+                    <template #actions-cell="{ row }"><UButton size="sm" color="neutral" variant="ghost" icon="i-tabler-eye" @click="openBalanceDetail(rowValue(row))">Details</UButton></template>
           <template #empty><div class="py-12 text-center text-sm text-[var(--ui-text-muted)]">No balance records match these filters.</div></template>
         </UTable>
         <template #footer><PaginationFooter :page="balancePage" :total="balancesTotal" :page-size="balancePageSize" :loading="balancesLoading" @previous="changeBalancePage(-1)" @next="changeBalancePage(1)" /></template>
@@ -218,22 +218,22 @@
     </template>
 
     <template v-else-if="activeSection === 'prices'">
-      <section class="overflow-hidden rounded-lg border border-blue-500/30 bg-blue-500/5" aria-labelledby="tier-policy-title"><div class="flex flex-wrap items-center justify-between gap-4 p-4"><div class="flex items-start gap-3"><span class="flex size-9 items-center justify-center rounded-md bg-blue-500/10 text-blue-500"><UIcon name="i-heroicons-arrows-right-left" class="size-5" /></span><div><div class="flex flex-wrap items-center gap-2"><h2 id="tier-policy-title" class="font-semibold">Runtime billing context</h2><UBadge color="info" variant="subtle">Global</UBadge><UBadge v-if="priceSchemaVersion >= 2" color="success" variant="subtle">Tier and context pricing supported</UBadge></div><p class="mt-1 text-sm text-[var(--ui-text-muted)]">{{ settingsForm.service_tier_source === 'response' ? 'Rules match the provider response tier, falling back to the requested tier when absent.' : 'Rules match the service tier requested by the client.' }}</p><p v-if="priceSchemaVersion < 2" class="mt-1 text-xs text-[var(--ui-text-muted)]">This Home instance supports flat-price compatibility rules only.</p></div></div><UButton v-if="priceSchemaVersion >= 2" color="neutral" variant="outline" icon="i-heroicons-cog-6-tooth" @click="openMatchingSettings">Configure matching</UButton></div></section>
+      <section class="overflow-hidden rounded-lg border border-blue-500/30 bg-blue-500/5" aria-labelledby="tier-policy-title"><div class="flex flex-wrap items-center justify-between gap-4 p-4"><div class="flex items-start gap-3"><span class="flex size-9 items-center justify-center rounded-md bg-blue-500/10 text-blue-500"><UIcon name="i-tabler-arrows-exchange" class="size-5" /></span><div><div class="flex flex-wrap items-center gap-2"><h2 id="tier-policy-title" class="font-semibold">Runtime billing context</h2><UBadge color="info" variant="subtle">Global</UBadge><UBadge v-if="priceSchemaVersion >= 2" color="success" variant="subtle">Tier and context pricing supported</UBadge></div><p class="mt-1 text-sm text-[var(--ui-text-muted)]">{{ settingsForm.service_tier_source === 'response' ? 'Rules match the provider response tier, falling back to the requested tier when absent.' : 'Rules match the service tier requested by the client.' }}</p><p v-if="priceSchemaVersion < 2" class="mt-1 text-xs text-[var(--ui-text-muted)]">This Home instance supports flat-price compatibility rules only.</p></div></div><UButton v-if="priceSchemaVersion >= 2" color="neutral" variant="outline" icon="i-tabler-settings" @click="openMatchingSettings">Configure matching</UButton></div></section>
       <BillingPriceImport :providers="providerSearchOptions" :models="modelSearchOptions" @applied="loadPrices" />
       <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div class="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <UFormField label="Search"><UInput v-model="priceFilters.search" icon="i-heroicons-magnifying-glass" placeholder="Search model ID or provider" class="w-full" /></UFormField>
+          <UFormField label="Search"><UInput v-model="priceFilters.search" icon="i-tabler-search" placeholder="Search model ID or provider" class="w-full" /></UFormField>
           <UFormField label="Status"><USelect :model-value="priceFilters.enabled || allOptionValue" @update:model-value="priceFilters.enabled = $event === allOptionValue ? '' : $event" :items="enabledOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
                     <UFormField label="Service tier"><UInputMenu v-model="priceFilters.service_tier" :items="priceTierOptions" create-item @create="priceFilters.service_tier = $event.trim()" placeholder="All tiers" class="w-full" /></UFormField>
                     <UFormField label="Source"><USelect :model-value="priceFilters.source || allOptionValue" @update:model-value="priceFilters.source = $event === allOptionValue ? '' : $event" :items="priceSourceOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
         </div>
-        <div class="flex gap-2"><UButton v-if="hasPriceFilters" color="neutral" variant="ghost" @click="clearPriceFilters">Clear filters</UButton><UButton color="primary" icon="i-heroicons-plus" @click="openPriceForm()">New price</UButton></div>
+        <div class="flex gap-2"><UButton v-if="hasPriceFilters" color="neutral" variant="ghost" @click="clearPriceFilters">Clear filters</UButton><UButton color="primary" icon="i-tabler-plus" @click="openPriceForm()">New price</UButton></div>
       </div>
 
       <AdminDataPanel title="Model prices" :description="`${filteredPriceRules.length} rules`">
         <UTable :columns="priceColumns" :data="filteredPriceRules" :loading="pricesLoading" class="min-w-[1260px]">
           <template #provider-cell="{ row }"><span class="font-medium">{{ rowValue(row).provider }}</span></template>
-          <template #model-cell="{ row }"><div class="flex min-w-52 items-center gap-1"><span class="truncate font-mono">{{ rowValue(row).model }}</span><UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-clipboard-document" aria-label="Copy model ID" @click="copyText(rowValue(row).model)" /></div></template>
+          <template #model-cell="{ row }"><div class="flex min-w-52 items-center gap-1"><span class="truncate font-mono">{{ rowValue(row).model }}</span><UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-clipboard" aria-label="Copy model ID" @click="copyText(rowValue(row).model)" /></div></template>
           <template #scope-cell="{ row }"><div class="min-w-36"><template v-if="priceSchemaVersion >= 2"><UBadge color="neutral" variant="subtle">{{ rowValue(row).service_tier || '*' }}</UBadge><p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ contextBandLabel(rowValue(row).min_input_tokens) }}</p></template><span v-else class="text-xs text-[var(--ui-text-muted)]">Flat price compatibility rule</span></div></template>
           <template #input-cell="{ row }"><span class="font-mono text-xs">{{ formatCredits(rowValue(row).input_price_per_million) }}</span></template>
           <template #output-cell="{ row }"><span class="font-mono text-xs">{{ formatCredits(rowValue(row).output_price_per_million) }}</span></template>
@@ -243,7 +243,7 @@
           <template #source-cell="{ row }"><UBadge color="neutral" variant="subtle">{{ rowValue(row).source || 'manual' }}</UBadge></template>
           <template #state-cell="{ row }"><div class="flex items-center gap-2"><USwitch :model-value="Boolean(rowValue(row).enabled)" :loading="togglingPrice === rowValue(row).id" @update:model-value="togglePriceEnabled(rowValue(row), $event)" /><UBadge :color="rowValue(row).enabled ? 'success' : 'neutral'" variant="subtle">{{ rowValue(row).enabled ? 'Enabled' : 'Disabled' }}</UBadge></div></template>
           <template #updated-cell="{ row }"><span class="whitespace-nowrap text-xs text-[var(--ui-text-muted)]">{{ formatDateTime(rowValue(row).updated_at) }}</span></template>
-          <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><UButton size="sm" color="neutral" variant="ghost" icon="i-heroicons-pencil-square" @click="openPriceForm(rowValue(row))" /><UButton size="sm" color="error" variant="ghost" icon="i-heroicons-trash" @click="confirmDeletePrice(rowValue(row))" /></div></template>
+          <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><UButton size="sm" color="neutral" variant="ghost" icon="i-tabler-pencil" @click="openPriceForm(rowValue(row))" /><UButton size="sm" color="error" variant="ghost" icon="i-tabler-trash" @click="confirmDeletePrice(rowValue(row))" /></div></template>
           <template #empty><div class="py-12 text-center text-sm text-[var(--ui-text-muted)]">No model price rules match these filters.</div></template>
         </UTable>
       </AdminDataPanel>
@@ -258,7 +258,7 @@
     <UModal v-model:open="adjustmentOpen" :title="adjustmentForm.type === 'recharge' ? 'Recharge user balance' : 'Deduct user balance'" description="Creates an immutable billing balance record.">
       <template #body>
         <form class="space-y-5" @submit.prevent="submitBalanceAdjustment">
-          <UAlert v-if="modalError" color="error" variant="subtle" icon="i-heroicons-exclamation-circle" title="Could not adjust balance" :description="modalError" />
+          <UAlert v-if="modalError" color="error" variant="subtle" icon="i-tabler-alert-circle" title="Could not adjust balance" :description="modalError" />
           <div class="grid grid-cols-2 gap-2">
             <UButton type="button" :color="adjustmentForm.type === 'recharge' ? 'success' : 'neutral'" :variant="adjustmentForm.type === 'recharge' ? 'soft' : 'outline'" @click="adjustmentForm.type = 'recharge'">Recharge</UButton>
             <UButton type="button" :color="adjustmentForm.type === 'deduct' ? 'warning' : 'neutral'" :variant="adjustmentForm.type === 'deduct' ? 'soft' : 'outline'" @click="adjustmentForm.type = 'deduct'">Deduct</UButton>
@@ -276,11 +276,11 @@
     <UModal v-model:open="priceFormOpen" :title="editingPrice ? 'Edit model price' : 'New model price'" description="Prices affect future charges only; historical charges retain their snapshots." :ui="{ content: 'sm:max-w-4xl' }">
       <template #body>
         <form class="space-y-5" @submit.prevent="submitPrice">
-          <UAlert v-if="modalError" color="error" variant="subtle" icon="i-heroicons-exclamation-circle" title="Could not save price rule" :description="modalError" />
+          <UAlert v-if="modalError" color="error" variant="subtle" icon="i-tabler-alert-circle" title="Could not save price rule" :description="modalError" />
           <UAlert v-if="modelCandidatesError" color="warning" variant="subtle" title="Model candidates unavailable" :description="modelCandidatesError" />
           <fieldset class="space-y-3 rounded-lg border border-[var(--ui-border)] p-4">
             <div class="flex flex-wrap items-center justify-between gap-2"><div><legend class="font-medium">Models</legend><p class="text-xs text-[var(--ui-text-muted)]">{{ editingPrice ? 'Select one provider/model identity.' : 'Select one or more models. The same pricing is created sequentially for each selection.' }}</p></div><UButton v-if="selectedPriceCandidates.length" type="button" size="sm" color="neutral" variant="ghost" @click="clearPriceCandidateSelection">Clear selection</UButton></div>
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-center"><UInput v-model="modelCandidateSearch" icon="i-heroicons-magnifying-glass" placeholder="Search model ID, label, description, provider, owner, or type..." class="w-full" /><UCheckbox v-model="availableModelsOnly" label="Available only" class="shrink-0" /></div>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center"><UInput v-model="modelCandidateSearch" icon="i-tabler-search" placeholder="Search model ID, label, description, provider, owner, or type..." class="w-full" /><UCheckbox v-model="availableModelsOnly" label="Available only" class="shrink-0" /></div>
             <div v-if="selectedPriceCandidates.length" class="flex flex-wrap gap-2"><UBadge v-for="candidate in selectedPriceCandidates" :key="candidate.key" color="primary" variant="subtle">{{ candidate.provider }} / {{ candidate.model }}</UBadge></div>
             <div class="max-h-72 overflow-y-auto rounded-md border border-[var(--ui-border)]">
               <button v-for="candidate in filteredModelCandidates" :key="candidate.key" type="button" class="flex w-full items-start gap-3 border-b border-[var(--ui-border)] px-3 py-2.5 text-left last:border-b-0 hover:bg-[var(--ui-bg-elevated)]" :class="isPriceCandidateSelected(candidate) ? 'bg-[var(--ui-primary)]/10' : ''" @click="togglePriceCandidate(candidate)">
@@ -310,7 +310,7 @@
     </UModal>
 
     <UModal v-model:open="deletePriceOpen" title="Delete price rule" description="Historical charges keep their stored price snapshots.">
-      <template #body><div class="space-y-5"><UAlert color="warning" variant="subtle" icon="i-heroicons-exclamation-triangle" title="This rule will no longer match future usage" :description="deletePriceTarget ? `${deletePriceTarget.provider} / ${deletePriceTarget.model} / ${deletePriceTarget.service_tier || '*'}` : ''" /><div class="flex justify-end gap-3"><UButton color="neutral" variant="ghost" @click="deletePriceOpen = false">Cancel</UButton><UButton color="error" :loading="priceDeleting" @click="deletePrice">Delete rule</UButton></div></div></template>
+      <template #body><div class="space-y-5"><UAlert color="warning" variant="subtle" icon="i-tabler-alert-triangle" title="This rule will no longer match future usage" :description="deletePriceTarget ? `${deletePriceTarget.provider} / ${deletePriceTarget.model} / ${deletePriceTarget.service_tier || '*'}` : ''" /><div class="flex justify-end gap-3"><UButton color="neutral" variant="ghost" @click="deletePriceOpen = false">Cancel</UButton><UButton color="error" :loading="priceDeleting" @click="deletePrice">Delete rule</UButton></div></div></template>
     </UModal>
 
     <UModal v-model:open="balanceDetailOpen" title="Balance record details" description="Immutable ledger adjustment and balance transition.">
@@ -359,10 +359,10 @@ function datesForRange(preset) {
 const defaultRange = () => datesForRange('7d')
 
 const sections = [
-  { label: 'Overview', value: 'overview', icon: 'i-heroicons-chart-pie' },
-  { label: 'Charge records', value: 'charges', icon: 'i-heroicons-receipt-percent' },
-  { label: 'Balance records', value: 'balances', icon: 'i-heroicons-banknotes' },
-  { label: 'Model prices', value: 'prices', icon: 'i-heroicons-tag' }
+  { label: 'Overview', value: 'overview', icon: 'i-tabler-chart-pie' },
+  { label: 'Charge records', value: 'charges', icon: 'i-tabler-receipt-tax' },
+  { label: 'Balance records', value: 'balances', icon: 'i-tabler-cash-banknote' },
+  { label: 'Model prices', value: 'prices', icon: 'i-tabler-tag' }
 ]
 const activeSection = ref('overview')
 const pageError = ref('')
@@ -671,7 +671,7 @@ async function submitBalanceAdjustment() {
     await fetchAPI(`/billing/balance-records/${adjustmentForm.value.type}`, { method: 'POST', body: { user_id: userID, amount, note: adjustmentForm.value.note.trim() } })
     adjustmentOpen.value = false
     await Promise.all([loadOverview(), loadBalances(), loadUsers()])
-    toast.add({ title: adjustmentForm.value.type === 'recharge' ? 'Balance recharged' : 'Balance deducted', color: 'success', icon: 'i-heroicons-check-circle' })
+    toast.add({ title: adjustmentForm.value.type === 'recharge' ? 'Balance recharged' : 'Balance deducted', color: 'success', icon: 'i-tabler-circle-check' })
   } catch (error) { modalError.value = errorMessage(error, 'Could not adjust the balance.') } finally { adjustmentSaving.value = false }
 }
 
@@ -709,7 +709,7 @@ async function submitPrice() {
     if (editingPrice.value) {
       const candidate = selected[0]
       await fetchAPI(`/billing/model-prices/${encodeURIComponent(editingPrice.value.id)}`, { method: 'PATCH', body: { ...body, provider: candidate.provider, model: candidate.model } })
-      toast.add({ title: 'Price rule updated', color: 'success', icon: 'i-heroicons-check-circle' })
+      toast.add({ title: 'Price rule updated', color: 'success', icon: 'i-tabler-circle-check' })
     } else {
       const failed = []
       for (const candidate of selected) {
@@ -717,7 +717,7 @@ async function submitPrice() {
         catch (error) { failed.push(`${candidate.provider}/${candidate.model}: ${errorMessage(error, 'Could not create rule.')}`) }
       }
       if (failed.length) { modalError.value = `${failed.length} price rule(s) failed. ${failed.join(' | ')}`; await loadPrices(); return }
-      toast.add({ title: `${selected.length} price rule(s) created`, color: 'success', icon: 'i-heroicons-check-circle' })
+      toast.add({ title: `${selected.length} price rule(s) created`, color: 'success', icon: 'i-tabler-circle-check' })
     }
     priceFormOpen.value = false
     await loadPrices()
@@ -728,7 +728,7 @@ async function copyText(value) { try { await navigator.clipboard.writeText(Strin
 function contextBandLabel(value) { const amount = Number(value || 0); return amount === 0 ? 'Base context' : amount === 272001 ? '>272K input' : `From ${formatNumber(amount)} input tokens` }
 async function togglePriceEnabled(rule, enabled) { togglingPrice.value = rule.id; try { await fetchAPI(`/billing/model-prices/${encodeURIComponent(rule.id)}`, { method: 'PATCH', body: { enabled } }); await loadPrices() } catch (error) { pageError.value = errorMessage(error, 'Could not update the price rule.') } finally { togglingPrice.value = '' } }
 function confirmDeletePrice(rule) { deletePriceTarget.value = rule; deletePriceOpen.value = true }
-async function deletePrice() { if (!deletePriceTarget.value) return; priceDeleting.value = true; try { await fetchAPI(`/billing/model-prices/${encodeURIComponent(deletePriceTarget.value.id)}`, { method: 'DELETE' }); deletePriceOpen.value = false; await loadPrices(); toast.add({ title: 'Price rule deleted', color: 'success', icon: 'i-heroicons-check-circle' }) } catch (error) { pageError.value = errorMessage(error, 'Could not delete the price rule.') } finally { priceDeleting.value = false } }
+async function deletePrice() { if (!deletePriceTarget.value) return; priceDeleting.value = true; try { await fetchAPI(`/billing/model-prices/${encodeURIComponent(deletePriceTarget.value.id)}`, { method: 'DELETE' }); deletePriceOpen.value = false; await loadPrices(); toast.add({ title: 'Price rule deleted', color: 'success', icon: 'i-tabler-circle-check' }) } catch (error) { pageError.value = errorMessage(error, 'Could not delete the price rule.') } finally { priceDeleting.value = false } }
 async function saveSettings() {
   if (settingsForm.value.service_tier_source === 'response' && savedTierSource.value !== 'response') {
     await loadDiagnostics()
@@ -750,7 +750,7 @@ async function persistSettings() {
     savedTierSource.value = saved.service_tier_source
     tierConfirmOpen.value = false
     matchingSettingsOpen.value = false
-    toast.add({ title: 'Tier matching saved', color: 'success', icon: 'i-heroicons-check-circle' })
+    toast.add({ title: 'Tier matching saved', color: 'success', icon: 'i-tabler-circle-check' })
   } catch (error) { pageError.value = errorMessage(error, 'Could not save tier matching.') }
   finally { settingsSaving.value = false }
 }

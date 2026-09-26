@@ -4,7 +4,7 @@
       v-if="loading"
       color="neutral"
       variant="subtle"
-      icon="i-heroicons-arrow-path"
+      icon="i-tabler-refresh"
       title="Loading configuration"
       description="Configuration fields will be available when the current values finish loading."
     />
@@ -23,7 +23,7 @@
             color="neutral"
             variant="ghost"
             size="sm"
-            trailing-icon="i-heroicons-arrow-right"
+            trailing-icon="i-tabler-arrow-right"
             @click="emit('navigate', section.navigateTo)"
           >
             Manage
@@ -92,7 +92,7 @@
                 type="button"
                 color="neutral"
                 variant="outline"
-                :icon="secretVisible ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
+                :icon="secretVisible ? 'i-tabler-eye-off' : 'i-tabler-eye'"
                 :aria-label="secretVisible ? 'Hide secret key' : 'Reveal secret key'"
                 :disabled="loading"
                 @click="toggleSecretVisibility"

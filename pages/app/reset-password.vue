@@ -7,7 +7,7 @@
       </template>
 
       <div v-if="complete" class="space-y-5 text-center">
-        <UIcon name="i-heroicons-check-circle" class="mx-auto size-14 text-emerald-500" />
+        <UIcon name="i-tabler-circle-check" class="mx-auto size-14 text-emerald-500" />
         <p>Your password has been reset. Your previous sessions have been signed out, so you can now sign in with the new password.</p>
         <UAlert color="info" variant="subtle" title="Your other security methods are unchanged" description="TOTP and registered passkeys remain enabled and will still apply when you sign in." />
         <UButton to="/app/login" color="primary" block>Sign in</UButton>

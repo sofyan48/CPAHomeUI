@@ -4,7 +4,7 @@
       v-if="pageError"
       color="error"
       variant="subtle"
-      icon="i-heroicons-exclamation-triangle"
+      icon="i-tabler-alert-triangle"
       title="Unable to load provider entries"
       :description="pageError"
     />
@@ -32,7 +32,7 @@
               </span>
               </span>
             </span>
-            <UIcon v-if="categoryStats[category.value]?.disabled" name="i-heroicons-exclamation-triangle" class="size-4 shrink-0 text-[var(--ui-warning)]" :aria-label="`${categoryStats[category.value].disabled} disabled entries`" />
+            <UIcon v-if="categoryStats[category.value]?.disabled" name="i-tabler-alert-triangle" class="size-4 shrink-0 text-[var(--ui-warning)]" :aria-label="`${categoryStats[category.value].disabled} disabled entries`" />
             <span v-else class="shrink-0 rounded-md border border-[var(--ui-border)] px-2 py-1 text-xs" :aria-label="categoryStats[category.value] ? `${categoryStats[category.value].total} entries` : 'Counts unavailable'">{{ categoryStats[category.value]?.total ?? '—' }}</span>
           </button>
         </nav>
@@ -56,8 +56,8 @@
             <h2 class="hidden items-center gap-2 text-base font-semibold text-[var(--ui-text-highlighted)] xl:flex"><span class="flex size-5 items-center justify-center rounded border border-[var(--ui-border)] text-[9px]" aria-hidden="true">{{ selectedProvider.mark }}</span>{{ selectedProvider.label }} <span class="font-mono text-xs font-normal text-[var(--ui-text-muted)]">/{{ selectedProviderRoute }}</span></h2>
           </div>
           <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <UInput v-model="providerSearch" icon="i-heroicons-magnifying-glass" placeholder="Filter entries..." class="w-full sm:w-72" />
-            <UButton color="primary" icon="i-heroicons-plus" :disabled="pending || !!pageError" @click="openProviderCreate">New provider</UButton>
+            <UInput v-model="providerSearch" icon="i-tabler-search" placeholder="Filter entries..." class="w-full sm:w-72" />
+            <UButton color="primary" icon="i-tabler-plus" :disabled="pending || !!pageError" @click="openProviderCreate">New provider</UButton>
           </div>
         </div>
 
@@ -76,16 +76,16 @@
           <template #models-cell="{ row }"><span class="text-xs text-[var(--ui-text-muted)]">{{ Array.isArray(rowValue(row).models) ? rowValue(row).models.length : 0 }} models · {{ Object.keys(rowValue(row).headers || {}).length }} headers</span></template>
           <template #status-cell="{ row }">
             <span class="inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium" :class="rowValue(row).disabled ? 'border-[var(--ui-warning)] text-[var(--ui-warning)]' : 'border-[var(--ui-primary)] text-[var(--ui-primary)]'">
-              <UIcon :name="rowValue(row).disabled ? 'i-heroicons-exclamation-triangle' : 'i-heroicons-check-circle'" class="size-3" />{{ rowValue(row).disabled ? 'Disabled' : 'Active' }}
+              <UIcon :name="rowValue(row).disabled ? 'i-tabler-alert-triangle' : 'i-tabler-circle-check'" class="size-3" />{{ rowValue(row).disabled ? 'Disabled' : 'Active' }}
             </span>
           </template>
 
-          <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><UButton color="neutral" variant="ghost" size="xs" icon="i-heroicons-eye" aria-label="View provider" title="View" @click="openProviderDetail(rowValue(row))" /><UButton color="neutral" variant="ghost" size="xs" icon="i-heroicons-pencil-square" aria-label="Edit provider" title="Edit" @click="openProviderEdit(rowValue(row))" /><UButton color="neutral" variant="ghost" size="xs" icon="i-heroicons-document-duplicate" aria-label="Duplicate provider" title="Duplicate" @click="duplicateProvider(rowValue(row))" /><UButton color="error" variant="ghost" size="xs" icon="i-heroicons-trash" aria-label="Delete provider" title="Delete" @click="confirmProviderDelete(rowValue(row))" /></div></template>
+          <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><UButton color="neutral" variant="ghost" size="xs" icon="i-tabler-eye" aria-label="View provider" title="View" @click="openProviderDetail(rowValue(row))" /><UButton color="neutral" variant="ghost" size="xs" icon="i-tabler-pencil" aria-label="Edit provider" title="Edit" @click="openProviderEdit(rowValue(row))" /><UButton color="neutral" variant="ghost" size="xs" icon="i-tabler-files" aria-label="Duplicate provider" title="Duplicate" @click="duplicateProvider(rowValue(row))" /><UButton color="error" variant="ghost" size="xs" icon="i-tabler-trash" aria-label="Delete provider" title="Delete" @click="confirmProviderDelete(rowValue(row))" /></div></template>
 
           <template #empty>
             <div class="flex flex-col items-center justify-center px-6 py-14 text-center">
               <div class="mb-3 rounded-full bg-[var(--ui-bg-elevated)] p-3">
-                <UIcon name="i-heroicons-server-stack" class="size-6 text-[var(--ui-text-muted)]" />
+                <UIcon name="i-tabler-server-2" class="size-6 text-[var(--ui-text-muted)]" />
               </div>
               <p class="font-medium">{{ pending ? 'Loading provider entries…' : pageError ? 'Provider entries unavailable' : providerSearch ? 'No matching entries' : `No ${selectedProvider.label} entries` }}</p>
               <p class="mt-1 text-sm text-[var(--ui-text-muted)]">{{ pageError ? 'Check the error above and retry.' : providerSearch ? 'Try a different search.' : 'Add an entry to configure this provider category.' }}</p>
@@ -110,7 +110,7 @@
           <details class="rounded-md border border-[var(--ui-border)] px-3 py-2.5 text-sm"><summary class="cursor-pointer font-medium">Additional metadata</summary>
             <dl class="mt-3 grid gap-x-4 gap-y-3 sm:grid-cols-2"><div v-for="field in providerMetadataFields" :key="field.label"><dt class="text-xs text-[var(--ui-text-muted)]">{{ field.label }}</dt><dd class="mt-1 break-words font-mono text-xs">{{ field.value }}</dd></div></dl>
           </details>
-          <div class="flex justify-end gap-2 border-t border-[var(--ui-border)] pt-4"><UButton color="neutral" variant="ghost" @click="providerEditorOpen = false">Close</UButton><UButton color="primary" icon="i-heroicons-pencil-square" @click="openProviderEdit(editingProviderEntry)">Edit</UButton></div>
+          <div class="flex justify-end gap-2 border-t border-[var(--ui-border)] pt-4"><UButton color="neutral" variant="ghost" @click="providerEditorOpen = false">Close</UButton><UButton color="primary" icon="i-tabler-pencil" @click="openProviderEdit(editingProviderEntry)">Edit</UButton></div>
         </div>
         <form v-else class="max-h-[75vh] space-y-4 overflow-y-auto pr-1" @submit.prevent="saveProviderEntry">
           <div class="flex gap-2">
@@ -121,7 +121,7 @@
             v-if="editorError"
             color="error"
             variant="subtle"
-            icon="i-heroicons-exclamation-circle"
+            icon="i-tabler-alert-circle"
             title="Invalid provider entry"
             :description="editorError"
           />
@@ -151,23 +151,23 @@
               <UCheckbox v-model="providerForm['experimental-cch-signing']" label="Experimental CCH signing for cloaked requests" />
             </fieldset>
             <fieldset v-if="isCompat" class="space-y-3 rounded-lg border border-[var(--ui-border)] p-4">
-              <div class="flex items-center justify-between gap-2"><legend class="font-medium">API key entries</legend><UButton type="button" size="sm" color="neutral" variant="outline" icon="i-heroicons-plus" @click="providerForm['api-key-entries'].push({ 'api-key': '', 'proxy-url': '' })">Add key</UButton></div>
+              <div class="flex items-center justify-between gap-2"><legend class="font-medium">API key entries</legend><UButton type="button" size="sm" color="neutral" variant="outline" icon="i-tabler-plus" @click="providerForm['api-key-entries'].push({ 'api-key': '', 'proxy-url': '' })">Add key</UButton></div>
               <p class="text-xs text-[var(--ui-text-muted)]">Each key can use its own proxy. Leave a saved key blank to keep it.</p>
               <div v-for="(key, index) in providerForm['api-key-entries']" :key="index" class="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
                 <UFormField label="API key"><UInput v-model="key['api-key']" type="password" autocomplete="new-password" class="w-full" /></UFormField>
                 <UFormField label="Proxy URL"><UInput v-model="key['proxy-url']" type="url" class="w-full" /></UFormField>
-                <UButton type="button" color="error" variant="ghost" icon="i-heroicons-trash" aria-label="Remove API key" class="self-end" @click="providerForm['api-key-entries'].splice(index, 1)" />
+                <UButton type="button" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove API key" class="self-end" @click="providerForm['api-key-entries'].splice(index, 1)" />
               </div>
             </fieldset>
             <fieldset class="space-y-3 rounded-lg border border-[var(--ui-border)] p-4">
-              <div class="flex items-center justify-between gap-2"><legend class="font-medium">Models</legend><UButton type="button" size="sm" color="neutral" variant="outline" icon="i-heroicons-plus" @click="addProviderModel">Add model</UButton></div>
+              <div class="flex items-center justify-between gap-2"><legend class="font-medium">Models</legend><UButton type="button" size="sm" color="neutral" variant="outline" icon="i-tabler-plus" @click="addProviderModel">Add model</UButton></div>
               <p class="text-xs text-[var(--ui-text-muted)]">Map an upstream model name to a client-facing alias. Additional model properties are retained.</p>
               <div v-if="supportsDiscovery" class="space-y-3 rounded-lg border border-[var(--ui-border)] p-3">
                 <p class="text-sm font-medium">Discover upstream models</p>
-                <UAlert color="warning" variant="subtle" icon="i-heroicons-exclamation-triangle" title="Server-side request (SSRF risk)" description="Home will request the exact URL you enter, including private network addresses. Only use a trusted upstream URL. A saved provider credential is required; its token is sent to that URL. Do not include secrets in the URL." />
+                <UAlert color="warning" variant="subtle" icon="i-tabler-alert-triangle" title="Server-side request (SSRF risk)" description="Home will request the exact URL you enter, including private network addresses. Only use a trusted upstream URL. A saved provider credential is required; its token is sent to that URL. Do not include secrets in the URL." />
                 <UFormField label="Models endpoint URL" hint="Derived from the base URL by default. Only request trusted HTTP(S) endpoints."><UInput v-model="discoveryURL" type="url" class="w-full" :placeholder="defaultDiscoveryURL || 'https://upstream.example/v1/models'" @update:model-value="clearDiscoveryResults" /></UFormField>
                 <p class="text-xs text-[var(--ui-text-muted)]">{{ discoveryHint }}</p>
-                <UButton type="button" color="neutral" variant="outline" icon="i-heroicons-magnifying-glass" :loading="discovering" :disabled="!discoveryAuthIndex || (!discoveryURL.trim() && !defaultDiscoveryURL)" @click="discoverModels">Fetch models</UButton>
+                <UButton type="button" color="neutral" variant="outline" icon="i-tabler-search" :loading="discovering" :disabled="!discoveryAuthIndex || (!discoveryURL.trim() && !defaultDiscoveryURL)" @click="discoverModels">Fetch models</UButton>
                 <UAlert v-if="discoveryError" color="error" variant="subtle" title="Discovery failed" :description="discoveryError" />
                 <div v-if="discoveredModels.length" class="space-y-2">
                   <div class="flex flex-wrap items-center justify-between gap-2">
@@ -182,7 +182,7 @@
                 </div>
               </div>
               <div v-for="(model, index) in providerForm.models" :key="index" class="space-y-2 rounded-lg bg-[var(--ui-bg-muted)] p-3">
-                <div class="grid gap-2 sm:grid-cols-2"><UFormField label="Upstream model"><UInputMenu v-model="model.name" :items="modelSuggestions" create-item class="w-full" placeholder="Search catalog or enter model" @create="model.name = $event.trim()" /></UFormField><UFormField label="Alias"><UInput v-model="model.alias" class="w-full" /></UFormField><UFormField label="Display name"><UInput v-model="model['display-name']" class="w-full" /></UFormField><div class="flex items-end justify-between gap-2"><UCheckbox v-model="model['force-mapping']" label="Force response mapping" /><UButton type="button" color="error" variant="ghost" icon="i-heroicons-trash" aria-label="Remove model" @click="removeProviderModel(index)" /></div></div>
+                <div class="grid gap-2 sm:grid-cols-2"><UFormField label="Upstream model"><UInputMenu v-model="model.name" :items="modelSuggestions" create-item class="w-full" placeholder="Search catalog or enter model" @create="model.name = $event.trim()" /></UFormField><UFormField label="Alias"><UInput v-model="model.alias" class="w-full" /></UFormField><UFormField label="Display name"><UInput v-model="model['display-name']" class="w-full" /></UFormField><div class="flex items-end justify-between gap-2"><UCheckbox v-model="model['force-mapping']" label="Force response mapping" /><UButton type="button" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove model" @click="removeProviderModel(index)" /></div></div>
               </div>
             </fieldset>
             <UFormField v-if="!isCompat" label="Excluded models" hint="One model ID per line"><UTextarea v-model="excludedModelsText" :rows="3" class="w-full" /></UFormField>
@@ -193,7 +193,7 @@
             <UTextarea v-model="providerJSON" :rows="18" autoresize class="w-full font-mono text-xs" spellcheck="false" />
           </UFormField>
           <div class="flex items-center justify-between border-t border-[var(--ui-border)] pt-4">
-            <UButton v-if="editorView === 'json'" color="neutral" variant="ghost" type="button" icon="i-heroicons-code-bracket" @click="formatProviderJSON">Format JSON</UButton>
+            <UButton v-if="editorView === 'json'" color="neutral" variant="ghost" type="button" icon="i-tabler-code" @click="formatProviderJSON">Format JSON</UButton>
             <span v-else class="text-xs text-[var(--ui-text-muted)]">Credentials are not shown in the entry list.</span>
             <div class="flex gap-3">
               <UButton color="neutral" variant="ghost" type="button" @click="providerEditorOpen = false">Cancel</UButton>
@@ -210,7 +210,7 @@
           <UAlert
             color="warning"
             variant="subtle"
-            icon="i-heroicons-exclamation-triangle"
+            icon="i-tabler-alert-triangle"
             title="Requests using this provider entry may stop working"
             :description="deleteDescription"
           />
@@ -711,7 +711,7 @@ async function saveProviderEntry() {
     await refreshWorkspace()
     void refreshCategoryStats()
     emit('changed')
-    toast.add({ title: providerEditorMode.value === 'create' ? 'Provider entry created' : 'Provider entry updated', color: 'success', icon: 'i-heroicons-check-circle' })
+    toast.add({ title: providerEditorMode.value === 'create' ? 'Provider entry created' : 'Provider entry updated', color: 'success', icon: 'i-tabler-circle-check' })
   } catch (error) {
     editorError.value = 'Could not save the provider entry. Check the fields and try again.'
   } finally {
@@ -736,7 +736,7 @@ async function performDelete() {
     await refreshWorkspace()
     void refreshCategoryStats()
     emit('changed')
-    toast.add({ title: 'Provider entry deleted', color: 'success', icon: 'i-heroicons-check-circle' })
+    toast.add({ title: 'Provider entry deleted', color: 'success', icon: 'i-tabler-circle-check' })
   } catch (error) {
     toast.add({ title: 'Delete failed', description: 'Could not delete the provider entry.', color: 'error' })
   } finally {

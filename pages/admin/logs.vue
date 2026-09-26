@@ -9,20 +9,20 @@
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <USelect v-model="pageSize" :items="pageSizeOptions" value-key="value" label-key="label" class="w-32" aria-label="Page size" @update:model-value="resetPages" />
-        <UButton :color="liveRefresh ? 'primary' : 'neutral'" variant="outline" icon="i-heroicons-arrow-path" @click="liveRefresh = !liveRefresh">
+        <UButton :color="liveRefresh ? 'primary' : 'neutral'" variant="outline" icon="i-tabler-refresh" @click="liveRefresh = !liveRefresh">
           Live refresh {{ liveRefresh ? 'on' : 'off' }}
         </UButton>
         <UButton
           v-if="activeView === 'application'"
           color="error"
           variant="outline"
-          icon="i-heroicons-trash"
+          icon="i-tabler-trash"
           :disabled="applicationTotal === 0"
           @click="clearConfirmOpen = true"
         >
           Clear application logs
         </UButton>
-        <UButton color="neutral" variant="outline" icon="i-heroicons-arrow-path" :loading="loading" @click="refreshActive">
+        <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" @click="refreshActive">
           Refresh
         </UButton>
       </div>
@@ -53,7 +53,7 @@
       <form class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6" @submit.prevent="applyFilters">
         <template v-if="activeView === 'error-logs'">
           <UFormField label="Search filename" class="md:col-span-2">
-            <UInput v-model="errorLogSearch" placeholder="e.g. error-2026-05-27.log" icon="i-heroicons-magnifying-glass-20-solid" class="w-full" />
+            <UInput v-model="errorLogSearch" placeholder="e.g. error-2026-05-27.log" icon="i-tabler-search" class="w-full" />
           </UFormField>
         </template>
         <template v-else-if="activeView !== 'application'">
@@ -76,7 +76,7 @@
             <UInput
               v-model="requestFilters.search"
               :placeholder="activeView === 'events' ? 'Request, user, key, node...' : 'Request ID, file, provider...'"
-              icon="i-heroicons-magnifying-glass-20-solid"
+              icon="i-tabler-search"
               class="w-full"
             />
           </UFormField>
@@ -124,7 +124,7 @@
 
       <UTable :columns="eventColumns" :data="events" :loading="eventsLoading">
         <template #empty>
-          <EmptyState icon="i-heroicons-list-bullet" message="No request events match these filters." />
+          <EmptyState icon="i-tabler-list" message="No request events match these filters." />
         </template>
         <template #timestamp-cell="{ row }">
           <div class="min-w-36">
@@ -165,12 +165,12 @@
               size="sm"
               color="neutral"
               variant="ghost"
-              icon="i-heroicons-arrow-down-tray"
+              icon="i-tabler-download"
               title="Download request log"
               :loading="downloadingId === rowValue(row).request_id"
               @click="downloadRequestLog(rowValue(row).related.request_log.download_url, rowValue(row).request_id)"
             />
-            <UButton size="sm" color="neutral" variant="ghost" icon="i-heroicons-eye" @click="openEventDetail(rowValue(row))">
+            <UButton size="sm" color="neutral" variant="ghost" icon="i-tabler-eye" @click="openEventDetail(rowValue(row))">
               Details
             </UButton>
           </div>
@@ -190,7 +190,7 @@
 
       <UTable :columns="requestLogColumns" :data="requestLogs" :loading="requestLogsLoading">
         <template #empty>
-          <EmptyState icon="i-heroicons-document-magnifying-glass" message="No request log files match these filters." />
+          <EmptyState icon="i-tabler-file-search" message="No request log files match these filters." />
         </template>
         <template #timestamp-cell="{ row }">
           <div class="min-w-36">
@@ -224,7 +224,7 @@
               size="sm"
               color="neutral"
               variant="outline"
-              icon="i-heroicons-arrow-down-tray"
+              icon="i-tabler-download"
               :disabled="!rowValue(row).download_url"
               :loading="downloadingId === rowValue(row).request_id"
               @click="downloadRequestLog(rowValue(row).download_url, rowValue(row).request_id)"
@@ -246,11 +246,11 @@
         </div>
       </template>
       <UTable :columns="errorLogColumns" :data="pagedErrorLogs" :loading="errorLogsLoading">
-        <template #empty><EmptyState icon="i-heroicons-document-magnifying-glass" message="No local request error logs match this filename." /></template>
+        <template #empty><EmptyState icon="i-tabler-file-search" message="No local request error logs match this filename." /></template>
         <template #modified-cell="{ row }">{{ formatDateTime(Number(rowValue(row).modified) * 1000) }}</template>
         <template #size-cell="{ row }">{{ formatBytes(rowValue(row).size) }}</template>
         <template #actions-cell="{ row }">
-          <UButton size="sm" color="neutral" variant="outline" icon="i-heroicons-arrow-down-tray"
+          <UButton size="sm" color="neutral" variant="outline" icon="i-tabler-download"
             :disabled="!validErrorLogName(rowValue(row).name)" :loading="downloadingId === rowValue(row).name"
             @click="downloadErrorLog(rowValue(row).name)">Download</UButton>
         </template>
@@ -268,7 +268,7 @@
 
       <UTable :columns="applicationColumns" :data="applicationLogs" :loading="applicationLoading">
         <template #empty>
-          <EmptyState icon="i-heroicons-command-line" message="No application logs match these filters." />
+          <EmptyState icon="i-tabler-terminal-2" message="No application logs match these filters." />
         </template>
         <template #timestamp-cell="{ row }">
           <div class="min-w-36">
@@ -294,7 +294,7 @@
           <span class="font-mono text-xs">{{ rowValue(row).request_id || '—' }}</span>
         </template>
         <template #actions-cell="{ row }">
-          <UButton size="sm" color="neutral" variant="ghost" icon="i-heroicons-eye" @click="selectedApplicationLog = rowValue(row)">Details</UButton>
+          <UButton size="sm" color="neutral" variant="ghost" icon="i-tabler-eye" @click="selectedApplicationLog = rowValue(row)">Details</UButton>
         </template>
       </UTable>
 
@@ -344,7 +344,7 @@
             <UButton
               color="neutral"
               variant="outline"
-              icon="i-heroicons-arrow-down-tray"
+              icon="i-tabler-download"
               :loading="downloadingId === selectedEvent.event.request_id"
               @click="downloadRequestLog(selectedEvent.event.related.request_log.download_url, selectedEvent.event.request_id)"
             >
@@ -379,7 +379,7 @@
           </div>
           <div class="flex justify-end gap-3">
             <UButton color="neutral" variant="ghost" @click="clearConfirmOpen = false">Cancel</UButton>
-            <UButton color="error" icon="i-heroicons-trash" :loading="clearingLogs" @click="clearApplicationLogs">
+            <UButton color="error" icon="i-tabler-trash" :loading="clearingLogs" @click="clearApplicationLogs">
               Clear all logs
             </UButton>
           </div>
@@ -431,10 +431,10 @@ const defaultApplicationFilters = () => ({
 })
 
 const views = [
-  { value: 'events', label: 'Request events', icon: 'i-heroicons-list-bullet' },
-  { value: 'request-logs', label: 'Request log files', icon: 'i-heroicons-document-arrow-down' },
-  { value: 'error-logs', label: 'Request error logs', icon: 'i-heroicons-exclamation-triangle' },
-  { value: 'application', label: 'Application logs', icon: 'i-heroicons-command-line' },
+  { value: 'events', label: 'Request events', icon: 'i-tabler-list' },
+  { value: 'request-logs', label: 'Request log files', icon: 'i-tabler-file-download' },
+  { value: 'error-logs', label: 'Request error logs', icon: 'i-tabler-alert-triangle' },
+  { value: 'application', label: 'Application logs', icon: 'i-tabler-terminal-2' },
 ]
 
 const activeView = ref('events')

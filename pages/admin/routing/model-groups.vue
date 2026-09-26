@@ -7,14 +7,14 @@
           Define reusable model allowlists. Each model may optionally be restricted to selected channel groups.
         </p>
       </div>
-      <UButton color="primary" icon="i-heroicons-plus" @click="openCreateGroup">New model group</UButton>
+      <UButton color="primary" icon="i-tabler-plus" @click="openCreateGroup">New model group</UButton>
     </div>
 
-    <UAlert v-if="pageError" color="error" variant="subtle" icon="i-heroicons-exclamation-triangle" title="Unable to load model groups" :description="pageError" />
+    <UAlert v-if="pageError" color="error" variant="subtle" icon="i-tabler-alert-triangle" title="Unable to load model groups" :description="pageError" />
 
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <UInput v-model="search" icon="i-heroicons-magnifying-glass" placeholder="Search model groups..." class="w-full sm:max-w-sm" />
-      <UButton color="neutral" variant="outline" icon="i-heroicons-arrow-path" :loading="pending" @click="refreshWorkspace">Refresh</UButton>
+      <UInput v-model="search" icon="i-tabler-search" placeholder="Search model groups..." class="w-full sm:max-w-sm" />
+      <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="pending" @click="refreshWorkspace">Refresh</UButton>
     </div>
 
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.6fr)]">
@@ -37,8 +37,8 @@
           </template>
           <template #actions-cell="{ row }">
             <div class="flex justify-end gap-1">
-              <UButton color="neutral" variant="ghost" size="sm" icon="i-heroicons-pencil-square" aria-label="Edit group" @click.stop="openEditGroup(rowValue(row))" />
-              <UButton color="error" variant="ghost" size="sm" icon="i-heroicons-trash" aria-label="Delete group" @click.stop="confirmDelete('group', rowValue(row))" />
+              <UButton color="neutral" variant="ghost" size="sm" icon="i-tabler-pencil" aria-label="Edit group" @click.stop="openEditGroup(rowValue(row))" />
+              <UButton color="error" variant="ghost" size="sm" icon="i-tabler-trash" aria-label="Delete group" @click.stop="confirmDelete('group', rowValue(row))" />
             </div>
           </template>
           <template #empty>
@@ -57,7 +57,7 @@
               </div>
               <p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ details.length }} model binding{{ details.length === 1 ? '' : 's' }}</p>
             </div>
-            <UButton color="primary" variant="soft" icon="i-heroicons-plus" @click="openCreateDetail">Add model</UButton>
+            <UButton color="primary" variant="soft" icon="i-tabler-plus" @click="openCreateDetail">Add model</UButton>
           </div>
         </template>
         <UTable :columns="detailColumns" :data="details" :loading="detailsPending">
@@ -75,13 +75,13 @@
           </template>
           <template #actions-cell="{ row }">
             <div class="flex justify-end gap-1">
-              <UButton color="neutral" variant="ghost" size="sm" icon="i-heroicons-pencil-square" aria-label="Edit model binding" @click="openEditDetail(rowValue(row))" />
-              <UButton color="error" variant="ghost" size="sm" icon="i-heroicons-trash" aria-label="Delete model binding" @click="confirmDelete('detail', rowValue(row))" />
+              <UButton color="neutral" variant="ghost" size="sm" icon="i-tabler-pencil" aria-label="Edit model binding" @click="openEditDetail(rowValue(row))" />
+              <UButton color="error" variant="ghost" size="sm" icon="i-tabler-trash" aria-label="Delete model binding" @click="confirmDelete('detail', rowValue(row))" />
             </div>
           </template>
           <template #empty>
             <div class="flex flex-col items-center px-6 py-14 text-center">
-              <UIcon name="i-heroicons-cube-transparent" class="mb-3 size-8 text-[var(--ui-text-muted)]" />
+              <UIcon name="i-tabler-box" class="mb-3 size-8 text-[var(--ui-text-muted)]" />
               <p class="font-medium">No models in this group</p>
               <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Add a model and optionally select channel groups allowed to execute it.</p>
             </div>
@@ -90,7 +90,7 @@
       </UCard>
 
       <div v-else class="flex min-h-64 flex-col items-center justify-center rounded-xl border border-dashed border-[var(--ui-border)] bg-[var(--ui-bg-muted)] p-8 text-center">
-        <UIcon name="i-heroicons-rectangle-group" class="mb-3 size-8 text-[var(--ui-text-muted)]" />
+        <UIcon name="i-tabler-layout-grid" class="mb-3 size-8 text-[var(--ui-text-muted)]" />
         <p class="font-medium">Select a model group</p>
         <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Its model bindings will appear here.</p>
       </div>
@@ -99,7 +99,7 @@
     <UModal v-model:open="groupFormOpen" :title="editingGroup ? 'Edit model group' : 'Create model group'" description="Model groups are reusable model allowlists for client API keys.">
       <template #body>
         <form class="space-y-5" @submit.prevent="submitGroup">
-          <UAlert v-if="formError" color="error" variant="subtle" icon="i-heroicons-exclamation-circle" title="Could not save model group" :description="formError" />
+          <UAlert v-if="formError" color="error" variant="subtle" icon="i-tabler-alert-circle" title="Could not save model group" :description="formError" />
           <UFormField label="Group name" required>
             <UInput v-model="groupForm.group_name" class="w-full" placeholder="premium-models" autofocus />
           </UFormField>
@@ -123,7 +123,7 @@
     <UModal v-model:open="detailFormOpen" :title="editingDetail ? 'Edit model binding' : 'Add model binding'" description="Choose a catalog model or enter a canonical model ID manually.">
       <template #body>
         <form class="space-y-5" @submit.prevent="submitDetail">
-          <UAlert v-if="formError" color="error" variant="subtle" icon="i-heroicons-exclamation-circle" title="Could not save model binding" :description="formError" />
+          <UAlert v-if="formError" color="error" variant="subtle" icon="i-tabler-alert-circle" title="Could not save model binding" :description="formError" />
           <UFormField label="Catalog model" hint="Optional">
             <USelectMenu v-model="detailForm.suggested_model_id" :items="modelOptions" value-key="value" label-key="label" class="w-full" placeholder="Search catalog models..." :search-input="{ placeholder: 'Search model ID or name...' }" @update:model-value="applyModelSuggestion" />
           </UFormField>
@@ -156,7 +156,7 @@
     <UModal v-model:open="deleteOpen" :title="deleteKind === 'group' ? 'Delete model group' : 'Remove model binding'" description="This action soft-deletes the selected record.">
       <template #body>
         <div class="space-y-5">
-          <UAlert color="warning" variant="subtle" icon="i-heroicons-exclamation-triangle" title="Confirm deletion" :description="deleteDescription" />
+          <UAlert color="warning" variant="subtle" icon="i-tabler-alert-triangle" title="Confirm deletion" :description="deleteDescription" />
           <div class="flex justify-end gap-3">
             <UButton color="neutral" variant="ghost" @click="deleteOpen = false">Cancel</UButton>
             <UButton color="error" :loading="deleting" @click="performDelete">Delete</UButton>
@@ -285,7 +285,7 @@ async function submitGroup() {
     if (!editingGroup.value && response?.model_group?.id) selectedGroupId.value = response.model_group.id
     if (editingGroup.value?.id === selectedGroupId.value) selectedGroupId.value = editingGroup.value.id
     if (selectedGroupId.value) await refreshDetails()
-    toast.add({ title: editingGroup.value ? 'Model group updated' : 'Model group created', color: 'success', icon: 'i-heroicons-check-circle' })
+    toast.add({ title: editingGroup.value ? 'Model group updated' : 'Model group created', color: 'success', icon: 'i-tabler-circle-check' })
   } catch (error) {
     formError.value = errorMessage(error)
   } finally {
@@ -328,7 +328,7 @@ async function submitDetail() {
     })
     detailFormOpen.value = false
     await refreshDetails()
-    toast.add({ title: editingDetail.value ? 'Model binding updated' : 'Model added', color: 'success', icon: 'i-heroicons-check-circle' })
+    toast.add({ title: editingDetail.value ? 'Model binding updated' : 'Model added', color: 'success', icon: 'i-tabler-circle-check' })
   } catch (error) {
     formError.value = errorMessage(error)
   } finally {
@@ -352,9 +352,9 @@ async function performDelete() {
     } else {
       await refreshDetails()
     }
-    toast.add({ title: deleteKind.value === 'group' ? 'Model group deleted' : 'Model binding removed', color: 'success', icon: 'i-heroicons-check-circle' })
+    toast.add({ title: deleteKind.value === 'group' ? 'Model group deleted' : 'Model binding removed', color: 'success', icon: 'i-tabler-circle-check' })
   } catch (error) {
-    toast.add({ title: 'Delete failed', description: errorMessage(error), color: 'error', icon: 'i-heroicons-exclamation-circle' })
+    toast.add({ title: 'Delete failed', description: errorMessage(error), color: 'error', icon: 'i-tabler-alert-circle' })
   } finally {
     deleting.value = false
   }

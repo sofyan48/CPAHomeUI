@@ -28,12 +28,12 @@
 <script setup lang="ts">
 const colorMode = useColorMode()
 const options = [
-  { label: 'Light', value: 'light', icon: 'i-heroicons-sun' },
-  { label: 'Dark', value: 'dark', icon: 'i-heroicons-moon' },
-  { label: 'System', value: 'system', icon: 'i-heroicons-computer-desktop' }
+  { label: 'Light', value: 'light', icon: 'i-tabler-sun' },
+  { label: 'Dark', value: 'dark', icon: 'i-tabler-moon' },
+  { label: 'System', value: 'system', icon: 'i-tabler-device-desktop' }
 ]
 const activeTheme = computed(() => colorMode.preference === 'system' ? colorMode.value : colorMode.preference)
-const themeIcon = computed(() => colorMode.preference === 'system' ? 'i-heroicons-computer-desktop' : activeTheme.value === 'dark' ? 'i-heroicons-moon' : 'i-heroicons-sun')
+const themeIcon = computed(() => colorMode.preference === 'system' ? 'i-tabler-device-desktop' : activeTheme.value === 'dark' ? 'i-tabler-moon' : 'i-tabler-sun')
 const themeLabel = computed(() => options.find(option => option.value === colorMode.preference)?.label || 'System')
 function setTheme(value: string) {
   colorMode.preference = value

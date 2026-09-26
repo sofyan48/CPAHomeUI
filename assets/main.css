@@ -354,8 +354,8 @@ pre,
   position: sticky;
   right: 0;
   width: 1%;
-  min-width: 2.5rem;
-  max-width: none;
+  min-width: 0;
+  max-width: max-content;
   padding-inline: 0.375rem !important;
   text-align: right !important;
   white-space: nowrap;
@@ -368,10 +368,14 @@ pre,
   background: color-mix(in oklch, var(--glass-card-strong) 84%, var(--ui-bg-muted));
 }
 
-/* Tabler-style compact action sizing. */
-.workbench-main .table-action-medium { min-width: 5rem !important; }
-.workbench-main .table-action-wide { min-width: 6.5rem !important; }
-.workbench-main .table-action-xwide { min-width: 8rem !important; }
+/* Action width is content-driven; legacy size classes intentionally share the same behavior. */
+.workbench-main .table-action-medium,
+.workbench-main .table-action-wide,
+.workbench-main .table-action-xwide {
+  width: 1% !important;
+  min-width: 0 !important;
+  max-width: max-content !important;
+}
 
 .workbench-main .table-action-cell {
   z-index: 2;
@@ -383,32 +387,32 @@ pre,
 }
 
 .workbench-main .table-action-cell > * {
-  display: flex;
-  max-width: 100%;
+  display: inline-flex;
+  width: max-content;
+  max-width: none;
   align-items: center;
   justify-content: flex-end;
-  gap: 0;
+  gap: 0.125rem;
   overflow: visible;
+  vertical-align: middle;
 }
 
 .workbench-main .table-action-cell button {
   flex: 0 0 auto;
-  width: 1.5rem !important;
-  min-width: 1.5rem !important;
-  height: 1.5rem !important;
-  min-height: 1.5rem !important;
-  padding: 0 !important;
+  width: auto !important;
+  min-width: 1.75rem !important;
+  height: 1.75rem !important;
+  min-height: 1.75rem !important;
+  padding-inline: 0.375rem !important;
   border-radius: 0.25rem !important;
 }
 
 .workbench-main .table-action-cell button svg {
   width: 0.875rem !important;
   height: 0.875rem !important;
+  flex: 0 0 auto;
 }
 
-.workbench-main .table-action-cell button {
-  min-height: 1.75rem;
-}
 
 .workbench-main table + [class*="border-t"],
 .workbench-main [data-slot="body"] > [class*="border-t"]:last-child {

@@ -20,7 +20,7 @@
         </div>
       </template>
       <form class="space-y-5" @submit.prevent="submit">
-        <UAlert v-if="error" color="error" variant="subtle" icon="i-heroicons-exclamation-circle" title="Sign in failed" :description="error" />
+        <UAlert v-if="error" color="error" variant="subtle" icon="i-tabler-alert-circle" title="Sign in failed" :description="error" />
         <template v-if="needsTOTP">
           <UFormField label="Six-digit code" required>
             <UInput v-model="form.totp" class="w-full font-mono tracking-[0.35em]" inputmode="numeric" autocomplete="one-time-code" maxlength="8" autofocus />
@@ -30,19 +30,19 @@
         </template>
         <template v-else-if="passkeyRequired">
           <UFormField label="Username">
-            <UInput v-model="form.username" class="w-full" autocomplete="username" icon="i-heroicons-user" readonly />
+            <UInput v-model="form.username" class="w-full" autocomplete="username" icon="i-tabler-user" readonly />
           </UFormField>
           <UCheckbox v-model="form.remember" label="Keep me signed in" />
           <UAlert v-if="!passkeysSupported" color="warning" variant="subtle" title="Passkeys unavailable" description="This browser cannot use the passkey required by this account." />
-          <UButton type="button" color="primary" block size="lg" icon="i-heroicons-finger-print" :loading="passkeyLoading" :disabled="!passkeysSupported" @click="passkeyLogin">Continue with passkey</UButton>
+          <UButton type="button" color="primary" block size="lg" icon="i-tabler-fingerprint" :loading="passkeyLoading" :disabled="!passkeysSupported" @click="passkeyLogin">Continue with passkey</UButton>
           <UButton color="neutral" variant="link" class="px-0" type="button" @click="resetPrincipal">Use a different account</UButton>
         </template>
         <template v-else>
           <UFormField label="Username" required>
-            <UInput v-model="form.username" class="w-full" autocomplete="username" icon="i-heroicons-user" autofocus />
+            <UInput v-model="form.username" class="w-full" autocomplete="username" icon="i-tabler-user" autofocus />
           </UFormField>
           <UFormField label="Password" required>
-            <UInput v-model="form.password" class="w-full" type="password" autocomplete="current-password" icon="i-heroicons-lock-closed" />
+            <UInput v-model="form.password" class="w-full" type="password" autocomplete="current-password" icon="i-tabler-lock" />
           </UFormField>
           <div class="flex items-center justify-between gap-3">
             <UCheckbox v-model="form.remember" label="Keep me signed in" />
@@ -50,7 +50,7 @@
           </div>
           <p class="text-xs text-[var(--ui-text-muted)]">Without this option, the browser cookie expires when the browsing session ends. The server token still uses its configured expiry.</p>
           <UButton type="submit" color="primary" block size="lg" :loading="loading">Sign in</UButton>
-          <UButton v-if="passkeysSupported" type="button" color="neutral" variant="outline" block size="lg" icon="i-heroicons-finger-print" :loading="passkeyLoading" @click="passkeyLogin">Sign in with passkey</UButton>
+          <UButton v-if="passkeysSupported" type="button" color="neutral" variant="outline" block size="lg" icon="i-tabler-fingerprint" :loading="passkeyLoading" @click="passkeyLogin">Sign in with passkey</UButton>
         </template>
       </form>
       <template #footer>
@@ -73,9 +73,9 @@ const passkeyRequired = ref(false)
 const error = ref('')
 const passkeysSupported = ref(false)
 const benefits = [
-  { label: 'Personal API keys', icon: 'i-heroicons-key' },
-  { label: 'Usage and billing', icon: 'i-heroicons-chart-bar-square' },
-  { label: 'Strong security', icon: 'i-heroicons-shield-check' }
+  { label: 'Personal API keys', icon: 'i-tabler-key' },
+  { label: 'Usage and billing', icon: 'i-tabler-chart-bar' },
+  { label: 'Strong security', icon: 'i-tabler-shield-check' }
 ]
 const destination = computed(() => typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/app') ? route.query.redirect : '/app')
 

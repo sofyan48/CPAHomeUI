@@ -5,10 +5,10 @@
         <h1 class="text-2xl font-bold">Upstream proxies</h1>
         <p class="mt-1 max-w-3xl text-sm text-[var(--ui-text-muted)]">Set the active global upstream proxy and maintain testable proxy-pool records.</p>
       </div>
-      <UButton color="neutral" variant="outline" icon="i-heroicons-arrow-path" :loading="loading" @click="loadAll">Refresh</UButton>
+      <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" @click="loadAll">Refresh</UButton>
     </div>
 
-    <UAlert v-if="errorMessage" color="error" variant="subtle" icon="i-heroicons-exclamation-circle" title="Proxy request failed" :description="errorMessage" />
+    <UAlert v-if="errorMessage" color="error" variant="subtle" icon="i-tabler-alert-circle" title="Proxy request failed" :description="errorMessage" />
 
     <UCard>
       <template #header>
@@ -21,12 +21,12 @@
         <UFormField label="Proxy URL" class="flex-1">
           <UInput v-model="globalProxy" placeholder="http://127.0.0.1:7890" class="w-full" />
         </UFormField>
-        <UButton type="submit" icon="i-heroicons-check" :loading="savingGlobal">Save</UButton>
-        <UButton color="neutral" variant="outline" icon="i-heroicons-x-mark" :loading="savingGlobal" @click="clearGlobalProxy">Clear</UButton>
+        <UButton type="submit" icon="i-tabler-check" :loading="savingGlobal">Save</UButton>
+        <UButton color="neutral" variant="outline" icon="i-tabler-x" :loading="savingGlobal" @click="clearGlobalProxy">Clear</UButton>
       </form>
     </UCard>
 
-    <UAlert color="info" variant="subtle" icon="i-heroicons-information-circle" title="Pool records are informational" description="Proxy-pool records can be stored and tested, but they do not currently alter runtime priority, auth selection, dispatch, or outbound routing. Only the global proxy above is active." />
+    <UAlert color="info" variant="subtle" icon="i-tabler-info-circle" title="Pool records are informational" description="Proxy-pool records can be stored and tested, but they do not currently alter runtime priority, auth selection, dispatch, or outbound routing. Only the global proxy above is active." />
 
     <UCard :ui="{ body: { padding: '' } }">
       <template #header>
@@ -35,7 +35,7 @@
             <h2 class="font-semibold">Proxy pool</h2>
             <p class="text-xs text-[var(--ui-text-muted)]">{{ pools.length }} stored proxy records</p>
           </div>
-          <UButton icon="i-heroicons-plus" @click="openCreate">Add proxy</UButton>
+          <UButton icon="i-tabler-plus" @click="openCreate">Add proxy</UButton>
         </div>
       </template>
       <UTable :columns="columns" :data="pools" :loading="loading">
@@ -56,9 +56,9 @@
         <template #note-cell="{ row }"><span class="text-sm text-[var(--ui-text-muted)]">{{ value(row).note || '—' }}</span></template>
         <template #actions-cell="{ row }">
           <div class="flex justify-end gap-1">
-            <UButton size="sm" color="neutral" variant="ghost" icon="i-heroicons-signal" :loading="testingId === value(row).id" @click="testPool(value(row))">Test</UButton>
-            <UButton size="sm" color="neutral" variant="ghost" icon="i-heroicons-pencil-square" @click="openEdit(value(row))">Edit</UButton>
-            <UButton size="sm" color="error" variant="ghost" icon="i-heroicons-trash" @click="removePool(value(row))" />
+            <UButton size="sm" color="neutral" variant="ghost" icon="i-tabler-antenna-bars-5" :loading="testingId === value(row).id" @click="testPool(value(row))">Test</UButton>
+            <UButton size="sm" color="neutral" variant="ghost" icon="i-tabler-pencil" @click="openEdit(value(row))">Edit</UButton>
+            <UButton size="sm" color="error" variant="ghost" icon="i-tabler-trash" @click="removePool(value(row))" />
           </div>
         </template>
         <template #empty><div class="py-12 text-center text-sm text-[var(--ui-text-muted)]">No proxy-pool records.</div></template>

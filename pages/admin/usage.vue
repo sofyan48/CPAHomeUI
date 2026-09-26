@@ -10,7 +10,7 @@
       <UButton
         color="neutral"
         variant="outline"
-        icon="i-heroicons-arrow-path"
+        icon="i-tabler-refresh"
         :loading="loading"
         @click="refreshAll"
       >
@@ -50,12 +50,12 @@
               <USelect :model-value="filters.status || allOptionValue" @update:model-value="filters.status = $event === allOptionValue ? '' : $event" :items="statusOptions" value-key="value" label-key="label" class="w-full" />
             </UFormField>
             <UFormField label="Search">
-              <UInput v-model="filters.search" placeholder="Request, user, key, node..." icon="i-heroicons-magnifying-glass-20-solid" class="w-full" />
+              <UInput v-model="filters.search" placeholder="Request, user, key, node..." icon="i-tabler-search" class="w-full" />
             </UFormField>
           </div>
         </div>
         <div class="mt-4">
-          <UButton type="button" color="neutral" variant="ghost" size="sm" :icon="showAdvancedFilters ? 'i-heroicons-chevron-up' : 'i-heroicons-chevron-down'" :aria-expanded="showAdvancedFilters" @click="showAdvancedFilters = !showAdvancedFilters">
+          <UButton type="button" color="neutral" variant="ghost" size="sm" :icon="showAdvancedFilters ? 'i-tabler-chevron-up' : 'i-tabler-chevron-down'" :aria-expanded="showAdvancedFilters" @click="showAdvancedFilters = !showAdvancedFilters">
             {{ showAdvancedFilters ? 'Hide advanced filters' : 'Advanced filters' }}
           </UButton>
         </div>
@@ -237,7 +237,7 @@
       <UTable :columns="recordColumns" :data="records" :loading="recordsLoading">
         <template #empty>
           <div class="flex flex-col items-center justify-center py-12">
-            <UIcon name="i-heroicons-chart-bar-square" class="mb-3 size-8 text-[var(--ui-text-muted)]" />
+            <UIcon name="i-tabler-chart-bar" class="mb-3 size-8 text-[var(--ui-text-muted)]" />
             <span class="text-sm text-[var(--ui-text-muted)]">No usage records match these filters.</span>
           </div>
         </template>
@@ -294,7 +294,7 @@
 
         <template #actions-cell="{ row }">
           <div class="flex justify-end">
-            <UButton size="sm" color="neutral" variant="ghost" icon="i-heroicons-eye" @click="openDetail(rowValue(row))">
+            <UButton size="sm" color="neutral" variant="ghost" icon="i-tabler-eye" @click="openDetail(rowValue(row))">
               Details
             </UButton>
           </div>
@@ -390,7 +390,7 @@
             <pre class="max-h-64 overflow-auto whitespace-pre-wrap break-words text-xs">{{ selectedDetail.log_excerpt.join('\n') }}</pre>
           </div>
           <div v-if="selectedDetail.related?.request_log?.download_url" class="flex justify-end">
-            <UButton color="neutral" variant="outline" icon="i-heroicons-arrow-down-tray" :loading="downloadingLog" @click="downloadDetailLog">Download request log</UButton>
+            <UButton color="neutral" variant="outline" icon="i-tabler-download" :loading="downloadingLog" @click="downloadDetailLog">Download request log</UButton>
           </div>
         </div>
         <div v-else class="py-10 text-center text-sm text-[var(--ui-text-muted)]">Record details are unavailable.</div>
@@ -560,25 +560,25 @@ const metrics = computed(() => [
     label: 'Requests',
     value: formatNumber(totals.value.request_count),
     hint: `${formatNumber(totals.value.success_count)} successful · ${formatNumber(totals.value.failed_count)} failed`,
-    icon: 'i-heroicons-bolt',
+    icon: 'i-tabler-bolt',
   },
   {
     label: 'Total tokens',
     value: formatCompactNumber(totals.value.total_tokens),
     hint: `${formatCompactNumber(totals.value.input_tokens)} input · ${formatCompactNumber(totals.value.output_tokens)} output`,
-    icon: 'i-heroicons-circle-stack',
+    icon: 'i-tabler-database',
   },
   {
     label: 'Success rate',
     value: formatPercent(totals.value.success_rate),
     hint: `${formatPercent(totals.value.error_rate)} error rate`,
-    icon: 'i-heroicons-check-circle',
+    icon: 'i-tabler-circle-check',
   },
   {
     label: 'P95 latency',
     value: formatMilliseconds(totals.value.p95_latency_ms),
     hint: `${formatMilliseconds(totals.value.avg_latency_ms)} average`,
-    icon: 'i-heroicons-clock',
+    icon: 'i-tabler-clock',
   },
 ])
 

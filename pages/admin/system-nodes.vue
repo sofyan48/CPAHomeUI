@@ -7,8 +7,8 @@
       </div>
     </div>
 
-    <UAlert color="info" variant="subtle" icon="i-heroicons-information-circle" title="mTLS enrollment" description="Home RESP access is mTLS-only. Generate a one-time Home JWT here, then provide it to the CPA node enrollment workflow. Treat the JWT as a secret." />
-    <UAlert v-if="errorMessage" color="error" variant="subtle" icon="i-heroicons-exclamation-circle" title="Enrollment failed" :description="errorMessage" />
+    <UAlert color="info" variant="subtle" icon="i-tabler-info-circle" title="mTLS enrollment" description="Home RESP access is mTLS-only. Generate a one-time Home JWT here, then provide it to the CPA node enrollment workflow. Treat the JWT as a secret." />
+    <UAlert v-if="errorMessage" color="error" variant="subtle" icon="i-tabler-alert-circle" title="Enrollment failed" :description="errorMessage" />
 
     <div class="grid gap-6 xl:grid-cols-2">
       <UCard>
@@ -23,7 +23,7 @@
             <UInput v-model="nodeName" maxlength="128" placeholder="primary-cpa" class="w-full" />
           </UFormField>
           <div class="flex justify-end">
-            <UButton type="submit" icon="i-heroicons-key" :loading="generating">Generate enrollment JWT</UButton>
+            <UButton type="submit" icon="i-tabler-key" :loading="generating">Generate enrollment JWT</UButton>
           </div>
         </form>
       </UCard>
@@ -37,12 +37,12 @@
             <UTextarea :model-value="enrollment.home_jwt" :rows="8" readonly class="w-full break-all font-mono text-xs" />
           </UFormField>
           <div class="flex justify-end">
-            <UButton color="neutral" variant="outline" icon="i-heroicons-clipboard" @click="copyJWT">Copy JWT</UButton>
+            <UButton color="neutral" variant="outline" icon="i-tabler-clipboard" @click="copyJWT">Copy JWT</UButton>
           </div>
           <UAlert color="warning" variant="subtle" title="Store it now" description="The JWT contains enrollment secret material. This page does not retain the result after navigation or refresh." />
         </div>
         <div v-else class="flex min-h-56 flex-col items-center justify-center text-center text-[var(--ui-text-muted)]">
-          <UIcon name="i-heroicons-identification" class="size-10" />
+          <UIcon name="i-tabler-id" class="size-10" />
           <p class="mt-3 text-sm">No enrollment has been generated in this session.</p>
         </div>
       </UCard>
@@ -52,7 +52,7 @@
 
     <UCard>
       <template #header><div><h2 class="font-semibold">Node network diagnostics</h2><p class="text-xs text-[var(--ui-text-muted)]">Send a controlled request from Home to verify provider or node-reachable endpoints.</p></div></template>
-      <UAlert color="warning" variant="subtle" icon="i-heroicons-shield-exclamation" title="Administrative network access" description="The request originates from Home and can reach services available to that server. Use only trusted URLs; responses may contain sensitive upstream data." class="mb-5" />
+      <UAlert color="warning" variant="subtle" icon="i-tabler-shield-exclamation" title="Administrative network access" description="The request originates from Home and can reach services available to that server. Use only trusted URLs; responses may contain sensitive upstream data." class="mb-5" />
       <div class="grid gap-6 xl:grid-cols-2">
         <form class="space-y-4" @submit.prevent="runDiagnostic">
           <div class="grid gap-4 sm:grid-cols-[10rem_1fr]"><UFormField label="Method"><USelect v-model="diagnostic.method" :items="methods" class="w-full" /></UFormField><UFormField label="Absolute URL" required><UInput v-model="diagnostic.url" type="url" class="w-full" placeholder="https://api.example.com/v1/models" /></UFormField></div>
@@ -60,10 +60,10 @@
           <UFormField label="Headers (JSON object)"><UTextarea v-model="diagnostic.headers" :rows="6" class="w-full font-mono text-xs" spellcheck="false" /></UFormField>
           <UFormField label="Raw body"><UTextarea v-model="diagnostic.data" :rows="6" class="w-full font-mono text-xs" spellcheck="false" /></UFormField>
           <UAlert v-if="diagnosticError" color="error" variant="subtle" :description="diagnosticError" />
-          <div class="flex justify-end"><UButton type="submit" icon="i-heroicons-paper-airplane" :loading="diagnosticLoading">Run request</UButton></div>
+          <div class="flex justify-end"><UButton type="submit" icon="i-tabler-send" :loading="diagnosticLoading">Run request</UButton></div>
         </form>
-        <div v-if="diagnosticResult" class="space-y-4"><div class="flex items-center justify-between"><h3 class="font-semibold">Response</h3><UBadge :color="statusColor(diagnosticResult.status_code)" variant="subtle">HTTP {{ diagnosticResult.status_code }}</UBadge></div><div><p class="mb-2 text-xs font-semibold uppercase text-[var(--ui-text-muted)]">Headers</p><pre class="max-h-48 overflow-auto rounded-lg bg-[var(--ui-bg-muted)] p-4 text-xs">{{ JSON.stringify(diagnosticResult.header || {}, null, 2) }}</pre></div><div><div class="mb-2 flex items-center justify-between"><p class="text-xs font-semibold uppercase text-[var(--ui-text-muted)]">Body</p><UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-clipboard" @click="copyDiagnosticBody">Copy</UButton></div><pre class="max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-[var(--ui-bg-muted)] p-4 text-xs">{{ diagnosticBody }}</pre></div></div>
-        <div v-else class="flex min-h-72 flex-col items-center justify-center text-center text-[var(--ui-text-muted)]"><UIcon name="i-heroicons-command-line" class="size-9" /><p class="mt-3 text-sm">Run a request to inspect status, headers, and body.</p></div>
+        <div v-if="diagnosticResult" class="space-y-4"><div class="flex items-center justify-between"><h3 class="font-semibold">Response</h3><UBadge :color="statusColor(diagnosticResult.status_code)" variant="subtle">HTTP {{ diagnosticResult.status_code }}</UBadge></div><div><p class="mb-2 text-xs font-semibold uppercase text-[var(--ui-text-muted)]">Headers</p><pre class="max-h-48 overflow-auto rounded-lg bg-[var(--ui-bg-muted)] p-4 text-xs">{{ JSON.stringify(diagnosticResult.header || {}, null, 2) }}</pre></div><div><div class="mb-2 flex items-center justify-between"><p class="text-xs font-semibold uppercase text-[var(--ui-text-muted)]">Body</p><UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-clipboard" @click="copyDiagnosticBody">Copy</UButton></div><pre class="max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-[var(--ui-bg-muted)] p-4 text-xs">{{ diagnosticBody }}</pre></div></div>
+        <div v-else class="flex min-h-72 flex-col items-center justify-center text-center text-[var(--ui-text-muted)]"><UIcon name="i-tabler-terminal-2" class="size-9" /><p class="mt-3 text-sm">Run a request to inspect status, headers, and body.</p></div>
       </div>
     </UCard>
   </div>
@@ -91,7 +91,7 @@ async function generateEnrollment() {
   generating.value = true; errorMessage.value = ''; enrollment.value = null
   try {
     enrollment.value = await fetchAPI('/certificates/clients', { method: 'POST', body: { node_name: nodeName.value.trim() } })
-    toast.add({ title: 'Enrollment generated', color: 'success', icon: 'i-heroicons-check-circle' })
+    toast.add({ title: 'Enrollment generated', color: 'success', icon: 'i-tabler-circle-check' })
   } catch (error) { errorMessage.value = message(error, 'Unable to generate client enrollment.') }
   finally { generating.value = false }
 }

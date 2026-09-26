@@ -10,14 +10,14 @@
       <div class="flex h-14 items-center justify-between border-b border-[var(--workbench-sidebar-border)] px-4" :class="sidebarCollapsed ? 'lg:justify-center lg:px-2' : ''">
         <NuxtLink to="/admin/dashboard" class="flex min-w-0 items-center gap-3" title="Home Center" @click="closeMobile">
           <div class="flex size-8 shrink-0 items-center justify-center rounded-md bg-[var(--workbench-sidebar-primary)] text-slate-950">
-            <UIcon name="i-heroicons-command-line" class="size-5" />
+            <UIcon name="i-tabler-terminal-2" class="size-5" />
           </div>
           <div class="min-w-0" :class="sidebarCollapsed ? 'lg:hidden' : ''">
             <p class="workbench-brand truncate text-sm font-semibold">Home Center</p>
             <p class="workbench-muted truncate text-[11px]">AI Gateway Management Console</p>
           </div>
         </NuxtLink>
-        <UButton class="lg:hidden" icon="i-heroicons-x-mark" color="neutral" variant="ghost" aria-label="Close navigation" @click="closeMobile" />
+        <UButton class="lg:hidden" icon="i-tabler-x" color="neutral" variant="ghost" aria-label="Close navigation" @click="closeMobile" />
       </div>
 
       <nav aria-label="Management" class="flex-1 overflow-y-auto px-3 py-4" :class="sidebarCollapsed ? 'lg:px-1.5' : ''">
@@ -60,10 +60,10 @@
     <div class="min-h-screen transition-[padding] duration-200" :class="sidebarCollapsed ? 'lg:pl-13' : 'lg:pl-56'">
       <header class="workbench-header sticky top-0 z-30 flex h-14 items-center justify-between border-b px-4 backdrop-blur lg:px-5">
         <div class="flex min-w-0 items-center gap-3">
-          <UButton class="lg:hidden" icon="i-heroicons-bars-3" color="neutral" variant="ghost" aria-label="Open navigation" @click="openMobile" />
+          <UButton class="lg:hidden" icon="i-tabler-menu-2" color="neutral" variant="ghost" aria-label="Open navigation" @click="openMobile" />
           <UButton
             class="hidden lg:inline-flex"
-            :icon="sidebarCollapsed ? 'i-heroicons-chevron-right' : 'i-heroicons-chevron-left'"
+            :icon="sidebarCollapsed ? 'i-tabler-chevron-right' : 'i-tabler-chevron-left'"
             color="neutral"
             variant="ghost"
             :aria-label="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
@@ -80,14 +80,14 @@
         <div class="flex items-center gap-2">
           <ThemeSwitcher />
           <UButton
-            icon="i-heroicons-arrow-path"
+            icon="i-tabler-refresh"
             color="neutral"
             variant="ghost"
             :loading="capabilitiesLoading"
             aria-label="Refresh capabilities"
             @click="refreshCapabilities(true)"
           />
-          <UButton icon="i-heroicons-arrow-right-on-rectangle" color="neutral" variant="soft" @click="handleLogout">
+          <UButton icon="i-tabler-logout" color="neutral" variant="soft" @click="handleLogout">
             <span class="hidden sm:inline">Logout</span>
           </UButton>
         </div>
@@ -99,7 +99,7 @@
           class="mb-6"
           color="warning"
           variant="subtle"
-          icon="i-heroicons-exclamation-triangle"
+          icon="i-tabler-alert-triangle"
           title="Could not refresh server capabilities"
           :description="capabilitiesError"
         />
@@ -145,34 +145,34 @@ const openMobile = () => {
 const navigationSections: Array<{ label: string; items: NavigationItem[] }> = [
   {
     label: 'Operate',
-    items: [{ label: 'Dashboard', to: '/admin/dashboard', icon: 'i-heroicons-squares-2x2', subtitle: 'Runtime overview' }]
+    items: [{ label: 'Dashboard', to: '/admin/dashboard', icon: 'i-tabler-grid-dots', subtitle: 'Runtime overview' }]
   },
   {
     label: 'Gateway',
     items: [
-      { label: 'Upstream', to: '/admin/upstream', icon: 'i-heroicons-cloud-arrow-up', subtitle: 'Credentials and model providers' },
-      { label: 'Access keys', to: '/admin/access-keys', icon: 'i-heroicons-key', subtitle: 'Client access control' },
-      { label: 'Users & Access', to: '/admin/users', icon: 'i-heroicons-users', subtitle: 'Users and access', capability: 'users' }
+      { label: 'Upstream', to: '/admin/upstream', icon: 'i-tabler-cloud-upload', subtitle: 'Credentials and model providers' },
+      { label: 'Access keys', to: '/admin/access-keys', icon: 'i-tabler-key', subtitle: 'Client access control' },
+      { label: 'Users & Access', to: '/admin/users', icon: 'i-tabler-users', subtitle: 'Users and access', capability: 'users' }
     ]
   },
   {
     label: 'Observe',
     items: [
-      { label: 'Usage & Requests', to: '/admin/usage', icon: 'i-heroicons-chart-bar-square', subtitle: 'Usage analysis and request diagnostics', capability: 'usage_records' },
-      { label: 'Call Diagnostics', to: '/admin/diagnostics', icon: 'i-heroicons-wrench-screwdriver', subtitle: 'Call health and request logs' },
-      { label: 'Runtime Logs', to: '/admin/logs', icon: 'i-heroicons-document-text', subtitle: 'Gateway runtime and request error logs', capability: 'logs' }
+      { label: 'Usage & Requests', to: '/admin/usage', icon: 'i-tabler-chart-bar', subtitle: 'Usage analysis and request diagnostics', capability: 'usage_records' },
+      { label: 'Call Diagnostics', to: '/admin/diagnostics', icon: 'i-tabler-tools', subtitle: 'Call health and request logs' },
+      { label: 'Runtime Logs', to: '/admin/logs', icon: 'i-tabler-file-text', subtitle: 'Gateway runtime and request error logs', capability: 'logs' }
     ]
   },
   {
     label: 'Finance',
-    items: [{ label: 'Billing & Reports', to: '/admin/billing', icon: 'i-heroicons-banknotes', subtitle: 'Billing and reports' }]
+    items: [{ label: 'Billing & Reports', to: '/admin/billing', icon: 'i-tabler-cash-banknote', subtitle: 'Billing and reports' }]
   },
   {
     label: 'Control',
     items: [
-      { label: 'System config', to: '/admin/config', icon: 'i-heroicons-adjustments-horizontal', subtitle: 'Gateway core settings' },
-      { label: 'Plugins', to: '/admin/plugins', icon: 'i-heroicons-puzzle-piece', subtitle: 'Plugin store and node reports' },
-      { label: 'System Info', to: '/admin/system-nodes', icon: 'i-heroicons-server-stack', subtitle: 'Runtime and diagnostics', capability: 'topology' }
+      { label: 'System config', to: '/admin/config', icon: 'i-tabler-adjustments-horizontal', subtitle: 'Gateway core settings' },
+      { label: 'Plugins', to: '/admin/plugins', icon: 'i-tabler-puzzle', subtitle: 'Plugin store and node reports' },
+      { label: 'System Info', to: '/admin/system-nodes', icon: 'i-tabler-server-2', subtitle: 'Runtime and diagnostics', capability: 'topology' }
     ]
   }
 ]

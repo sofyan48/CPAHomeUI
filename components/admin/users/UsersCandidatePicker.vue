@@ -3,7 +3,7 @@
     <p class="text-sm font-medium">{{ kind === 'credential' ? 'Account credential' : 'Model' }}</p>
     <UInput
       :model-value="search"
-      icon="i-heroicons-magnifying-glass"
+      icon="i-tabler-search"
       :disabled="mutating || pending"
       :placeholder="kind === 'credential' ? 'Search credential name, provider, or ID' : 'Search model name, provider, channel, or ID'"
       @update:model-value="$emit('update:search', $event)"
@@ -33,7 +33,7 @@
     </div>
     <div v-else-if="errorMessage" class="rounded-md border border-red-300 bg-red-50 px-3 py-3 dark:border-red-900 dark:bg-red-950">
       <p class="text-sm text-red-700 dark:text-red-300">{{ errorMessage }}</p>
-      <UButton type="button" size="sm" color="neutral" variant="outline" icon="i-heroicons-arrow-path" class="mt-3" @click="$emit('retry')">Retry</UButton>
+      <UButton type="button" size="sm" color="neutral" variant="outline" icon="i-tabler-refresh" class="mt-3" @click="$emit('retry')">Retry</UButton>
     </div>
     <div v-else-if="!visible.length" class="rounded-md border border-[var(--ui-border)] px-3 py-6 text-center text-sm text-[var(--ui-text-muted)]">
       {{ search.trim() ? (kind === 'credential' ? 'No account credentials match your search.' : 'No models match your search.') : (kind === 'credential' ? 'No account credentials are available for selection.' : 'No models are available for selection.') }}

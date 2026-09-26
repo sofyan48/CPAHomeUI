@@ -8,16 +8,16 @@
       <form class="space-y-5" @submit.prevent="submit">
         <UAlert v-if="error" color="error" variant="subtle" title="Registration failed" :description="error" />
         <UFormField label="Username" required>
-          <UInput v-model="form.username" class="w-full" autocomplete="username" icon="i-heroicons-user" />
+          <UInput v-model="form.username" class="w-full" autocomplete="username" icon="i-tabler-user" />
         </UFormField>
         <UFormField v-if="emailEnabled" label="Email" hint="Optional, used for verification and recovery">
-          <UInput v-model="form.email" class="w-full" type="email" autocomplete="email" icon="i-heroicons-envelope" />
+          <UInput v-model="form.email" class="w-full" type="email" autocomplete="email" icon="i-tabler-mail" />
         </UFormField>
         <UFormField label="Password" required hint="Maximum 72 bytes">
-          <UInput v-model="form.password" class="w-full" type="password" autocomplete="new-password" icon="i-heroicons-lock-closed" />
+          <UInput v-model="form.password" class="w-full" type="password" autocomplete="new-password" icon="i-tabler-lock" />
         </UFormField>
         <UFormField label="Confirm password" required>
-          <UInput v-model="form.confirmPassword" class="w-full" type="password" autocomplete="new-password" icon="i-heroicons-lock-closed" />
+          <UInput v-model="form.confirmPassword" class="w-full" type="password" autocomplete="new-password" icon="i-tabler-lock" />
         </UFormField>
         <UCheckbox v-model="form.remember" label="Keep me signed in" />
         <p class="text-xs text-[var(--ui-text-muted)]">Without this option, the browser cookie expires when the browsing session ends. The server token still uses its configured expiry.</p>

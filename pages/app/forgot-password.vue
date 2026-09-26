@@ -7,7 +7,7 @@
       </template>
 
       <div v-if="capabilityState === 'loading'" class="space-y-4 py-4 text-center">
-        <UIcon name="i-heroicons-arrow-path" class="mx-auto size-10 animate-spin text-primary-500" />
+        <UIcon name="i-tabler-refresh" class="mx-auto size-10 animate-spin text-primary-500" />
         <p class="text-sm text-[var(--ui-text-muted)]">Checking whether password recovery is available…</p>
       </div>
 
@@ -28,7 +28,7 @@
       </div>
 
       <div v-else-if="sent" class="space-y-5 text-center">
-        <div class="mx-auto flex size-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500"><UIcon name="i-heroicons-envelope" class="size-7" /></div>
+        <div class="mx-auto flex size-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500"><UIcon name="i-tabler-mail" class="size-7" /></div>
         <p class="text-sm text-[var(--ui-text-muted)]">{{ message }}</p>
         <UButton color="neutral" variant="outline" block @click="requestAnother">Submit another request</UButton>
         <UButton to="/app/login" color="primary" block>Return to sign in</UButton>
@@ -36,7 +36,7 @@
 
       <form v-else class="space-y-5" @submit.prevent="submit">
         <UAlert v-if="error" color="error" variant="subtle" title="Request failed" :description="error" />
-        <UFormField label="Email" required><UInput v-model="email" class="w-full" type="email" autocomplete="email" icon="i-heroicons-envelope" /></UFormField>
+        <UFormField label="Email" required><UInput v-model="email" class="w-full" type="email" autocomplete="email" icon="i-tabler-mail" /></UFormField>
         <UButton type="submit" color="primary" block :loading="loading">Send reset instructions</UButton>
         <UButton to="/app/login" color="neutral" variant="ghost" block>Back to sign in</UButton>
       </form>

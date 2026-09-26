@@ -7,14 +7,14 @@
           Group credential auth IDs into reusable routing scopes for client API keys and model-specific restrictions.
         </p>
       </div>
-      <UButton color="primary" icon="i-heroicons-plus" @click="openCreateGroup">New channel group</UButton>
+      <UButton color="primary" icon="i-tabler-plus" @click="openCreateGroup">New channel group</UButton>
     </div>
 
-    <UAlert v-if="pageError" color="error" variant="subtle" icon="i-heroicons-exclamation-triangle" title="Unable to load channel groups" :description="pageError" />
+    <UAlert v-if="pageError" color="error" variant="subtle" icon="i-tabler-alert-triangle" title="Unable to load channel groups" :description="pageError" />
 
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <UInput v-model="search" icon="i-heroicons-magnifying-glass" placeholder="Search channel groups..." class="w-full sm:max-w-sm" />
-      <UButton color="neutral" variant="outline" icon="i-heroicons-arrow-path" :loading="pending" @click="refreshWorkspace">Refresh</UButton>
+      <UInput v-model="search" icon="i-tabler-search" placeholder="Search channel groups..." class="w-full sm:max-w-sm" />
+      <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="pending" @click="refreshWorkspace">Refresh</UButton>
     </div>
 
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.6fr)]">
@@ -37,8 +37,8 @@
           </template>
           <template #actions-cell="{ row }">
             <div class="flex justify-end gap-1">
-              <UButton color="neutral" variant="ghost" size="sm" icon="i-heroicons-pencil-square" aria-label="Edit group" @click.stop="openEditGroup(rowValue(row))" />
-              <UButton color="error" variant="ghost" size="sm" icon="i-heroicons-trash" aria-label="Delete group" @click.stop="confirmDelete('group', rowValue(row))" />
+              <UButton color="neutral" variant="ghost" size="sm" icon="i-tabler-pencil" aria-label="Edit group" @click.stop="openEditGroup(rowValue(row))" />
+              <UButton color="error" variant="ghost" size="sm" icon="i-tabler-trash" aria-label="Delete group" @click.stop="confirmDelete('group', rowValue(row))" />
             </div>
           </template>
           <template #empty>
@@ -57,7 +57,7 @@
               </div>
               <p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ details.length }} credential binding{{ details.length === 1 ? '' : 's' }}</p>
             </div>
-            <UButton color="primary" variant="soft" icon="i-heroicons-plus" @click="openCreateDetail">Add credential</UButton>
+            <UButton color="primary" variant="soft" icon="i-tabler-plus" @click="openCreateDetail">Add credential</UButton>
           </div>
         </template>
         <UTable :columns="detailColumns" :data="details" :loading="detailsPending">
@@ -72,13 +72,13 @@
           </template>
           <template #actions-cell="{ row }">
             <div class="flex justify-end gap-1">
-              <UButton color="neutral" variant="ghost" size="sm" icon="i-heroicons-pencil-square" aria-label="Edit credential binding" @click="openEditDetail(rowValue(row))" />
-              <UButton color="error" variant="ghost" size="sm" icon="i-heroicons-trash" aria-label="Delete credential binding" @click="confirmDelete('detail', rowValue(row))" />
+              <UButton color="neutral" variant="ghost" size="sm" icon="i-tabler-pencil" aria-label="Edit credential binding" @click="openEditDetail(rowValue(row))" />
+              <UButton color="error" variant="ghost" size="sm" icon="i-tabler-trash" aria-label="Delete credential binding" @click="confirmDelete('detail', rowValue(row))" />
             </div>
           </template>
           <template #empty>
             <div class="flex flex-col items-center px-6 py-14 text-center">
-              <UIcon name="i-heroicons-identification" class="mb-3 size-8 text-[var(--ui-text-muted)]" />
+              <UIcon name="i-tabler-id" class="mb-3 size-8 text-[var(--ui-text-muted)]" />
               <p class="font-medium">No credentials in this group</p>
               <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Add an auth ID from the available credentials or enter one manually.</p>
             </div>
@@ -87,7 +87,7 @@
       </UCard>
 
       <div v-else class="flex min-h-64 flex-col items-center justify-center rounded-xl border border-dashed border-[var(--ui-border)] bg-[var(--ui-bg-muted)] p-8 text-center">
-        <UIcon name="i-heroicons-arrows-right-left" class="mb-3 size-8 text-[var(--ui-text-muted)]" />
+        <UIcon name="i-tabler-arrows-exchange" class="mb-3 size-8 text-[var(--ui-text-muted)]" />
         <p class="font-medium">Select a channel group</p>
         <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Its credential bindings will appear here.</p>
       </div>
@@ -96,7 +96,7 @@
     <UModal v-model:open="groupFormOpen" :title="editingGroup ? 'Edit channel group' : 'Create channel group'" description="Channel groups are reusable credential routing scopes.">
       <template #body>
         <form class="space-y-5" @submit.prevent="submitGroup">
-          <UAlert v-if="formError" color="error" variant="subtle" icon="i-heroicons-exclamation-circle" title="Could not save channel group" :description="formError" />
+          <UAlert v-if="formError" color="error" variant="subtle" icon="i-tabler-alert-circle" title="Could not save channel group" :description="formError" />
           <UFormField label="Group name" required>
             <UInput v-model="groupForm.channel_name" class="w-full" placeholder="premium-tier" autofocus />
           </UFormField>
@@ -120,7 +120,7 @@
     <UModal v-model:open="detailFormOpen" :title="editingDetail ? 'Edit credential binding' : 'Add credential binding'" description="The backend stores the credential's canonical auth_id.">
       <template #body>
         <form class="space-y-5" @submit.prevent="submitDetail">
-          <UAlert v-if="formError" color="error" variant="subtle" icon="i-heroicons-exclamation-circle" title="Could not save credential binding" :description="formError" />
+          <UAlert v-if="formError" color="error" variant="subtle" icon="i-tabler-alert-circle" title="Could not save credential binding" :description="formError" />
           <UFormField label="Credential suggestion" hint="Optional">
             <USelectMenu v-model="detailForm.suggested_auth_id" :items="credentialOptions" value-key="value" label-key="label" class="w-full" placeholder="Search credentials..." :search-input="{ placeholder: 'Search credential name, provider, or ID...' }" @update:model-value="applyCredentialSuggestion" />
           </UFormField>
@@ -139,7 +139,7 @@
     <UModal v-model:open="deleteOpen" :title="deleteKind === 'group' ? 'Delete channel group' : 'Remove credential binding'" description="This action soft-deletes the selected record.">
       <template #body>
         <div class="space-y-5">
-          <UAlert color="warning" variant="subtle" icon="i-heroicons-exclamation-triangle" title="Confirm deletion" :description="deleteDescription" />
+          <UAlert color="warning" variant="subtle" icon="i-tabler-alert-triangle" title="Confirm deletion" :description="deleteDescription" />
           <div class="flex justify-end gap-3">
             <UButton color="neutral" variant="ghost" @click="deleteOpen = false">Cancel</UButton>
             <UButton color="error" :loading="deleting" @click="performDelete">Delete</UButton>
@@ -254,7 +254,7 @@ async function submitGroup() {
     if (!editingGroup.value && response?.channel_group?.id) selectedGroupId.value = response.channel_group.id
     if (editingGroup.value?.id === selectedGroupId.value) selectedGroupId.value = editingGroup.value.id
     if (selectedGroupId.value) await refreshDetails()
-    toast.add({ title: editingGroup.value ? 'Channel group updated' : 'Channel group created', color: 'success', icon: 'i-heroicons-check-circle' })
+    toast.add({ title: editingGroup.value ? 'Channel group updated' : 'Channel group created', color: 'success', icon: 'i-tabler-circle-check' })
   } catch (error) {
     formError.value = errorMessage(error)
   } finally {
@@ -288,7 +288,7 @@ async function submitDetail() {
     })
     detailFormOpen.value = false
     await refreshDetails()
-    toast.add({ title: editingDetail.value ? 'Credential binding updated' : 'Credential added', color: 'success', icon: 'i-heroicons-check-circle' })
+    toast.add({ title: editingDetail.value ? 'Credential binding updated' : 'Credential added', color: 'success', icon: 'i-tabler-circle-check' })
   } catch (error) {
     formError.value = errorMessage(error)
   } finally {
@@ -312,9 +312,9 @@ async function performDelete() {
     } else {
       await refreshDetails()
     }
-    toast.add({ title: deleteKind.value === 'group' ? 'Channel group deleted' : 'Credential binding removed', color: 'success', icon: 'i-heroicons-check-circle' })
+    toast.add({ title: deleteKind.value === 'group' ? 'Channel group deleted' : 'Credential binding removed', color: 'success', icon: 'i-tabler-circle-check' })
   } catch (error) {
-    toast.add({ title: 'Delete failed', description: errorMessage(error), color: 'error', icon: 'i-heroicons-exclamation-circle' })
+    toast.add({ title: 'Delete failed', description: errorMessage(error), color: 'error', icon: 'i-tabler-alert-circle' })
   } finally {
     deleting.value = false
   }

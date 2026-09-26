@@ -8,14 +8,14 @@
           Static entries are grouped by channel and retain their authoritative billing providers.
         </p>
       </div>
-      <UButton color="primary" icon="i-heroicons-arrow-path" :loading="pending" @click="refresh">Refresh</UButton>
+      <UButton color="primary" icon="i-tabler-refresh" :loading="pending" @click="refresh">Refresh</UButton>
     </div>
 
     <UAlert
       v-if="pageError"
       color="error"
       variant="subtle"
-      icon="i-heroicons-exclamation-triangle"
+      icon="i-tabler-alert-triangle"
       title="Unable to load models"
       :description="pageError"
     />
@@ -43,7 +43,7 @@
         <USelectMenu :model-value="channel || allChannelsValue" @update:model-value="channel = $event === allChannelsValue ? '' : $event" :items="channelOptions" value-key="value" label-key="label" class="w-full" :search-input="{ placeholder: 'Search channels...' }" />
       </UFormField>
       <UFormField label="Search" class="w-full lg:max-w-md lg:flex-1">
-        <UInput v-model="search" icon="i-heroicons-magnifying-glass" placeholder="Model ID, name, provider, or channel..." class="w-full" />
+        <UInput v-model="search" icon="i-tabler-search" placeholder="Model ID, name, provider, or channel..." class="w-full" />
       </UFormField>
     </div>
 
@@ -69,7 +69,7 @@
         </template>
         <template #empty>
           <div class="flex flex-col items-center justify-center px-6 py-14 text-center">
-            <UIcon name="i-heroicons-cube-transparent" class="mb-3 size-8 text-[var(--ui-text-muted)]" />
+            <UIcon name="i-tabler-box" class="mb-3 size-8 text-[var(--ui-text-muted)]" />
             <p class="font-medium">{{ search ? 'No matching models' : 'No models found' }}</p>
             <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Try another catalog, channel, or search term.</p>
           </div>

@@ -11,19 +11,19 @@
           <p class="mt-1 text-xs text-[var(--ui-text-muted)]">Scope ID: {{ group.id }}</p>
         </div>
         <div class="flex gap-1">
-          <UButton color="neutral" variant="ghost" size="sm" icon="i-heroicons-plus" aria-label="Add binding" @click="$emit('add', group)" />
-          <UButton color="neutral" variant="ghost" size="sm" icon="i-heroicons-pencil-square" aria-label="Edit" @click="$emit('edit', group)" />
-          <UButton color="error" variant="ghost" size="sm" icon="i-heroicons-trash" aria-label="Delete" @click="$emit('delete', group)" />
+          <UButton color="neutral" variant="ghost" size="sm" icon="i-tabler-plus" aria-label="Add binding" @click="$emit('add', group)" />
+          <UButton color="neutral" variant="ghost" size="sm" icon="i-tabler-pencil" aria-label="Edit" @click="$emit('edit', group)" />
+          <UButton color="error" variant="ghost" size="sm" icon="i-tabler-trash" aria-label="Delete" @click="$emit('delete', group)" />
         </div>
       </div>
       <div class="overflow-x-auto">
-        <table :class="['w-full table-fixed text-sm', kind === 'model' && channelBindingsSupported ? 'min-w-[760px]' : 'min-w-[620px]']">
+        <table :class="['w-full text-sm', kind === 'model' && channelBindingsSupported ? 'min-w-[760px]' : 'min-w-[620px]']">
           <thead class="bg-[var(--ui-bg-muted)] text-left text-xs text-[var(--ui-text-muted)]">
             <tr>
               <th class="px-3 py-2">{{ kind === 'channel' ? 'Credential ID' : 'Model ID' }}</th>
               <th v-if="kind === 'model' && channelBindingsSupported" class="w-[26%] px-3 py-2">Credential scope</th>
               <th class="w-[20%] px-3 py-2">Updated</th>
-              <th class="w-[18%] px-3 py-2 text-right">Actions</th>
+              <th class="w-px whitespace-nowrap px-3 py-2 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -34,8 +34,8 @@
               <td class="truncate px-3 py-2 font-mono text-xs" :title="target(detail)">{{ target(detail) }}</td>
               <td v-if="kind === 'model' && channelBindingsSupported" class="truncate px-3 py-2 text-[var(--ui-text-muted)]" :title="channels(detail)">{{ channels(detail) }}</td>
               <td class="truncate px-3 py-2 text-[var(--ui-text-muted)]">{{ updated(detail) }}</td>
-              <td class="px-3 py-2 text-right">
-                <UButton color="error" variant="ghost" size="sm" icon="i-heroicons-trash" aria-label="Remove binding" title="Remove binding" @click="$emit('delete-detail', detail)" />
+              <td class="w-px whitespace-nowrap px-3 py-2 text-right">
+                <UButton color="error" variant="ghost" size="sm" icon="i-tabler-trash" aria-label="Remove binding" title="Remove binding" @click="$emit('delete-detail', detail)" />
               </td>
             </tr>
           </tbody>
@@ -43,7 +43,7 @@
       </div>
     </div>
   </div>
-  <UsersEmptyState v-else :icon="kind === 'channel' ? 'i-heroicons-rectangle-group' : 'i-heroicons-cube'" :text="kind === 'channel' ? 'No credential scopes yet.' : 'No model scopes yet.'" />
+  <UsersEmptyState v-else :icon="kind === 'channel' ? 'i-tabler-layout-grid' : 'i-tabler-cube'" :text="kind === 'channel' ? 'No credential scopes yet.' : 'No model scopes yet.'" />
 </template>
 
 <script>

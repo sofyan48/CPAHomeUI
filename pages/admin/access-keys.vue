@@ -8,10 +8,10 @@
         </div>
       </div>
       <div class="flex flex-wrap gap-2">
-        <UButton color="neutral" variant="outline" icon="i-heroicons-arrow-path" :loading="loading" @click="syncData">
+        <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" @click="syncData">
           {{ loading ? 'Syncing' : 'Sync data' }}
         </UButton>
-        <UButton icon="i-heroicons-plus" @click="openCreate">New access key</UButton>
+        <UButton icon="i-tabler-plus" @click="openCreate">New access key</UButton>
       </div>
     </header>
 
@@ -21,7 +21,7 @@
           <h2 class="font-semibold text-[var(--ui-text-highlighted)]">Access keys could not be loaded</h2>
           <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Check the management endpoint, key, and /api-keys route.</p>
         </div>
-        <UButton color="neutral" variant="outline" icon="i-heroicons-arrow-path" :loading="loading" @click="syncData">Retry</UButton>
+        <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" @click="syncData">Retry</UButton>
       </div>
     </UCard>
 
@@ -41,7 +41,7 @@
       <template #actions>
         <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
 
-          <UInput v-model="search" icon="i-heroicons-magnifying-glass" placeholder="Filter keys" class="w-full sm:w-72" />
+          <UInput v-model="search" icon="i-tabler-search" placeholder="Filter keys" class="w-full sm:w-72" />
         </div>
       </template>
 
@@ -53,7 +53,7 @@
           <span class="text-sm font-medium">{{ selectedIDs.size }} keys selected</span>
           <div class="flex flex-wrap gap-2">
             <UButton color="neutral" variant="ghost" size="sm" :disabled="bulkDeleting" @click="clearSelection">Clear selection</UButton>
-            <UButton color="error" variant="ghost" size="sm" icon="i-heroicons-trash" :disabled="bulkDeleting" @click="openBulkDelete">
+            <UButton color="error" variant="ghost" size="sm" icon="i-tabler-trash" :disabled="bulkDeleting" @click="openBulkDelete">
               Delete selected
             </UButton>
           </div>
@@ -94,7 +94,7 @@
               <div class="flex items-center gap-1.5">
                 <span>Name / key</span>
                 <UTooltip text="The display name is an editable label and does not affect authentication. The stable identifier (api-key-N) survives renames and key rotations, and links the same key across usage, billing, and request records.">
-                  <UIcon name="i-heroicons-information-circle" class="size-4 text-[var(--ui-text-muted)]" />
+                  <UIcon name="i-tabler-info-circle" class="size-4 text-[var(--ui-text-muted)]" />
                 </UTooltip>
               </div>
             </template>
@@ -110,7 +110,7 @@
                     color="neutral"
                     variant="ghost"
                     size="xs"
-                    icon="i-heroicons-clipboard"
+                    icon="i-tabler-clipboard"
                     :aria-label="`Copy key ${rowValue(row).maskedValue}`"
                     @click="copyText(rowValue(row).value, 'Access key copied.')"
                   />
@@ -136,12 +136,12 @@
 
             <template #status-cell>
               <span class="inline-flex items-center gap-1.5 rounded-md border border-primary-500/30 bg-primary-500/10 px-2 py-1 text-xs font-medium text-primary-500">
-                <UIcon name="i-heroicons-check-circle" class="size-3" />
+                <UIcon name="i-tabler-circle-check" class="size-3" />
                 Accepted
               </span>
             </template>
 
-            <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-eye" aria-label="View access key" title="View" @click="openDetail(rowValue(row))" /><UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-pencil-square" aria-label="Edit access key" title="Edit" @click="openEdit(rowValue(row))" /><UButton v-if="rowValue(row).identifier" size="xs" color="neutral" variant="ghost" icon="i-heroicons-clipboard-document" aria-label="Copy identifier" title="Copy identifier" @click="copyText(rowValue(row).identifier, 'Identifier copied.')" /><UButton size="xs" color="error" variant="ghost" icon="i-heroicons-trash" aria-label="Delete access key" title="Delete" @click="openDelete(rowValue(row))" /></div></template>
+            <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-eye" aria-label="View access key" title="View" @click="openDetail(rowValue(row))" /><UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-pencil" aria-label="Edit access key" title="Edit" @click="openEdit(rowValue(row))" /><UButton v-if="rowValue(row).identifier" size="xs" color="neutral" variant="ghost" icon="i-tabler-clipboard" aria-label="Copy identifier" title="Copy identifier" @click="copyText(rowValue(row).identifier, 'Identifier copied.')" /><UButton size="xs" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Delete access key" title="Delete" @click="openDelete(rowValue(row))" /></div></template>
 
             <template #empty>
               <div class="px-6 py-12 text-center text-sm text-[var(--ui-text-muted)]">No access keys match the current filter.</div>
@@ -179,14 +179,14 @@
                 type="button"
                 color="neutral"
                 variant="outline"
-                :icon="formSecretVisible ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
+                :icon="formSecretVisible ? 'i-tabler-eye-off' : 'i-tabler-eye'"
                 :aria-label="formSecretVisible ? 'Hide' : 'Reveal'"
                 @click="formSecretVisible = !formSecretVisible"
               />
             </div>
           </UFormField>
 
-          <UButton type="button" color="neutral" variant="outline" icon="i-heroicons-sparkles" :disabled="submitting" @click="generateKey">
+          <UButton type="button" color="neutral" variant="outline" icon="i-tabler-sparkles" :disabled="submitting" @click="generateKey">
             Generate key
           </UButton>
 
@@ -201,10 +201,10 @@
             <p class="text-xs text-[var(--ui-text-muted)]">Secret value</p>
             <p class="mt-2 break-all font-mono text-sm">{{ detailSecretVisible ? selectedResource.value : selectedResource.maskedValue }}</p>
             <div class="mt-3 flex gap-2">
-              <UButton color="neutral" variant="outline" size="sm" :icon="detailSecretVisible ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'" @click="detailSecretVisible = !detailSecretVisible">
+              <UButton color="neutral" variant="outline" size="sm" :icon="detailSecretVisible ? 'i-tabler-eye-off' : 'i-tabler-eye'" @click="detailSecretVisible = !detailSecretVisible">
                 {{ detailSecretVisible ? 'Hide' : 'Reveal' }}
               </UButton>
-              <UButton color="neutral" variant="outline" size="sm" icon="i-heroicons-clipboard" @click="copyText(selectedResource.value, 'Access key copied.')">Copy</UButton>
+              <UButton color="neutral" variant="outline" size="sm" icon="i-tabler-clipboard" @click="copyText(selectedResource.value, 'Access key copied.')">Copy</UButton>
             </div>
           </div>
 
@@ -240,8 +240,8 @@
           </dl>
 
           <div class="grid gap-2">
-            <UButton icon="i-heroicons-pencil-square" @click="openEdit(selectedResource)">Edit</UButton>
-            <UButton color="error" variant="outline" icon="i-heroicons-trash" @click="openDelete(selectedResource)">Delete</UButton>
+            <UButton icon="i-tabler-pencil" @click="openEdit(selectedResource)">Edit</UButton>
+            <UButton color="error" variant="outline" icon="i-tabler-trash" @click="openDelete(selectedResource)">Delete</UButton>
           </div>
         </div>
       </template>
@@ -746,10 +746,10 @@ async function deleteSelected() {
 
 function rowActions(resource) {
   return [[
-    { label: 'View', icon: 'i-heroicons-eye', onSelect: () => openDetail(resource) },
-    { label: 'Edit', icon: 'i-heroicons-pencil-square', onSelect: () => openEdit(resource) },
-    ...(resource.identifier ? [{ label: 'Copy identifier', icon: 'i-heroicons-clipboard-document', onSelect: () => copyText(resource.identifier, 'Identifier copied.') }] : []),
-    { label: 'Delete', icon: 'i-heroicons-trash', color: 'error', onSelect: () => openDelete(resource) }
+    { label: 'View', icon: 'i-tabler-eye', onSelect: () => openDetail(resource) },
+    { label: 'Edit', icon: 'i-tabler-pencil', onSelect: () => openEdit(resource) },
+    ...(resource.identifier ? [{ label: 'Copy identifier', icon: 'i-tabler-clipboard', onSelect: () => copyText(resource.identifier, 'Identifier copied.') }] : []),
+    { label: 'Delete', icon: 'i-tabler-trash', color: 'error', onSelect: () => openDelete(resource) }
   ]]
 }
 

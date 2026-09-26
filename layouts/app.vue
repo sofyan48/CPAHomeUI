@@ -2,7 +2,7 @@
   <div class="workbench-shell min-h-screen text-[var(--ui-text)]">
     <header class="workbench-header sticky top-0 z-30 flex h-16 items-center justify-between border-b px-4 backdrop-blur sm:px-8">
       <NuxtLink to="/app" class="flex min-w-0 items-center gap-3">
-        <span class="flex size-9 shrink-0 items-center justify-center rounded-md bg-[var(--workbench-sidebar-primary)] text-slate-950"><UIcon name="i-heroicons-command-line" class="size-5" /></span>
+        <span class="flex size-9 shrink-0 items-center justify-center rounded-md bg-[var(--workbench-sidebar-primary)] text-slate-950"><UIcon name="i-tabler-terminal-2" class="size-5" /></span>
         <span class="min-w-0"><span class="block truncate text-sm font-semibold text-[var(--ui-text-highlighted)]">Home Center</span><span class="block truncate text-xs text-[var(--ui-text-muted)]">AI Gateway</span></span>
       </NuxtLink>
       <div class="flex items-center gap-2">

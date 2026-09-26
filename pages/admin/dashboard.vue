@@ -11,7 +11,7 @@
           Operational health, connected CPA nodes, and recent request activity from your Home runtime.
         </p>
       </div>
-      <UButton color="neutral" variant="outline" icon="i-heroicons-arrow-path" :loading="loading" @click="refreshDashboard">
+      <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" @click="refreshDashboard">
         Refresh
       </UButton>
     </section>
@@ -20,7 +20,7 @@
       v-if="loadError"
       color="error"
       variant="subtle"
-      icon="i-heroicons-exclamation-circle"
+      icon="i-tabler-alert-circle"
       title="Dashboard data is incomplete"
       :description="loadError"
     />
@@ -61,7 +61,7 @@
           </div>
         </div>
         <div v-else class="flex min-h-40 flex-col items-center justify-center text-center">
-          <UIcon name="i-heroicons-chart-bar" class="size-8 text-[var(--ui-text-dimmed)]" />
+          <UIcon name="i-tabler-chart-bar" class="size-8 text-[var(--ui-text-dimmed)]" />
           <p class="mt-3 text-sm font-medium">Usage overview is not advertised by this server.</p>
           <p class="mt-1 text-xs text-[var(--ui-text-muted)]">The rest of the dashboard remains available.</p>
         </div>
@@ -122,7 +122,7 @@
               <h2 class="font-semibold text-[var(--ui-text-highlighted)]">Home topology</h2>
               <p class="text-xs text-[var(--ui-text-muted)]">Cluster ownership and heartbeat health</p>
             </div>
-            <UButton to="/admin/system-nodes" color="neutral" variant="ghost" size="sm" trailing-icon="i-heroicons-arrow-right">Details</UButton>
+            <UButton to="/admin/system-nodes" color="neutral" variant="ghost" size="sm" trailing-icon="i-tabler-arrow-right">Details</UButton>
           </div>
         </template>
         <div v-if="topologyAvailable" class="space-y-3">
@@ -221,33 +221,33 @@ const summaryCards = computed(() => [
   {
     label: 'Connected CPA nodes', value: formatNumber(nodeList.value.length),
     detail: `${nodeList.value.filter(node => node.healthy).length} currently healthy`,
-    icon: 'i-heroicons-server', iconClass: 'bg-sky-500/10 text-sky-500'
+    icon: 'i-tabler-server', iconClass: 'bg-sky-500/10 text-sky-500'
   },
   {
     label: 'Home instances', value: formatNumber(topology.value?.summary?.home_count ?? topologyHomes.value.length),
     detail: `${topology.value?.summary?.healthy_home_count ?? 0} healthy Home nodes`,
-    icon: 'i-heroicons-building-office-2', iconClass: 'bg-indigo-500/10 text-indigo-500'
+    icon: 'i-tabler-building', iconClass: 'bg-indigo-500/10 text-indigo-500'
   },
   {
     label: 'Requests (24h)', value: usageAvailable.value ? formatNumber(requestCount.value) : '—',
     detail: usageAvailable.value ? `${formatNumber(failedCount.value)} failed requests` : 'Capability unavailable',
-    icon: 'i-heroicons-bolt', iconClass: 'bg-amber-500/10 text-amber-500'
+    icon: 'i-tabler-bolt', iconClass: 'bg-amber-500/10 text-amber-500'
   },
   {
     label: 'Cluster attention', value: formatNumber(topology.value?.summary?.attention_count ?? nodeList.value.filter(node => !node.healthy).length),
     detail: topology.value?.summary?.missing_master ? 'Healthy master is missing' : 'Nodes requiring attention',
-    icon: 'i-heroicons-shield-exclamation', iconClass: 'bg-rose-500/10 text-rose-500'
+    icon: 'i-tabler-shield-exclamation', iconClass: 'bg-rose-500/10 text-rose-500'
   }
 ])
 
 const issues = computed(() => {
   const result: any[] = []
-  if (topology.value?.summary?.missing_master) result.push({ title: 'Healthy Home master is missing', description: 'Cluster scheduling and coordination may be degraded.', color: 'error', icon: 'i-heroicons-shield-exclamation', to: '/admin/system-nodes' })
+  if (topology.value?.summary?.missing_master) result.push({ title: 'Healthy Home master is missing', description: 'Cluster scheduling and coordination may be degraded.', color: 'error', icon: 'i-tabler-shield-exclamation', to: '/admin/system-nodes' })
   const unhealthyNodes = nodeList.value.filter(node => !node.healthy).length
-  if (unhealthyNodes) result.push({ title: `${unhealthyNodes} CPA node(s) need attention`, description: 'Inspect heartbeat and topology details.', color: 'warning', icon: 'i-heroicons-server', to: '/admin/system-nodes' })
-  if (unavailableCredentialCount.value) result.push({ title: `${unavailableCredentialCount.value} credential(s) unavailable`, description: 'Review status messages, quota, and concurrency.', color: 'warning', icon: 'i-heroicons-key', to: '/admin/credentials' })
-  if (usageAvailable.value && failedCount.value > 0) result.push({ title: `${formatNumber(failedCount.value)} failed request(s) in 24 hours`, description: 'Open usage records to inspect providers, models, and errors.', color: 'warning', icon: 'i-heroicons-exclamation-triangle', to: '/admin/usage' })
-  if (!releaseCurrent.value && latestVersion.value) result.push({ title: `Home ${latestVersion.value} is available`, description: `This server reports ${currentVersion.value}.`, color: 'info', icon: 'i-heroicons-arrow-up-circle', to: '/admin/system-nodes' })
+  if (unhealthyNodes) result.push({ title: `${unhealthyNodes} CPA node(s) need attention`, description: 'Inspect heartbeat and topology details.', color: 'warning', icon: 'i-tabler-server', to: '/admin/system-nodes' })
+  if (unavailableCredentialCount.value) result.push({ title: `${unavailableCredentialCount.value} credential(s) unavailable`, description: 'Review status messages, quota, and concurrency.', color: 'warning', icon: 'i-tabler-key', to: '/admin/credentials' })
+  if (usageAvailable.value && failedCount.value > 0) result.push({ title: `${formatNumber(failedCount.value)} failed request(s) in 24 hours`, description: 'Open usage records to inspect providers, models, and errors.', color: 'warning', icon: 'i-tabler-alert-triangle', to: '/admin/usage' })
+  if (!releaseCurrent.value && latestVersion.value) result.push({ title: `Home ${latestVersion.value} is available`, description: `This server reports ${currentVersion.value}.`, color: 'info', icon: 'i-tabler-circle-arrow-up', to: '/admin/system-nodes' })
   return result
 })
 
@@ -261,7 +261,7 @@ const usageMetrics = computed(() => [
 const currentVersion = computed(() => serverInfo.value.home_version || 'Unknown')
 const latestVersion = computed(() => latest.value?.['latest-version'] || latest.value?.latest_version || '')
 const releaseCurrent = computed(() => !latestVersion.value || normalizeVersion(currentVersion.value) === normalizeVersion(latestVersion.value))
-const releaseIcon = computed(() => releaseCurrent.value ? 'i-heroicons-check-circle' : 'i-heroicons-arrow-up-circle')
+const releaseIcon = computed(() => releaseCurrent.value ? 'i-tabler-circle-check' : 'i-tabler-circle-arrow-up')
 const releaseMessage = computed(() => {
   if (!latestVersion.value) return 'Latest release check was unavailable.'
   return releaseCurrent.value ? 'This Home is on the latest release.' : `A newer release (${latestVersion.value}) is available.`

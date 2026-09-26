@@ -5,12 +5,12 @@
         <h1 class="text-3xl font-bold tracking-tight text-[var(--ui-text-highlighted)]">System topology</h1>
         <p class="mt-2 text-sm text-[var(--ui-text-muted)]">Inspect Home ownership, CPA heartbeat health, and operator-managed node names.</p>
       </div>
-      <UButton color="neutral" variant="outline" icon="i-heroicons-arrow-path" :loading="loading" @click="refreshSystem">
+      <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" @click="refreshSystem">
         Refresh
       </UButton>
     </section>
 
-    <UAlert v-if="errorMessage" color="error" variant="subtle" icon="i-heroicons-exclamation-circle" title="System data could not be loaded" :description="errorMessage" />
+    <UAlert v-if="errorMessage" color="error" variant="subtle" icon="i-tabler-alert-circle" title="System data could not be loaded" :description="errorMessage" />
 
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <UCard v-for="stat in stats" :key="stat.label">
@@ -74,7 +74,7 @@
             <h2 class="font-semibold text-[var(--ui-text-highlighted)]">CPA nodes</h2>
             <p class="text-xs text-[var(--ui-text-muted)]">Active node snapshots; names are stored by Home</p>
           </div>
-          <UInput v-model="search" icon="i-heroicons-magnifying-glass" placeholder="Search nodes..." class="w-full sm:w-64" />
+          <UInput v-model="search" icon="i-tabler-search" placeholder="Search nodes..." class="w-full sm:w-64" />
         </div>
       </template>
 
@@ -114,8 +114,8 @@
               <td class="px-3 py-4">
                 <div v-if="editingId === node.node_id" class="flex max-w-sm items-center gap-2">
                   <UInput v-model="renameValue" size="sm" placeholder="Node name (empty clears)" class="flex-1" @keyup.enter="saveRename(node)" @keyup.esc="cancelRename" />
-                  <UButton icon="i-heroicons-check" size="sm" :loading="renamingId === node.node_id" @click="saveRename(node)" />
-                  <UButton icon="i-heroicons-x-mark" size="sm" color="neutral" variant="ghost" @click="cancelRename" />
+                  <UButton icon="i-tabler-check" size="sm" :loading="renamingId === node.node_id" @click="saveRename(node)" />
+                  <UButton icon="i-tabler-x" size="sm" color="neutral" variant="ghost" @click="cancelRename" />
                 </div>
                 <div v-else class="min-w-0">
                   <p class="font-medium text-[var(--ui-text-highlighted)]">{{ node.node_name || 'Unnamed node' }}</p>
@@ -148,7 +148,7 @@
                   color="neutral"
                   variant="ghost"
                   size="sm"
-                  icon="i-heroicons-pencil-square"
+                  icon="i-tabler-pencil"
                   @click="startRename(node)"
                 >Rename</UButton>
               </td>
@@ -156,7 +156,7 @@
           </tbody>
         </table>
         <div v-if="!filteredNodes.length" class="py-12 text-center">
-          <UIcon name="i-heroicons-server-stack" class="mx-auto size-8 text-[var(--ui-text-dimmed)]" />
+          <UIcon name="i-tabler-server-2" class="mx-auto size-8 text-[var(--ui-text-dimmed)]" />
           <p class="mt-3 text-sm text-[var(--ui-text-muted)]">{{ search ? 'No nodes match your search.' : 'No connected CPA nodes.' }}</p>
         </div>
       </div>
@@ -192,10 +192,10 @@ const filteredNodes = computed(() => {
 })
 
 const stats = computed(() => [
-  { label: 'Home instances', value: topology.value?.summary?.home_count ?? homes.value.length, icon: 'i-heroicons-building-office-2', color: 'text-indigo-500' },
-  { label: 'Healthy Homes', value: topology.value?.summary?.healthy_home_count ?? homes.value.filter(home => home.healthy).length, icon: 'i-heroicons-heart', color: 'text-emerald-500' },
-  { label: 'CPA nodes', value: topology.value?.summary?.cpa_count ?? nodes.value.length, icon: 'i-heroicons-server', color: 'text-sky-500' },
-  { label: 'Needs attention', value: topology.value?.summary?.attention_count ?? nodes.value.filter(node => !node.healthy).length, icon: 'i-heroicons-exclamation-triangle', color: 'text-amber-500' }
+  { label: 'Home instances', value: topology.value?.summary?.home_count ?? homes.value.length, icon: 'i-tabler-building', color: 'text-indigo-500' },
+  { label: 'Healthy Homes', value: topology.value?.summary?.healthy_home_count ?? homes.value.filter(home => home.healthy).length, icon: 'i-tabler-heart', color: 'text-emerald-500' },
+  { label: 'CPA nodes', value: topology.value?.summary?.cpa_count ?? nodes.value.length, icon: 'i-tabler-server', color: 'text-sky-500' },
+  { label: 'Needs attention', value: topology.value?.summary?.attention_count ?? nodes.value.filter(node => !node.healthy).length, icon: 'i-tabler-alert-triangle', color: 'text-amber-500' }
 ])
 
 function pluginReportColor(state: string) {

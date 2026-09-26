@@ -16,7 +16,7 @@
         <UFormField label="Realtime grouping">
           <USelect v-model="groupBy" :items="['model', 'provider', 'client_key', 'credential']" class="w-40" :disabled="loadingConsole" @update:model-value="refreshConsole" />
         </UFormField>
-        <UButton icon="i-heroicons-arrow-path" :loading="loadingConsole" @click="refreshConsole">Refresh</UButton>
+        <UButton icon="i-tabler-refresh" :loading="loadingConsole" @click="refreshConsole">Refresh</UButton>
         <label class="flex items-center gap-2 text-sm"><input v-model="autoRefresh" type="checkbox" /> Auto-refresh every 30s</label>
         <span v-if="lastUpdated" class="text-xs text-[var(--ui-text-muted)]">Updated {{ formatTime(lastUpdated) }}</span>
       </div>
@@ -78,8 +78,8 @@
 
     <section v-else class="space-y-6" role="tabpanel">
     <p class="text-sm text-[var(--ui-text-muted)]">Send an HTTP request from Home, optionally using a stored credential for token substitution and credential-scoped proxy selection.</p>
-    <UAlert color="warning" variant="subtle" icon="i-heroicons-shield-exclamation" title="Administrative network access" description="Requests originate from Home and can reach addresses available to that server. Use only trusted URLs. Responses shown below may contain sensitive upstream data." />
-    <UAlert v-if="errorMessage" color="error" variant="subtle" icon="i-heroicons-exclamation-circle" title="Request failed" :description="errorMessage" />
+    <UAlert color="warning" variant="subtle" icon="i-tabler-shield-exclamation" title="Administrative network access" description="Requests originate from Home and can reach addresses available to that server. Use only trusted URLs. Responses shown below may contain sensitive upstream data." />
+    <UAlert v-if="errorMessage" color="error" variant="subtle" icon="i-tabler-alert-circle" title="Request failed" :description="errorMessage" />
 
     <div class="grid gap-6 xl:grid-cols-2">
       <UCard>
@@ -104,7 +104,7 @@
             <UTextarea v-model="form.data" :rows="10" class="w-full font-mono text-xs" spellcheck="false" />
           </UFormField>
           <div class="flex justify-end">
-            <UButton type="submit" icon="i-heroicons-paper-airplane" :loading="sending">Send request</UButton>
+            <UButton type="submit" icon="i-tabler-send" :loading="sending">Send request</UButton>
           </div>
         </form>
       </UCard>
@@ -124,13 +124,13 @@
           <div>
             <div class="mb-2 flex items-center justify-between gap-3">
               <p class="text-xs font-semibold uppercase tracking-wide text-[var(--ui-text-muted)]">Body</p>
-              <UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-clipboard" @click="copyBody">Copy</UButton>
+              <UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-clipboard" @click="copyBody">Copy</UButton>
             </div>
             <pre class="max-h-[42rem] overflow-auto whitespace-pre-wrap break-words rounded-lg bg-[var(--ui-bg-muted)] p-4 text-xs">{{ formattedBody }}</pre>
           </div>
         </div>
         <div v-else class="flex min-h-80 flex-col items-center justify-center text-center text-[var(--ui-text-muted)]">
-          <UIcon name="i-heroicons-command-line" class="size-10" />
+          <UIcon name="i-tabler-terminal-2" class="size-10" />
           <p class="mt-3 text-sm">Send a request to inspect its status, headers, and body.</p>
         </div>
       </UCard>

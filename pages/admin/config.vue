@@ -16,8 +16,8 @@
       </div>
       <div class="flex flex-wrap gap-2">
         <UButton color="neutral" variant="outline" :disabled="!dirtyCount" @click="changesOpen = true">View changes</UButton>
-        <UButton color="neutral" variant="outline" icon="i-heroicons-arrow-path" :loading="loading" :disabled="saving" @click="reloadWorkspace">Reload</UButton>
-        <UButton icon="i-heroicons-check" :loading="saving" :disabled="!dirtyCount || validationCount > 0 || loading" @click="saveWorkspace">Save</UButton>
+        <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" :disabled="saving" @click="reloadWorkspace">Reload</UButton>
+        <UButton icon="i-tabler-check" :loading="saving" :disabled="!dirtyCount || validationCount > 0 || loading" @click="saveWorkspace">Save</UButton>
       </div>
     </div>
 
@@ -46,7 +46,7 @@
               <template #header><div><h2 class="font-semibold">OAuth model rules</h2><p class="text-xs text-[var(--ui-text-muted)]">Configure disabled models and client-visible aliases for OAuth and file-backed credentials.</p></div></template>
               <div class="space-y-6">
                 <section class="space-y-3">
-                  <div class="flex flex-col gap-3 lg:flex-row lg:items-end"><UFormField label="Channel" class="lg:w-64"><USelect v-model="exclusionChannel" :items="channelOptions" value-key="value" label-key="label" class="w-full" @update:model-value="loadChannelModels" /></UFormField><UInput v-model="modelSearch" icon="i-heroicons-magnifying-glass" placeholder="Search model ID, name, or owner" class="flex-1" /><UButton color="neutral" variant="outline" :loading="modelsLoading" @click="loadChannelModels">Reload models</UButton></div>
+                  <div class="flex flex-col gap-3 lg:flex-row lg:items-end"><UFormField label="Channel" class="lg:w-64"><USelect v-model="exclusionChannel" :items="channelOptions" value-key="value" label-key="label" class="w-full" @update:model-value="loadChannelModels" /></UFormField><UInput v-model="modelSearch" icon="i-tabler-search" placeholder="Search model ID, name, or owner" class="flex-1" /><UButton color="neutral" variant="outline" :loading="modelsLoading" @click="loadChannelModels">Reload models</UButton></div>
                   <div class="max-h-80 overflow-y-auto rounded-md border border-[var(--ui-border)]">
                     <label v-for="model in filteredChannelModels" :key="model.id" class="flex items-start gap-3 border-b border-[var(--ui-border)] px-3 py-2 last:border-b-0"><UCheckbox :model-value="excludedForChannel.includes(model.id)" @update:model-value="toggleExcluded(model.id, $event)" /><span><span class="block text-sm font-medium">{{ model.display_name || model.name || model.id }}</span><span class="font-mono text-xs text-[var(--ui-text-muted)]">{{ model.id }}</span></span></label>
                     <p v-if="!modelsLoading && !filteredChannelModels.length" class="p-6 text-center text-sm text-[var(--ui-text-muted)]">No matching models.</p>
@@ -56,7 +56,7 @@
 
                 <section class="space-y-3 border-t border-[var(--ui-border)] pt-5">
                   <div class="flex items-center justify-between"><div><h3 class="font-semibold">Model aliases</h3><p class="text-xs text-[var(--ui-text-muted)]">Map upstream model names to client-visible aliases.</p></div><UButton size="sm" color="neutral" variant="outline" @click="addAlias">Add alias</UButton></div>
-                  <div v-for="(row, index) in aliasRows" :key="row.key" class="grid gap-3 rounded-md border border-[var(--ui-border)] p-3 lg:grid-cols-[1fr_1.3fr_1.3fr_auto_auto_auto] lg:items-end"><UFormField label="Channel"><UInput v-model="row.channel" /></UFormField><UFormField label="Upstream model"><UInput v-model="row.name" /></UFormField><UFormField label="Client alias"><UInput v-model="row.alias" /></UFormField><UCheckbox v-model="row.fork" label="Fork" /><UCheckbox v-model="row.forceMapping" label="Force mapping" /><UButton color="error" variant="ghost" icon="i-heroicons-trash" @click="aliasRows.splice(index, 1)" /></div>
+                  <div v-for="(row, index) in aliasRows" :key="row.key" class="grid gap-3 rounded-md border border-[var(--ui-border)] p-3 lg:grid-cols-[1fr_1.3fr_1.3fr_auto_auto_auto] lg:items-end"><UFormField label="Channel"><UInput v-model="row.channel" /></UFormField><UFormField label="Upstream model"><UInput v-model="row.name" /></UFormField><UFormField label="Client alias"><UInput v-model="row.alias" /></UFormField><UCheckbox v-model="row.fork" label="Fork" /><UCheckbox v-model="row.forceMapping" label="Force mapping" /><UButton color="error" variant="ghost" icon="i-tabler-trash" @click="aliasRows.splice(index, 1)" /></div>
                   <p v-if="!aliasRows.length" class="py-6 text-center text-sm text-[var(--ui-text-muted)]">No rules configured.</p>
                 </section>
               </div>

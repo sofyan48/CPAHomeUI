@@ -1,13 +1,13 @@
 <template>
   <AdminDataPanel title="Proxy pool" description="Globally scoped proxy records. Changes are applied immediately.">
-    <template #actions><UButton color="neutral" variant="ghost" icon="i-heroicons-arrow-path" :loading="loading" @click="loadPools" /><UButton size="sm" icon="i-heroicons-plus" :disabled="unsupported" @click="openCreate">New proxy</UButton></template>
+    <template #actions><UButton color="neutral" variant="ghost" icon="i-tabler-refresh" :loading="loading" @click="loadPools" /><UButton size="sm" icon="i-tabler-plus" :disabled="unsupported" @click="openCreate">New proxy</UButton></template>
 
     <div v-if="unsupported || loadError" class="p-4">
     <UAlert
       v-if="unsupported"
       color="warning"
       variant="subtle"
-      icon="i-heroicons-exclamation-triangle"
+      icon="i-tabler-alert-triangle"
       title="Proxy pools are not supported"
       description="This Home instance does not expose the proxy-pool Management API. Upgrade Home to create and manage proxy-pool records."
     />
@@ -15,7 +15,7 @@
       v-else-if="loadError"
       color="error"
       variant="subtle"
-      icon="i-heroicons-exclamation-circle"
+      icon="i-tabler-alert-circle"
       title="Proxy pools could not be loaded"
       :description="loadError"
     />
@@ -65,7 +65,7 @@
             <span class="block max-w-56 truncate text-sm text-[var(--ui-text-muted)]" :title="rowValue(row).note || ''">{{ rowValue(row).note || '—' }}</span>
           </template>
 
-          <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-signal" aria-label="Test proxy" title="Test" :loading="testingId === rowValue(row).id" :disabled="Boolean(testingId)" @click="testPool(rowValue(row))" /><UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-pencil-square" aria-label="Edit proxy" title="Edit" @click="openEdit(rowValue(row))" /><UButton size="xs" color="error" variant="ghost" icon="i-heroicons-trash" :aria-label="`Delete ${rowValue(row).name}`" title="Delete" @click="confirmDelete(rowValue(row))" /></div></template>
+          <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-antenna-bars-5" aria-label="Test proxy" title="Test" :loading="testingId === rowValue(row).id" :disabled="Boolean(testingId)" @click="testPool(rowValue(row))" /><UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-pencil" aria-label="Edit proxy" title="Edit" @click="openEdit(rowValue(row))" /><UButton size="xs" color="error" variant="ghost" icon="i-tabler-trash" :aria-label="`Delete ${rowValue(row).name}`" title="Delete" @click="confirmDelete(rowValue(row))" /></div></template>
 
           <template #empty>
             <div class="py-12 text-center text-sm text-[var(--ui-text-muted)]">
@@ -107,7 +107,7 @@
             <USwitch v-model="form.enabled" />
           </label>
 
-          <UAlert v-if="formError" color="error" variant="subtle" icon="i-heroicons-exclamation-circle" title="Proxy could not be saved" :description="formError" />
+          <UAlert v-if="formError" color="error" variant="subtle" icon="i-tabler-alert-circle" title="Proxy could not be saved" :description="formError" />
 
           <div class="flex justify-end gap-2">
             <UButton type="button" color="neutral" variant="ghost" :disabled="saving" @click="closeForm">Cancel</UButton>
@@ -120,7 +120,7 @@
     <UModal v-model:open="deleteOpen" title="Delete proxy">
       <template #body>
         <div class="space-y-5">
-          <UAlert color="warning" variant="subtle" icon="i-heroicons-exclamation-triangle" title="This proxy record will be deleted" :description="deleteTarget?.name || deleteTarget?.proxy_url" />
+          <UAlert color="warning" variant="subtle" icon="i-tabler-alert-triangle" title="This proxy record will be deleted" :description="deleteTarget?.name || deleteTarget?.proxy_url" />
           <p class="text-sm text-[var(--ui-text-muted)]">This action cannot be undone.</p>
           <div class="flex justify-end gap-2">
             <UButton color="neutral" variant="ghost" :disabled="deleting" @click="closeDelete">Cancel</UButton>
@@ -294,7 +294,7 @@ async function savePool() {
       : await fetchAPI<ProxyPoolResponse>('/proxy/proxy-pools', { method: 'POST', body })
     if (response?.proxy_pool) replacePool(response.proxy_pool)
     formOpen.value = false
-    toast.add({ title: editingId.value ? 'Proxy updated' : 'Proxy created', color: 'success', icon: 'i-heroicons-check-circle' })
+    toast.add({ title: editingId.value ? 'Proxy updated' : 'Proxy created', color: 'success', icon: 'i-tabler-circle-check' })
   } catch (error: any) {
     formError.value = errorMessage(error, 'Unable to save the proxy.')
   } finally {
@@ -357,7 +357,7 @@ async function deletePool() {
     pools.value = pools.value.filter(pool => pool.id !== target.id)
     deleteOpen.value = false
     deleteTarget.value = null
-    toast.add({ title: 'Proxy deleted', color: 'success', icon: 'i-heroicons-check-circle' })
+    toast.add({ title: 'Proxy deleted', color: 'success', icon: 'i-tabler-circle-check' })
   } catch (error: any) {
     toast.add({ title: 'Delete failed', description: errorMessage(error, 'Unable to delete the proxy.'), color: 'error' })
   } finally {

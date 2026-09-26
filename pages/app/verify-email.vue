@@ -1,10 +1,10 @@
 <template>
   <div class="mx-auto max-w-md py-16 text-center">
     <UCard>
-      <UIcon v-if="verifying" name="i-heroicons-arrow-path" class="mx-auto size-14 animate-spin text-primary-500" />
-      <UIcon v-else-if="verified" name="i-heroicons-check-circle" class="mx-auto size-14 text-emerald-500" />
-      <UIcon v-else-if="failed || !verificationToken" name="i-heroicons-exclamation-circle" class="mx-auto size-14 text-rose-500" />
-      <UIcon v-else name="i-heroicons-envelope" class="mx-auto size-14 text-primary-500" />
+      <UIcon v-if="verifying" name="i-tabler-refresh" class="mx-auto size-14 animate-spin text-primary-500" />
+      <UIcon v-else-if="verified" name="i-tabler-circle-check" class="mx-auto size-14 text-emerald-500" />
+      <UIcon v-else-if="failed || !verificationToken" name="i-tabler-alert-circle" class="mx-auto size-14 text-rose-500" />
+      <UIcon v-else name="i-tabler-mail" class="mx-auto size-14 text-primary-500" />
 
       <h1 class="mt-5 text-2xl font-bold">{{ title }}</h1>
       <p class="mt-2 text-sm text-[var(--ui-text-muted)]">{{ message }}</p>

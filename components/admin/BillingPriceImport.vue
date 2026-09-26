@@ -9,12 +9,12 @@
         <div class="flex items-end"><UCheckbox v-model="includeZeroCost" label="Include zero-cost catalog rows" /></div>
       </div>
       <fieldset class="space-y-3 rounded-lg border border-[var(--ui-border)] p-4">
-        <div class="flex items-center justify-between gap-3"><legend class="font-medium">Import targets</legend><UButton size="sm" color="neutral" variant="outline" icon="i-heroicons-plus" @click="addTarget">Add target</UButton></div>
+        <div class="flex items-center justify-between gap-3"><legend class="font-medium">Import targets</legend><UButton size="sm" color="neutral" variant="outline" icon="i-tabler-plus" @click="addTarget">Add target</UButton></div>
         <p class="text-xs text-[var(--ui-text-muted)]">Each target creates wildcard-tier rules at the catalog context bands supported by Home.</p>
         <div v-for="(target, index) in targets" :key="index" class="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
           <UFormField :label="`Provider #${index + 1}`"><UInputMenu v-model="target.provider" :items="providers" create-item placeholder="Search or enter provider" class="w-full" @create="target.provider = $event.trim()" /></UFormField>
           <UFormField :label="`Model #${index + 1}`"><UInputMenu v-model="target.model" :items="models" create-item placeholder="Search or enter model ID" class="w-full" @create="target.model = $event.trim()" /></UFormField>
-          <UButton v-if="targets.length > 1" color="error" variant="ghost" icon="i-heroicons-trash" aria-label="Remove target" class="self-end" @click="removeTarget(index)" />
+          <UButton v-if="targets.length > 1" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove target" class="self-end" @click="removeTarget(index)" />
         </div>
       </fieldset>
       <fieldset class="space-y-3 rounded-lg border border-[var(--ui-border)] p-4">
@@ -23,7 +23,7 @@
         <div v-for="(alias, index) in aliases" :key="index" class="grid gap-3 sm:grid-cols-[1fr_2fr_auto]">
           <UFormField label="Target model"><UInput v-model="alias.target_model" placeholder="Target model ID" class="w-full" /></UFormField>
           <UFormField label="Catalog model IDs (comma-separated)"><UInput v-model="alias.source_models" placeholder="catalog-model-a, catalog-model-b" class="w-full" /></UFormField>
-          <UButton color="error" variant="ghost" icon="i-heroicons-trash" aria-label="Remove alias" class="self-end" @click="() => { aliases.splice(index, 1) }" />
+          <UButton color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove alias" class="self-end" @click="() => { aliases.splice(index, 1) }" />
         </div>
       </fieldset>
       <fieldset class="space-y-3 rounded-lg border border-[var(--ui-border)] p-4">
@@ -34,7 +34,7 @@
           <UFormField label="Match"><USelect v-model="rule.match_mode" :items="['prefix', 'regex']" class="w-full" /></UFormField>
           <UFormField label="Pattern"><UInput v-model="rule.pattern" :placeholder="rule.match_mode === 'regex' ? 'Go-compatible regex' : 'Model prefix'" class="w-full" /></UFormField>
           <UFormField label="Multiplier"><UInput v-model.number="rule.multiplier" type="number" min="0.000001" step="0.01" class="w-full" /></UFormField>
-          <UButton color="error" variant="ghost" icon="i-heroicons-trash" aria-label="Remove multiplier rule" class="self-end" @click="() => { multiplierRules.splice(index, 1) }" />
+          <UButton color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove multiplier rule" class="self-end" @click="() => { multiplierRules.splice(index, 1) }" />
         </div>
       </fieldset>
       <fieldset class="space-y-3 rounded-lg border border-[var(--ui-border)] p-4">
@@ -43,7 +43,7 @@
         <div v-for="(row, index) in rowMultipliers" :key="index" class="grid gap-3 sm:grid-cols-[2fr_1fr_auto]">
           <UFormField label="Row key"><UInput v-model="row.row_key" placeholder="provider::model or provider::model::*::200000" class="w-full" /></UFormField>
           <UFormField label="Multiplier"><UInput v-model.number="row.multiplier" type="number" min="0.000001" step="0.01" class="w-full" /></UFormField>
-          <UButton color="error" variant="ghost" icon="i-heroicons-trash" aria-label="Remove row multiplier" class="self-end" @click="() => { rowMultipliers.splice(index, 1) }" />
+          <UButton color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove row multiplier" class="self-end" @click="() => { rowMultipliers.splice(index, 1) }" />
         </div>
       </fieldset>
       <fieldset class="space-y-3 rounded-lg border border-[var(--ui-border)] p-4">
@@ -54,7 +54,7 @@
           <UFormField label="Target model"><UInput v-model="override.target_model" class="w-full" /></UFormField>
           <UFormField label="Catalog provider"><UInput v-model="override.source_provider" class="w-full" /></UFormField>
           <UFormField label="Catalog model"><UInput v-model="override.source_model" class="w-full" /></UFormField>
-          <UButton color="error" variant="ghost" icon="i-heroicons-trash" aria-label="Remove match override" class="self-end" @click="() => { matchOverrides.splice(index, 1) }" />
+          <UButton color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove match override" class="self-end" @click="() => { matchOverrides.splice(index, 1) }" />
         </div>
       </fieldset>
       <UAlert v-if="validationError" color="warning" variant="subtle" :description="validationError" />

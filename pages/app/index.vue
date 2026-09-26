@@ -2,7 +2,7 @@
   <div class="space-y-7">
     <section class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div><UBadge color="primary" variant="subtle">Account #{{ user?.id }}</UBadge><h1 class="mt-3 text-3xl font-bold tracking-tight">Welcome, {{ user?.username }}</h1><p class="mt-2 text-sm text-[var(--ui-text-muted)]">Manage your API access, billing activity, and account security.</p><p v-if="tokenExpiresAt" class="mt-1 text-xs text-[var(--ui-text-dimmed)]">Session expires {{ formatDate(tokenExpiresAt) }}</p></div>
-      <UButton color="neutral" variant="outline" icon="i-heroicons-arrow-path" :loading="loading" @click="loadWorkspace">Refresh</UButton>
+      <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" @click="loadWorkspace">Refresh</UButton>
     </section>
     <UAlert v-if="error" color="error" variant="subtle" title="Some workspace data could not be loaded" :description="error" />
 
@@ -12,26 +12,26 @@
 
     <section class="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
       <UCard>
-        <template #header><div class="flex items-center justify-between"><div><h2 class="font-semibold">API keys</h2><p class="text-xs text-[var(--ui-text-muted)]">Credentials owned by your account</p></div><UButton size="sm" icon="i-heroicons-plus" @click="openKey()">New key</UButton></div></template>
+        <template #header><div class="flex items-center justify-between"><div><h2 class="font-semibold">API keys</h2><p class="text-xs text-[var(--ui-text-muted)]">Credentials owned by your account</p></div><UButton size="sm" icon="i-tabler-plus" @click="openKey()">New key</UButton></div></template>
         <div v-if="keys.length" class="divide-y divide-[var(--ui-border)]">
           <div v-for="key in keys" :key="key.id" class="flex items-center gap-3 px-5 py-4">
             <div class="min-w-0 flex-1"><p class="text-sm font-medium">Key #{{ key.id }}</p><code class="block truncate text-xs text-[var(--ui-text-muted)]">{{ maskKey(key.api_key) }}</code><p class="mt-1 text-xs text-[var(--ui-text-dimmed)]">{{ scopeLabel(key) }}</p></div>
-            <UButton icon="i-heroicons-clipboard" color="neutral" variant="ghost" size="sm" aria-label="Copy key" @click="copy(key.api_key)" />
-            <UButton icon="i-heroicons-pencil-square" color="neutral" variant="ghost" size="sm" aria-label="Edit key" @click="openKey(key)" />
-            <UButton icon="i-heroicons-trash" color="error" variant="ghost" size="sm" aria-label="Delete key" @click="removeKey(key)" />
+            <UButton icon="i-tabler-clipboard" color="neutral" variant="ghost" size="sm" aria-label="Copy key" @click="copy(key.api_key)" />
+            <UButton icon="i-tabler-pencil" color="neutral" variant="ghost" size="sm" aria-label="Edit key" @click="openKey(key)" />
+            <UButton icon="i-tabler-trash" color="error" variant="ghost" size="sm" aria-label="Delete key" @click="removeKey(key)" />
           </div>
         </div>
-        <div v-else class="px-6 py-14 text-center"><UIcon name="i-heroicons-key" class="mx-auto size-8 text-[var(--ui-text-dimmed)]" /><p class="mt-3 font-medium">No API keys yet</p><p class="mt-1 text-sm text-[var(--ui-text-muted)]">Create one to start making requests.</p></div>
+        <div v-else class="px-6 py-14 text-center"><UIcon name="i-tabler-key" class="mx-auto size-8 text-[var(--ui-text-dimmed)]" /><p class="mt-3 font-medium">No API keys yet</p><p class="mt-1 text-sm text-[var(--ui-text-muted)]">Create one to start making requests.</p></div>
       </UCard>
 
       <UCard>
         <template #header><h2 class="font-semibold">Account security</h2></template>
         <div class="space-y-4">
-          <SecurityRow icon="i-heroicons-lock-closed" title="Password" detail="Change your account password" action="Change" @action="openPassword" />
-          <SecurityRow icon="i-heroicons-device-phone-mobile" title="Authenticator app" :detail="user?.totp_enabled ? 'Two-factor authentication enabled' : 'Add a time-based one-time password'" :action="user?.totp_enabled ? 'Disable' : 'Enable'" @action="user?.totp_enabled ? disableTOTP() : beginTOTP()" />
-          <SecurityRow icon="i-heroicons-envelope" title="Recovery email" :detail="emailDetail" action="Manage" @action="openEmail" />
-          <SecurityRow icon="i-heroicons-finger-print" title="Passkeys" :detail="`${user?.passkey_count || 0} registered`" action="Add" @action="openPasskey" />
-          <div v-for="passkey in user?.passkeys || []" :key="passkey.id" class="ml-12 flex items-center justify-between rounded-lg bg-[var(--ui-bg-muted)] p-3"><div class="min-w-0"><p class="truncate text-sm font-medium">{{ passkey.name || 'Passkey' }}</p><p class="truncate text-xs text-[var(--ui-text-dimmed)]">{{ passkey.id }}</p><p v-if="passkey.created_at || passkey.updated_at" class="text-xs text-[var(--ui-text-dimmed)]">Added {{ formatDate(passkey.created_at || '') }}<span v-if="passkey.updated_at"> · updated {{ formatDate(passkey.updated_at) }}</span></p></div><UButton icon="i-heroicons-trash" color="error" variant="ghost" size="xs" @click="removePasskey(passkey)" /></div>
+          <SecurityRow icon="i-tabler-lock" title="Password" detail="Change your account password" action="Change" @action="openPassword" />
+          <SecurityRow icon="i-tabler-device-mobile" title="Authenticator app" :detail="user?.totp_enabled ? 'Two-factor authentication enabled' : 'Add a time-based one-time password'" :action="user?.totp_enabled ? 'Disable' : 'Enable'" @action="user?.totp_enabled ? disableTOTP() : beginTOTP()" />
+          <SecurityRow icon="i-tabler-mail" title="Recovery email" :detail="emailDetail" action="Manage" @action="openEmail" />
+          <SecurityRow icon="i-tabler-fingerprint" title="Passkeys" :detail="`${user?.passkey_count || 0} registered`" action="Add" @action="openPasskey" />
+          <div v-for="passkey in user?.passkeys || []" :key="passkey.id" class="ml-12 flex items-center justify-between rounded-lg bg-[var(--ui-bg-muted)] p-3"><div class="min-w-0"><p class="truncate text-sm font-medium">{{ passkey.name || 'Passkey' }}</p><p class="truncate text-xs text-[var(--ui-text-dimmed)]">{{ passkey.id }}</p><p v-if="passkey.created_at || passkey.updated_at" class="text-xs text-[var(--ui-text-dimmed)]">Added {{ formatDate(passkey.created_at || '') }}<span v-if="passkey.updated_at"> · updated {{ formatDate(passkey.updated_at) }}</span></p></div><UButton icon="i-tabler-trash" color="error" variant="ghost" size="xs" @click="removePasskey(passkey)" /></div>
         </div>
       </UCard>
     </section>
@@ -87,7 +87,7 @@
         <template #model-cell="{ row }"><div><p class="font-medium">{{ rowValue(row).model }}</p><p class="text-xs text-[var(--ui-text-muted)]">{{ rowValue(row).provider }}</p></div></template>
         <template #tokens-cell="{ row }"><span class="text-sm">{{ formatNumber(rowValue(row).input_tokens) }} in · {{ formatNumber(rowValue(row).output_tokens) }} out</span></template>
         <template #amount-cell="{ row }"><div class="font-mono text-sm">{{ money(rowValue(row).amount) }}<p class="text-xs text-[var(--ui-text-muted)]">Bal. {{ money(rowValue(row).balance_after) }}</p></div></template>
-        <template #actions-cell="{ row }"><UButton size="sm" color="neutral" variant="ghost" icon="i-heroicons-eye" @click="openChargeDetail(rowValue(row))">Details</UButton></template>
+        <template #actions-cell="{ row }"><UButton size="sm" color="neutral" variant="ghost" icon="i-tabler-eye" @click="openChargeDetail(rowValue(row))">Details</UButton></template>
         <template #empty><div class="py-12 text-center text-sm text-[var(--ui-text-muted)]">No billing charges found.</div></template>
       </UTable>
       <div class="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--ui-border)] px-4 py-3 text-sm"><span>Showing {{ chargesTotal ? (chargePage - 1) * chargePageSize + 1 : 0 }}–{{ Math.min(chargePage * chargePageSize, chargesTotal) }} of {{ formatNumber(chargesTotal) }}</span><div class="flex items-center gap-2"><UButton size="sm" color="neutral" variant="outline" :disabled="chargePage <= 1 || billingLoading" @click="changeChargePage(-1)">Previous</UButton><span>Page {{ chargePage }} of {{ chargePages }}</span><UButton size="sm" color="neutral" variant="outline" :disabled="chargePage >= chargePages || billingLoading" @click="changeChargePage(1)">Next</UButton></div></div>
@@ -117,7 +117,7 @@
 
     <UModal v-model:open="totpOpen" title="Set up an authenticator app"><template #body><form class="space-y-5" @submit.prevent="bindTOTP"><UAlert v-if="modalError" color="error" variant="subtle" :description="modalError" /><p class="text-sm text-[var(--ui-text-muted)]">Add this secret to your authenticator, then enter a current code.</p><div class="rounded-xl bg-[var(--ui-bg-muted)] p-4"><p class="text-xs text-[var(--ui-text-dimmed)]">Secret</p><code class="mt-1 block break-all font-semibold">{{ totpSetup?.secret }}</code></div><UFormField label="Verification code" required><UInput v-model="totpCode" class="w-full font-mono tracking-[0.3em]" inputmode="numeric" autocomplete="one-time-code" /></UFormField><div class="flex justify-end gap-2"><UButton color="neutral" variant="ghost" type="button" @click="closeTOTP">Cancel</UButton><UButton type="submit" :loading="saving">Enable TOTP</UButton></div></form></template></UModal>
 
-    <UModal v-model:open="passkeyOpen" title="Add a passkey" description="Your browser will ask for a device authenticator or security key."><template #body><form class="space-y-5" @submit.prevent="addPasskey"><UAlert v-if="modalError" color="error" variant="subtle" :description="modalError" /><UFormField label="Passkey name" required><UInput v-model="passkeyName" class="w-full" placeholder="MacBook Touch ID" /></UFormField><div class="flex justify-end gap-2"><UButton color="neutral" variant="ghost" type="button" @click="closePasskey">Cancel</UButton><UButton type="submit" icon="i-heroicons-finger-print" :loading="saving">Continue</UButton></div></form></template></UModal>
+    <UModal v-model:open="passkeyOpen" title="Add a passkey" description="Your browser will ask for a device authenticator or security key."><template #body><form class="space-y-5" @submit.prevent="addPasskey"><UAlert v-if="modalError" color="error" variant="subtle" :description="modalError" /><UFormField label="Passkey name" required><UInput v-model="passkeyName" class="w-full" placeholder="MacBook Touch ID" /></UFormField><div class="flex justify-end gap-2"><UButton color="neutral" variant="ghost" type="button" @click="closePasskey">Cancel</UButton><UButton type="submit" icon="i-tabler-fingerprint" :loading="saving">Continue</UButton></div></form></template></UModal>
   </div>
 </template>
 
@@ -165,10 +165,10 @@ const closePassword = () => { passwordOpen.value = false }
 const closeTOTP = () => { totpOpen.value = false }
 const closePasskey = () => { passkeyOpen.value = false }
 const cards = computed(() => [
-  { label: 'Current balance', value: money(overview.value?.current_balance ?? user.value?.credits ?? 0), detail: 'Available account credits', icon: 'i-heroicons-wallet' },
-  { label: 'Month spend', value: money(overview.value?.month_spend ?? 0), detail: 'This month', icon: 'i-heroicons-banknotes' },
-  { label: 'API keys', value: formatNumber(keys.value.length), detail: 'Active credentials', icon: 'i-heroicons-key' },
-  { label: 'Security', value: securityScore.value, detail: 'Account protections enabled', icon: 'i-heroicons-shield-check' }
+  { label: 'Current balance', value: money(overview.value?.current_balance ?? user.value?.credits ?? 0), detail: 'Available account credits', icon: 'i-tabler-wallet' },
+  { label: 'Month spend', value: money(overview.value?.month_spend ?? 0), detail: 'This month', icon: 'i-tabler-cash-banknote' },
+  { label: 'API keys', value: formatNumber(keys.value.length), detail: 'Active credentials', icon: 'i-tabler-key' },
+  { label: 'Security', value: securityScore.value, detail: 'Account protections enabled', icon: 'i-tabler-shield-check' }
 ])
 const billingMetrics = computed(() => {
   const data = overview.value

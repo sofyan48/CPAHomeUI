@@ -13,10 +13,10 @@
           <span class="text-sm">Live refresh</span>
           <USelect v-if="liveRefresh" v-model="refreshSeconds" :items="refreshOptions" value-key="value" label-key="label" size="sm" class="w-24" />
         </div>
-        <UButton color="neutral" variant="outline" icon="i-heroicons-arrow-path" :loading="loading" @click="refreshEvents">
+        <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" @click="refreshEvents">
           Refresh
         </UButton>
-        <UButton color="primary" icon="i-heroicons-arrow-down-tray" @click="exportOpen = true">
+        <UButton color="primary" icon="i-tabler-download" @click="exportOpen = true">
           Export
         </UButton>
       </div>
@@ -26,7 +26,7 @@
       v-if="pageError || liveError"
       color="error"
       variant="subtle"
-      icon="i-heroicons-exclamation-triangle"
+      icon="i-tabler-alert-triangle"
       title="Request events unavailable"
       :description="pageError || liveError"
     />
@@ -39,7 +39,7 @@
           <UFormField label="Event type"><USelect :model-value="filters.event_type || allOptionValue" @update:model-value="setSelectFilter('event_type', $event)" :items="eventTypeOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
           <UFormField label="Status"><USelect :model-value="filters.status || allOptionValue" @update:model-value="setSelectFilter('status', $event)" :items="statusOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
           <UFormField label="Status code"><USelect :model-value="filters.status_code || allOptionValue" @update:model-value="setSelectFilter('status_code', $event)" :items="statusCodeOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
-          <UFormField label="Search"><UInput v-model="filters.search" icon="i-heroicons-magnifying-glass" placeholder="Request, session, user, model..." class="w-full" /></UFormField>
+          <UFormField label="Search"><UInput v-model="filters.search" icon="i-tabler-search" placeholder="Request, session, user, model..." class="w-full" /></UFormField>
           <UFormField label="Provider"><USelectMenu :model-value="filters.provider || allOptionValue" @update:model-value="setSelectFilter('provider', $event)" :items="providerOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
           <UFormField label="Model"><USelectMenu :model-value="filters.model || allOptionValue" @update:model-value="setSelectFilter('model', $event)" :items="modelOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
           <UFormField label="Home"><USelectMenu :model-value="filters.home_ip || allOptionValue" @update:model-value="setSelectFilter('home_ip', $event)" :items="homeOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
@@ -69,7 +69,7 @@
         <div class="flex flex-wrap items-center gap-2 border-t border-[var(--ui-border)] pt-4">
           <UButton type="submit" color="primary" :loading="loading">Apply filters</UButton>
           <UButton color="neutral" variant="ghost" @click="resetFilters">Reset</UButton>
-          <UButton color="neutral" variant="ghost" :icon="advancedOpen ? 'i-heroicons-chevron-up' : 'i-heroicons-adjustments-horizontal'" @click="advancedOpen = !advancedOpen">
+          <UButton color="neutral" variant="ghost" :icon="advancedOpen ? 'i-tabler-chevron-up' : 'i-tabler-adjustments-horizontal'" @click="advancedOpen = !advancedOpen">
             {{ advancedOpen ? 'Hide advanced' : 'Advanced filters' }}
           </UButton>
           <span class="ml-auto text-xs text-[var(--ui-text-muted)]">Times are interpreted in {{ timezone }}.</span>
@@ -120,8 +120,8 @@
         <template #runtime-cell="{ row }"><div class="min-w-36"><p class="text-sm">{{ rowValue(row).runtime?.cpa_label || rowValue(row).runtime?.cpa_node_id || 'Unknown CPA' }}</p><p class="font-mono text-xs text-[var(--ui-text-muted)]">Home {{ rowValue(row).runtime?.home_id || rowValue(row).runtime?.home_ip || '—' }}</p></div></template>
         <template #tokens-cell="{ row }"><div class="min-w-28 text-sm tabular-nums"><p class="font-semibold">{{ formatNumber(rowValue(row).tokens?.total_tokens) }}</p><p class="text-xs text-[var(--ui-text-muted)]">{{ formatNumber(rowValue(row).tokens?.input_tokens) }} in / {{ formatNumber(rowValue(row).tokens?.output_tokens) }} out</p></div></template>
         <template #performance-cell="{ row }"><div class="min-w-24 text-sm tabular-nums"><p>{{ formatMilliseconds(rowValue(row).performance?.latency_ms) }}</p><p class="text-xs text-[var(--ui-text-muted)]">{{ rowValue(row).performance?.tps == null ? '—' : `${formatDecimal(rowValue(row).performance.tps)} TPS` }}</p></div></template>
-        <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><UButton v-if="rowValue(row).related?.request_log?.download_url" size="sm" color="neutral" variant="ghost" icon="i-heroicons-arrow-down-tray" title="Download request log" :loading="downloadingId === rowValue(row).request_id" @click="downloadRequestLog(rowValue(row).related.request_log.download_url, rowValue(row).request_id)" /><UButton size="sm" color="neutral" variant="ghost" icon="i-heroicons-eye" @click="openDetail(rowValue(row))">Details</UButton></div></template>
-        <template #empty><div class="flex flex-col items-center justify-center py-14 text-center"><UIcon name="i-heroicons-list-bullet" class="mb-3 size-8 text-[var(--ui-text-muted)]" /><p class="font-medium">No request events found</p><p class="mt-1 text-sm text-[var(--ui-text-muted)]">Try a broader time range or fewer filters.</p></div></template>
+        <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><UButton v-if="rowValue(row).related?.request_log?.download_url" size="sm" color="neutral" variant="ghost" icon="i-tabler-download" title="Download request log" :loading="downloadingId === rowValue(row).request_id" @click="downloadRequestLog(rowValue(row).related.request_log.download_url, rowValue(row).request_id)" /><UButton size="sm" color="neutral" variant="ghost" icon="i-tabler-eye" @click="openDetail(rowValue(row))">Details</UButton></div></template>
+        <template #empty><div class="flex flex-col items-center justify-center py-14 text-center"><UIcon name="i-tabler-list" class="mb-3 size-8 text-[var(--ui-text-muted)]" /><p class="font-medium">No request events found</p><p class="mt-1 text-sm text-[var(--ui-text-muted)]">Try a broader time range or fewer filters.</p></div></template>
       </UTable>
       <div class="flex flex-col gap-3 border-t border-[var(--ui-border)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <p class="text-xs text-[var(--ui-text-muted)]">Page {{ page }} of {{ totalPages }}</p>
@@ -135,7 +135,7 @@
         <div v-else-if="selectedDetail" class="space-y-5">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="flex flex-wrap gap-2"><UBadge :color="selectedDetail.event?.failed ? 'error' : 'success'" variant="subtle">{{ selectedDetail.event?.failed ? 'Failed' : 'Success' }}</UBadge><UBadge color="neutral" variant="subtle">{{ selectedDetail.event?.event_type || 'completion' }}</UBadge></div>
-            <UButton v-if="selectedDetail.event?.related?.request_log?.download_url" color="neutral" variant="outline" icon="i-heroicons-arrow-down-tray" :loading="downloadingId === selectedDetail.event.request_id" @click="downloadRequestLog(selectedDetail.event.related.request_log.download_url, selectedDetail.event.request_id)">Download log</UButton>
+            <UButton v-if="selectedDetail.event?.related?.request_log?.download_url" color="neutral" variant="outline" icon="i-tabler-download" :loading="downloadingId === selectedDetail.event.request_id" @click="downloadRequestLog(selectedDetail.event.related.request_log.download_url, selectedDetail.event.request_id)">Download log</UButton>
           </div>
           <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <DetailItem label="Event ID" :value="selectedDetail.event?.id" mono />
@@ -161,7 +161,7 @@
             <DetailSection title="Performance" :items="performanceDetails" />
             <DetailSection title="Billing" :items="billingDetails" />
           </div>
-          <UAlert v-if="hasEventError" color="error" variant="subtle" icon="i-heroicons-exclamation-circle" title="Request error" :description="eventErrorText" />
+          <UAlert v-if="hasEventError" color="error" variant="subtle" icon="i-tabler-alert-circle" title="Request error" :description="eventErrorText" />
           <div v-if="selectedDetail.payload_summary" class="rounded-lg border border-[var(--ui-border)] p-4"><p class="mb-3 text-sm font-semibold">Payload summary</p><pre class="max-h-64 overflow-auto whitespace-pre-wrap text-xs">{{ prettyJSON(selectedDetail.payload_summary) }}</pre></div>
           <div v-if="selectedDetail.log_excerpt?.length" class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] p-4"><p class="mb-3 text-sm font-semibold">Redacted request log excerpt</p><pre class="max-h-72 overflow-auto whitespace-pre-wrap break-words text-xs">{{ selectedDetail.log_excerpt.join('\n') }}</pre></div>
         </div>
@@ -172,8 +172,8 @@
       <template #body>
         <div class="space-y-5">
           <UFormField label="Format"><USelect v-model="exportFormat" :items="exportOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
-          <UAlert color="info" variant="subtle" icon="i-heroicons-shield-check" title="Secrets remain redacted" description="The server export uses flattened event fields and does not include raw client API keys or payload bodies." />
-          <div class="flex justify-end gap-3"><UButton color="neutral" variant="ghost" @click="exportOpen = false">Cancel</UButton><UButton icon="i-heroicons-arrow-down-tray" :loading="exporting" @click="exportEvents">Download {{ exportFormat.toUpperCase() }}</UButton></div>
+          <UAlert color="info" variant="subtle" icon="i-tabler-shield-check" title="Secrets remain redacted" description="The server export uses flattened event fields and does not include raw client API keys or payload bodies." />
+          <div class="flex justify-end gap-3"><UButton color="neutral" variant="ghost" @click="exportOpen = false">Cancel</UButton><UButton icon="i-tabler-download" :loading="exporting" @click="exportEvents">Download {{ exportFormat.toUpperCase() }}</UButton></div>
         </div>
       </template>
     </UModal>
