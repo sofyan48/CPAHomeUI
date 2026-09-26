@@ -2,7 +2,7 @@
   <div class="user-shell min-h-screen text-[var(--ui-text)]">
     <template v-if="workspaceRoute">
       <div v-if="mobileOpen" class="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden" @click="closeMobile" />
-      <aside class="user-sidebar fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-[var(--ui-border)] bg-[var(--glass-card-strong)] transition-transform lg:translate-x-0" :class="mobileOpen ? 'translate-x-0' : '-translate-x-full'">
+      <aside id="workspace-sidebar" class="user-sidebar fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-[var(--ui-border)] bg-[var(--glass-card-strong)] transition-transform" :class="[mobileOpen ? 'translate-x-0' : '-translate-x-full', sidebarHidden ? 'lg:-translate-x-full' : 'lg:translate-x-0']">
         <div class="flex h-16 items-center justify-between border-b border-[var(--ui-border)] px-4">
           <NuxtLink to="/app" class="flex min-w-0 items-center gap-3" @click="closeMobile"><img src="/favicon.png" alt="" class="size-9 rounded-md" /><span class="min-w-0"><span class="block truncate text-sm font-semibold">CPAHome</span><span class="block truncate text-xs text-[var(--ui-text-muted)]">User workspace</span></span></NuxtLink>
           <UButton class="lg:hidden" icon="i-tabler-x" color="neutral" variant="ghost" aria-label="Close navigation" @click="closeMobile" />
@@ -12,9 +12,13 @@
         </nav>
         <div class="flex items-center gap-2 border-t border-[var(--ui-border)] p-3"><UButton to="/app/profile" icon="i-tabler-user-circle" color="neutral" variant="ghost" class="min-w-0 flex-1 justify-start" :aria-current="route.path === '/app/profile' ? 'page' : undefined" @click="closeMobile">Profile</UButton><ThemeSwitcher /></div>
       </aside>
-      <div class="min-h-screen lg:pl-64">
+      <div class="min-h-screen transition-[padding] duration-200" :class="sidebarHidden ? 'lg:pl-0' : 'lg:pl-64'">
         <header class="user-shell__header sticky top-0 z-30 flex h-16 items-center justify-between border-b border-[var(--ui-border)] bg-[var(--glass-soft)] px-4 backdrop-blur sm:px-6">
-          <div class="flex min-w-0 items-center gap-3"><UButton class="lg:hidden" icon="i-tabler-menu-2" color="neutral" variant="ghost" aria-label="Open navigation" @click="openMobile" /><div><p class="text-sm font-semibold text-[var(--ui-text-highlighted)]">{{ pageTitle }}</p><p class="text-xs text-[var(--ui-text-muted)]">{{ pageSubtitle }}</p></div></div>
+          <div class="flex min-w-0 items-center gap-3">
+            <UButton class="lg:hidden" icon="i-tabler-menu-2" color="neutral" variant="ghost" aria-label="Open navigation" @click="openMobile" />
+            <UButton class="hidden lg:inline-flex" :icon="sidebarHidden ? 'i-tabler-layout-sidebar-left-expand' : 'i-tabler-layout-sidebar-left-collapse'" color="neutral" variant="ghost" :aria-label="sidebarHidden ? 'Show sidebar' : 'Hide sidebar'" :aria-expanded="!sidebarHidden" aria-controls="workspace-sidebar" @click="sidebarHidden = !sidebarHidden" />
+            <div><p class="text-sm font-semibold text-[var(--ui-text-highlighted)]">{{ pageTitle }}</p><p class="text-xs text-[var(--ui-text-muted)]">{{ pageSubtitle }}</p></div>
+          </div>
           <UButton color="neutral" variant="ghost" size="sm" icon="i-tabler-logout" @click="logout">Log out</UButton>
         </header>
         <main class="w-full px-4 pb-16 pt-6 sm:px-6"><slot /></main>
@@ -38,6 +42,7 @@ const route = useRoute()
 const router = useRouter()
 const { token, clearSession, loadCurrentUser, hydrateSession } = useUserApi()
 const mobileOpen = ref(false)
+const sidebarHidden = ref(false)
 const openMobile = () => { mobileOpen.value = true }
 const closeMobile = () => { mobileOpen.value = false }
 const publicPaths = new Set(['/app/login', '/app/register', '/app/forgot-password', '/app/reset-password', '/app/verify-email', '/app/models'])

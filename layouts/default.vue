@@ -8,7 +8,8 @@
       :class="[mobileOpen ? 'translate-x-0' : '-translate-x-full', sidebarCollapsed ? 'lg:w-13' : 'lg:w-56']"
     >
       <div class="flex h-14 items-center justify-between border-b border-[var(--workbench-sidebar-border)] px-4" :class="sidebarCollapsed ? 'lg:justify-center lg:px-2' : ''">
-        <NuxtLink to="/admin/dashboard" class="flex min-w-0 items-center gap-3" title="CPAHome" @click="closeMobile">
+        <UButton v-if="sidebarCollapsed" class="hidden lg:inline-flex" icon="i-tabler-layout-sidebar-left-expand" color="neutral" variant="ghost" aria-label="Expand sidebar" :aria-expanded="false" aria-controls="management-sidebar" @click="toggleSidebar" />
+        <NuxtLink to="/admin/dashboard" class="flex min-w-0 items-center gap-3" :class="sidebarCollapsed ? 'lg:hidden' : ''" title="CPAHome" @click="closeMobile">
           <div class="flex size-8 shrink-0 items-center justify-center rounded-md bg-[var(--workbench-sidebar-primary)] text-slate-950">
             <UIcon name="i-tabler-terminal-2" class="size-5" />
           </div>
