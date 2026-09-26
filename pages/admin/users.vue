@@ -78,7 +78,7 @@
               <template #credentialScope-cell="{ row }"><span class="block max-w-60 truncate">{{ scopeSummary(keyChannelNames(rowValue(row))) }}</span></template>
               <template #modelScope-cell="{ row }"><span class="block max-w-60 truncate">{{ scopeSummary(keyModelNames(rowValue(row))) }}</span></template>
               <template #length-cell="{ row }">{{ rowValue(row).api_key.length }}</template>
-              <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-pencil" aria-label="Edit client key" title="Edit client key" @click="openKeyEdit(rowValue(row))" /><UButton size="xs" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Delete client key" title="Delete client key" @click="confirmKeyDelete(rowValue(row))" /></div></template>
+              <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><AdminTableAction action="edit" label="Edit client key" @click="openKeyEdit(rowValue(row))" /><AdminTableAction action="delete" label="Delete client key" destructive @click="confirmKeyDelete(rowValue(row))" /></div></template>
               <template #empty><EmptyState icon="i-tabler-key" text="No client keys yet." /></template>
             </UTable>
           </div>
@@ -114,13 +114,15 @@
                   <UButton v-if="selectedModelGroup" size="sm" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Delete model scope" @click="confirmGroupDelete('model', selectedModelGroup)" />
                   <UButton size="sm" icon="i-tabler-plus" @click="selectedModelGroup ? openBindings('model', selectedModelGroup) : openGroupForm('model')">{{ selectedModelGroup ? 'Add models' : 'New scope' }}</UButton>
                 </template>
-                <UTable :columns="modelBindingColumns" :data="selectedModelBindings" :loading="loading" class="min-w-[760px]">
-                  <template #model-cell="{ row }"><div class="min-w-0"><p class="truncate font-mono text-xs" :title="rowValue(row).model_id">{{ rowValue(row).model_id }}</p></div></template>
-                  <template #channels-cell="{ row }"><span class="block max-w-64 truncate text-xs text-[var(--ui-text-muted)]" :title="modelBindingChannelLabel(rowValue(row))">{{ modelBindingChannelLabel(rowValue(row)) }}</span></template>
-                  <template #updated-cell="{ row }"><span class="whitespace-nowrap text-xs text-[var(--ui-text-muted)]">{{ formatDate(rowValue(row).updated_at) }}</span></template>
-                  <template #actions-cell="{ row }"><UButton size="sm" color="error" variant="ghost" icon="i-tabler-x" aria-label="Remove model from scope" title="Remove model from scope" @click="confirmDetailDelete('model', rowValue(row))" /></template>
-                  <template #empty><EmptyState icon="i-tabler-cube" :text="selectedModelGroup ? 'No models are bound to this scope.' : 'Select a model scope.'" /></template>
-                </UTable>
+                <div class="m-3 overflow-hidden rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] shadow-[0_1px_2px_color-mix(in_oklch,var(--ui-text)_6%,transparent)]">
+                  <UTable :columns="modelBindingColumns" :data="selectedModelBindings" :loading="loading" class="model-binding-table min-w-[760px]">
+                    <template #model-cell="{ row }"><div class="min-w-0"><p class="truncate font-mono text-xs font-medium text-[var(--ui-text-highlighted)]" :title="rowValue(row).model_id">{{ rowValue(row).model_id }}</p></div></template>
+                    <template #channels-cell="{ row }"><span class="block max-w-64 truncate text-xs text-[var(--ui-text-muted)]" :title="modelBindingChannelLabel(rowValue(row))">{{ modelBindingChannelLabel(rowValue(row)) }}</span></template>
+                    <template #updated-cell="{ row }"><span class="whitespace-nowrap text-xs text-[var(--ui-text-muted)]">{{ formatDate(rowValue(row).updated_at) }}</span></template>
+                    <template #actions-cell="{ row }"><div class="flex justify-end"><AdminTableAction action="remove" label="Remove model from scope" destructive @click="confirmDetailDelete('model', rowValue(row))" /></div></template>
+                    <template #empty><EmptyState icon="i-tabler-cube" :text="selectedModelGroup ? 'No models are bound to this scope.' : 'Select a model scope.'" /></template>
+                  </UTable>
+                </div>
               </AdminDataPanel>
             </div>
           </section>

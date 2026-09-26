@@ -80,7 +80,7 @@
             </span>
           </template>
 
-          <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><UButton color="neutral" variant="ghost" size="xs" icon="i-tabler-eye" aria-label="View provider" title="View" @click="openProviderDetail(rowValue(row))" /><UButton color="neutral" variant="ghost" size="xs" icon="i-tabler-pencil" aria-label="Edit provider" title="Edit" @click="openProviderEdit(rowValue(row))" /><UButton color="neutral" variant="ghost" size="xs" icon="i-tabler-files" aria-label="Duplicate provider" title="Duplicate" @click="duplicateProvider(rowValue(row))" /><UButton color="error" variant="ghost" size="xs" icon="i-tabler-trash" aria-label="Delete provider" title="Delete" @click="confirmProviderDelete(rowValue(row))" /></div></template>
+          <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><AdminTableAction action="view" label="View provider" @click="openProviderDetail(rowValue(row))" /><AdminTableAction action="edit" label="Edit provider" @click="openProviderEdit(rowValue(row))" /><AdminTableAction action="duplicate" label="Duplicate provider" @click="duplicateProvider(rowValue(row))" /><AdminTableAction action="delete" label="Delete provider" destructive @click="confirmProviderDelete(rowValue(row))" /></div></template>
 
           <template #empty>
             <div class="flex flex-col items-center justify-center px-6 py-14 text-center">

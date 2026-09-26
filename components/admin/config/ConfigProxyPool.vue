@@ -65,7 +65,7 @@
             <span class="block max-w-56 truncate text-sm text-[var(--ui-text-muted)]" :title="rowValue(row).note || ''">{{ rowValue(row).note || '—' }}</span>
           </template>
 
-          <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-antenna-bars-5" aria-label="Test proxy" title="Test" :loading="testingId === rowValue(row).id" :disabled="Boolean(testingId)" @click="testPool(rowValue(row))" /><UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-pencil" aria-label="Edit proxy" title="Edit" @click="openEdit(rowValue(row))" /><UButton size="xs" color="error" variant="ghost" icon="i-tabler-trash" :aria-label="`Delete ${rowValue(row).name}`" title="Delete" @click="confirmDelete(rowValue(row))" /></div></template>
+          <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><AdminTableAction action="test" label="Test proxy" :loading="testingId === rowValue(row).id" :disabled="Boolean(testingId)" @click="testPool(rowValue(row))" /><AdminTableAction action="edit" label="Edit proxy" @click="openEdit(rowValue(row))" /><AdminTableAction action="delete" :label="`Delete ${rowValue(row).name}`" destructive @click="confirmDelete(rowValue(row))" /></div></template>
 
           <template #empty>
             <div class="py-12 text-center text-sm text-[var(--ui-text-muted)]">

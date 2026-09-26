@@ -21,7 +21,7 @@
         <template #quota-cell="{ row }"><div><UBadge :color="statusColor(value(row).quota_status)" variant="subtle">{{ value(row).quota_status }}</UBadge><p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ value(row).window_count || 0 }} window(s)</p></div></template>
         <template #collection-cell="{ row }"><div><UBadge :color="collectionColor(value(row).collection_status)" variant="subtle">{{ value(row).collection_status }}</UBadge><p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ value(row).freshness }} · {{ value(row).source || 'no source' }}</p></div></template>
         <template #observed-cell="{ row }"><div class="text-xs"><p>{{ formatDate(value(row).observed_at) }}</p><p v-if="value(row).earliest_reset_at" class="mt-1 text-[var(--ui-text-muted)]">Reset {{ formatDate(value(row).earliest_reset_at) }}</p></div></template>
-        <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><UButton color="neutral" variant="ghost" size="sm" icon="i-tabler-eye" @click="openDetail(value(row))"/><UButton color="neutral" variant="ghost" size="sm" icon="i-tabler-bolt" :loading="collectingID === value(row).credential_id" @click="collectOne(value(row))"/></div></template>
+        <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><AdminTableAction action="view" label="View quota details" @click="openDetail(value(row))" /><AdminTableAction action="refresh" label="Collect quota" :loading="collectingID === value(row).credential_id" @click="collectOne(value(row))" /></div></template>
         <template #empty><div class="py-14 text-center text-sm text-[var(--ui-text-muted)]">No quota snapshots match these filters.</div></template>
       </UTable>
     </UCard>

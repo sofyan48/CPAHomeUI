@@ -141,7 +141,7 @@
               </span>
             </template>
 
-            <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-eye" aria-label="View access key" title="View" @click="openDetail(rowValue(row))" /><UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-pencil" aria-label="Edit access key" title="Edit" @click="openEdit(rowValue(row))" /><UButton v-if="rowValue(row).identifier" size="xs" color="neutral" variant="ghost" icon="i-tabler-clipboard" aria-label="Copy identifier" title="Copy identifier" @click="copyText(rowValue(row).identifier, 'Identifier copied.')" /><UButton size="xs" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Delete access key" title="Delete" @click="openDelete(rowValue(row))" /></div></template>
+            <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><AdminTableAction action="view" label="View access key" @click="openDetail(rowValue(row))" /><AdminTableAction action="edit" label="Edit access key" @click="openEdit(rowValue(row))" /><AdminTableAction v-if="rowValue(row).identifier" action="copy" label="Copy identifier" @click="copyText(rowValue(row).identifier, 'Identifier copied.')" /><AdminTableAction action="delete" label="Delete access key" destructive @click="openDelete(rowValue(row))" /></div></template>
 
             <template #empty>
               <div class="px-6 py-12 text-center text-sm text-[var(--ui-text-muted)]">No access keys match the current filter.</div>
