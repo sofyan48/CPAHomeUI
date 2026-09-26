@@ -35,7 +35,7 @@
     <AdminDataPanel
       v-else
       title="Access keys"
-      description="These keys grant clients access to the Home Center server; they are not model provider keys."
+      description="These keys grant clients access to the CPAHome server; they are not model provider keys."
       class="min-w-0"
     >
       <template #actions>

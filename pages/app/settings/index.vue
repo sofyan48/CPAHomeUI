@@ -1,5 +1,5 @@
 <template>
-  <AppUserWorkspace section="dashboard" />
+  <AppUserWorkspace section="settings" />
 </template>
 
 <script setup lang="ts">

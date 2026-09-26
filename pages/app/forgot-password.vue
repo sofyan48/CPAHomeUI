@@ -29,7 +29,7 @@
 
       <div v-else-if="sent" class="space-y-5 text-center">
         <div class="mx-auto flex size-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500"><UIcon name="i-tabler-mail" class="size-7" /></div>
-        <p class="text-sm text-[var(--ui-text-muted)]">{{ message }}</p>
+        <p class="text-sm text-[var(--ui-text-muted)]">{{ acceptedMessage }}</p>
         <UButton color="neutral" variant="outline" block @click="requestAnother">Submit another request</UButton>
         <UButton to="/app/login" color="primary" block>Return to sign in</UButton>
       </div>
@@ -54,7 +54,7 @@ const capabilityState = ref<'loading' | 'failure' | 'unsupported' | 'disabled' |
 const capabilityError = ref('Unable to contact the Home server.')
 const error = ref('')
 const sent = ref(false)
-const message = ref('If an eligible account matches, password reset instructions will be sent.')
+const acceptedMessage = 'If an eligible account matches, password reset instructions will be sent.'
 
 async function checkCapabilities() {
   capabilityState.value = 'loading'
@@ -69,8 +69,12 @@ async function checkCapabilities() {
       capabilityState.value = capabilities.value.password_recovery === true ? 'enabled' : 'disabled'
     }
   } catch (cause: any) {
-    capabilityError.value = cause?.message || capabilityError.value
-    capabilityState.value = 'failure'
+    if (cause?.statusCode === 404) {
+      capabilityState.value = 'unsupported'
+    } else {
+      capabilityError.value = cause?.message || capabilityError.value
+      capabilityState.value = 'failure'
+    }
   } finally {
     capabilityLoading.value = false
   }
@@ -81,11 +85,18 @@ async function submit() {
   if (!email.value.trim()) return void (error.value = 'Email is required.')
   loading.value = true
   try {
-    const response = await fetchAPI<{ message?: string }>('/password/forgot', { method: 'POST', auth: false, body: { email: email.value.trim() } })
-    message.value = response.message || message.value
+    await fetchAPI('/password/forgot', { method: 'POST', auth: false, body: { email: email.value.trim() } })
     sent.value = true
   } catch (cause: any) {
-    error.value = cause?.message || 'Unable to request a password reset.'
+    if (cause?.statusCode === 404 || cause?.code === 'email_feature_unavailable') {
+      capabilityState.value = 'unsupported'
+    } else if (cause?.code === 'invalid_email') {
+      error.value = 'Enter a valid email address.'
+    } else if (cause?.code === 'request_too_large') {
+      error.value = 'The request is too large. Check the email address and try again.'
+    } else {
+      error.value = 'Unable to request a password reset. Please try again.'
+    }
   } finally {
     loading.value = false
   }

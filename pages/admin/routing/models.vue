@@ -47,35 +47,36 @@
       </UFormField>
     </div>
 
-    <UCard :ui="{ body: { padding: '' } }">
-      <UTable :columns="columns" :data="filteredModels" :loading="pending" @select="showDetails">
-        <template #identity-cell="{ row }">
+    <div v-if="pending && !modelsList.length" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <USkeleton v-for="index in 8" :key="index" class="h-52 rounded-xl" />
+    </div>
+    <div v-else-if="filteredModels.length" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <UCard v-for="model in filteredModels" :key="`${model.channel}:${model.id}`" class="min-w-0">
+        <div class="flex items-start justify-between gap-2">
           <div class="min-w-0">
-            <p class="truncate font-mono text-sm font-semibold text-[var(--ui-text-highlighted)]">{{ rowValue(row).id }}</p>
-            <p v-if="rowValue(row).display_name && rowValue(row).display_name !== rowValue(row).id" class="truncate text-xs text-[var(--ui-text-muted)]">{{ rowValue(row).display_name }}</p>
+            <h2 class="truncate font-semibold text-[var(--ui-text-highlighted)]" :title="model.display_name || model.id">{{ model.display_name || model.id }}</h2>
+            <p class="mt-1 break-all font-mono text-xs text-[var(--ui-text-muted)]">{{ model.id }}</p>
           </div>
-        </template>
-        <template #channel-cell="{ row }">
-          <UBadge v-if="rowValue(row).channel" color="primary" variant="subtle" size="sm">{{ rowValue(row).channel }}</UBadge>
-          <span v-else class="text-sm text-[var(--ui-text-muted)]">Runtime</span>
-        </template>
-        <template #providers-cell="{ row }">
-          <div class="flex flex-wrap gap-1">
-            <UBadge v-for="provider in rowValue(row).providers" :key="provider" color="neutral" variant="subtle" size="sm">{{ provider }}</UBadge>
+          <UBadge v-if="model.channel" color="primary" variant="subtle" size="sm">{{ model.channel }}</UBadge>
+        </div>
+        <div class="mt-4">
+          <p class="text-xs font-medium text-[var(--ui-text-muted)]">Providers</p>
+          <div v-if="model.providers.length" class="mt-2 flex flex-wrap gap-1">
+            <UBadge v-for="provider in model.providers" :key="provider" color="neutral" variant="subtle" size="sm">{{ provider }}</UBadge>
           </div>
-        </template>
-        <template #type-cell="{ row }">
-          <span class="text-sm">{{ rowValue(row).type || rowValue(row).owned_by || '—' }}</span>
-        </template>
-        <template #empty>
-          <div class="flex flex-col items-center justify-center px-6 py-14 text-center">
-            <UIcon name="i-tabler-box" class="mb-3 size-8 text-[var(--ui-text-muted)]" />
-            <p class="font-medium">{{ search ? 'No matching models' : 'No models found' }}</p>
-            <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Try another catalog, channel, or search term.</p>
-          </div>
-        </template>
-      </UTable>
-    </UCard>
+          <p v-else class="mt-2 text-xs text-[var(--ui-text-muted)]">No provider information</p>
+        </div>
+        <div class="mt-4 flex items-center justify-between gap-2 border-t border-[var(--ui-border)] pt-3">
+          <span class="truncate text-xs text-[var(--ui-text-muted)]">{{ model.type || model.owned_by || '—' }}</span>
+          <UButton color="neutral" variant="outline" size="xs" :aria-label="`View details for ${model.id}`" @click="showDetails(model)">Details</UButton>
+        </div>
+      </UCard>
+    </div>
+    <div v-else-if="!pending" class="rounded-xl border border-dashed border-[var(--ui-border)] px-6 py-14 text-center">
+      <UIcon name="i-tabler-box" class="mx-auto mb-3 size-8 text-[var(--ui-text-muted)]" />
+      <p class="font-medium">{{ search ? 'No matching models' : 'No models found' }}</p>
+      <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Try another catalog, channel, or search term.</p>
+    </div>
 
     <UModal v-model:open="detailsOpen" title="Model details" description="Model metadata returned by the management API.">
       <template #body>
@@ -108,7 +109,7 @@
 
 <script setup>
 const { fetchAPI } = useApi()
-const rowValue = (row) => row?.original ?? row
+
 const scope = ref('available')
 const channel = ref('')
 const search = ref('')
@@ -120,12 +121,6 @@ const allChannelsValue = '__all_channels__'
 const scopeOptions = [
   { label: 'Available now', value: 'available' },
   { label: 'Static catalog', value: 'static' }
-]
-const columns = [
-  { accessorKey: 'identity', header: 'Model' },
-  { accessorKey: 'channel', header: 'Channel' },
-  { accessorKey: 'providers', header: 'Providers' },
-  { accessorKey: 'type', header: 'Type' }
 ]
 
 async function loadModels() {
@@ -144,13 +139,13 @@ const rawModels = computed(() => data.value?.models)
 const modelsList = computed(() => {
   if (Array.isArray(rawModels.value)) {
     return rawModels.value
-      .filter(model => Array.isArray(model.providers) && model.providers.length)
-      .map(model => ({ ...model, channel: model.channel || '' }))
+      .filter(model => model?.id)
+      .map(model => ({ ...model, providers: Array.isArray(model.providers) ? model.providers : [], channel: model.channel || '' }))
   }
   if (!rawModels.value || typeof rawModels.value !== 'object') return []
   return Object.entries(rawModels.value).flatMap(([catalogChannel, entries]) => (Array.isArray(entries) ? entries : [])
-    .filter(model => Array.isArray(model.providers) && model.providers.length)
-    .map(model => ({ ...model, channel: catalogChannel })))
+    .filter(model => model?.id)
+    .map(model => ({ ...model, providers: Array.isArray(model.providers) ? model.providers : [], channel: catalogChannel })))
 })
 const channelOptions = computed(() => [
   { label: 'All static channels', value: allChannelsValue },
@@ -169,7 +164,7 @@ const providerCount = computed(() => new Set(modelsList.value.flatMap(model => m
 const channelCount = computed(() => new Set(modelsList.value.map(model => model.channel).filter(Boolean)).size)
 
 function showDetails(row) {
-  selectedModel.value = rowValue(row)
+  selectedModel.value = row
   detailsOpen.value = true
 }
 function formatCreated(value) {

@@ -2,17 +2,16 @@
   <div class="space-y-7">
     <section class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <UBadge color="primary" variant="subtle">Model catalog</UBadge>
-        <h1 class="mt-3 text-4xl font-bold tracking-tight text-[var(--ui-text-highlighted)]">Find the right model</h1>
-        <p class="mt-2 max-w-2xl text-[var(--ui-text-muted)]">Browse the complete public catalog. Sign in to see which models your API keys can use, plus pricing and observed availability.</p>
+        <h1 class="text-4xl font-bold tracking-tight text-[var(--ui-text-highlighted)]">Find the right model</h1>
+        <p class="mt-2 max-w-2xl text-[var(--ui-text-muted)]">Browse models available to your API keys, including pricing and observed availability.</p>
       </div>
       <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading || capabilityLoading" @click="refreshCatalog">Refresh</UButton>
     </section>
 
-    <UAlert v-if="capabilityError && !catalogEnabled" color="error" variant="subtle" title="Unable to check model catalog support" :description="capabilityError" />
-    <UAlert v-else-if="!capabilityLoading && !catalogEnabled" color="warning" variant="subtle" title="Model catalog unavailable" description="This Home server does not advertise the model_catalog capability." />
+    <UAlert v-if="catalogUnsupported" color="warning" variant="subtle" title="Model catalog unavailable" description="This Home server does not support the public model catalog endpoint." />
 
-    <template v-if="catalogEnabled">
+    <template v-else>
+      <UAlert v-if="capabilityError" color="warning" variant="subtle" title="Unable to check model catalog capabilities" :description="`${capabilityError} The catalog was requested directly instead.`" />
       <UAlert v-if="error" color="error" variant="subtle" title="Unable to load models" :description="error" />
       <UAlert v-if="accessibleWarning" color="warning" variant="subtle" title="Your key access could not be loaded" :description="accessibleWarning" />
 
@@ -21,69 +20,63 @@
       </div>
 
       <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <UInput v-model="search" aria-label="Search models" icon="i-tabler-search" placeholder="Search models, providers, or capabilities..." />
-        <USelectMenu :model-value="provider || noFilterValue" @update:model-value="provider = $event === noFilterValue ? '' : String($event)" aria-label="Provider" :items="providerOptions" value-key="value" label-key="label" :search-input="{ placeholder: 'Search providers...' }" />
+        <UInput v-model="search" aria-label="Search models" icon="i-tabler-search" placeholder="Search models or capabilities..." />
         <USelect :model-value="inputModality || noFilterValue" @update:model-value="inputModality = $event === noFilterValue ? '' : String($event)" aria-label="Input modality" :items="modalityOptions" value-key="value" label-key="label" />
         <USelect v-model="sortBy" aria-label="Sort models" :items="sortOptions" value-key="value" label-key="label" />
-        <div v-if="token" class="flex items-center rounded-lg border border-[var(--ui-border)] px-3 py-2">
-          <UCheckbox v-model="mineOnly" label="My keys only" :disabled="!accessLoaded" />
-        </div>
       </div>
 
-      <fieldset class="flex flex-wrap gap-x-5 gap-y-2 rounded-xl border border-[var(--ui-border)] px-4 py-3">
+      <fieldset class="flex flex-wrap items-center gap-1.5 rounded-xl border border-[var(--ui-border)] px-3 py-2.5">
         <legend class="px-1 text-xs font-semibold uppercase tracking-wide text-[var(--ui-text-dimmed)]">Required capabilities</legend>
-        <UCheckbox :model-value="selectedCapabilities.includes('tools')" label="Tools" @update:model-value="setCapability('tools', Boolean($event))" />
-        <UCheckbox :model-value="selectedCapabilities.includes('structuredOutput')" label="Structured output" @update:model-value="setCapability('structuredOutput', Boolean($event))" />
-        <UCheckbox :model-value="selectedCapabilities.includes('reasoning')" label="Reasoning" @update:model-value="setCapability('reasoning', Boolean($event))" />
+        <UButton v-for="option in capabilityOptions" :key="option.value" type="button" size="xs" :color="selectedCapabilities.includes(option.value) ? 'primary' : 'neutral'" :variant="selectedCapabilities.includes(option.value) ? 'soft' : 'outline'" :icon="selectedCapabilities.includes(option.value) ? 'i-tabler-check' : undefined" :aria-pressed="selectedCapabilities.includes(option.value)" @click="setCapability(option.value, !selectedCapabilities.includes(option.value))">{{ option.label }}</UButton>
       </fieldset>
 
       <p class="text-xs text-[var(--ui-text-muted)]">{{ filteredModels.length }} of {{ models.length }} models · Unknown modalities and capabilities do not match support filters. Availability is observed cluster-wide, not a guarantee.</p>
 
-      <div v-if="loading && !models.length" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <USkeleton v-for="index in 6" :key="index" class="h-72 rounded-xl" />
+      <div v-if="(loading || !catalogReady) && !models.length" class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+        <USkeleton v-for="index in 12" :key="index" class="h-52 rounded-xl" />
       </div>
-      <div v-else class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <UCard v-for="model in filteredModels" :key="model.id" class="flex flex-col">
-          <div class="flex items-start justify-between gap-3">
-            <div class="min-w-0"><p class="truncate text-lg font-semibold text-[var(--ui-text-highlighted)]">{{ model.display_name || model.id }}</p><code class="text-xs text-[var(--ui-text-muted)]">{{ model.id }}</code></div>
-            <div class="flex shrink-0 flex-col items-end gap-1.5">
-              <UBadge v-if="model.accessible === true" color="success" variant="subtle">Your keys</UBadge>
-              <UBadge v-else-if="model.accessible === false" color="neutral" variant="subtle">Outside your keys</UBadge>
-              <UBadge v-if="model.availability" :color="availabilityColor(model)" variant="subtle">{{ availabilityLabel(model) }}</UBadge>
+      <div v-else class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+        <UCard v-for="model in filteredModels" :key="model.id" class="min-w-0" :ui="{ body: 'flex h-full flex-col p-3 sm:p-3' }">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--ui-bg-muted)] text-[var(--ui-text-highlighted)]">
+              <UIcon :name="modelLogoIcon(model)" class="size-6" aria-hidden="true" />
+            </div>
+            <UBadge v-if="token" color="success" variant="subtle" size="sm">Available</UBadge>
+          </div>
+          <div class="mt-3 min-w-0">
+            <p class="truncate text-sm font-semibold text-[var(--ui-text-highlighted)]" :title="model.display_name || model.id">{{ model.display_name || model.id }}</p>
+            <div class="mt-0.5 flex min-w-0 items-center gap-0.5">
+              <code class="truncate text-[10px] text-[var(--ui-text-muted)]" :title="model.id">{{ model.id }}</code>
+              <UButton color="neutral" variant="ghost" size="xs" icon="i-tabler-copy" :aria-label="`Copy model ID ${model.id}`" @click.stop="copyModelId(model.id)" />
             </div>
           </div>
-          <p class="mt-4 line-clamp-3 min-h-15 text-sm leading-5 text-[var(--ui-text-muted)]">{{ model.description || 'No description has been published for this model.' }}</p>
-          <div class="mt-4 flex flex-wrap gap-1.5">
-            <UBadge v-for="name in model.providers || []" :key="name" color="neutral" variant="subtle">{{ name }}</UBadge>
-            <UBadge v-for="name in capabilityLabels(model)" :key="name" color="info" variant="subtle">{{ name }}</UBadge>
+          <p v-if="model.pricing?.status === 'published'" class="mt-3 text-xs font-medium leading-5">From {{ credits(lowestPrice(model, 'input')) }} in / {{ credits(lowestPrice(model, 'output')) }} out / 1M tokens</p>
+          <p v-else class="mt-3 text-xs text-[var(--ui-text-muted)]">Price not published</p>
+          <div class="mt-auto pt-3">
+            <UButton block color="neutral" variant="outline" size="xs" :aria-label="`View details for ${model.display_name || model.id}`" @click="openDetails(model, $event)">Details</UButton>
           </div>
-          <div class="mt-5 grid grid-cols-2 gap-3 border-t border-[var(--ui-border)] pt-4 text-sm">
-            <div><p class="text-xs text-[var(--ui-text-muted)]">Context</p><p class="mt-1 font-medium">{{ formatTokens(model.context_length) }}</p></div>
-            <div><p class="text-xs text-[var(--ui-text-muted)]">Output</p><p class="mt-1 font-medium">{{ formatTokens(model.max_output_tokens) }}</p></div>
-          </div>
-          <div v-if="model.pricing?.status === 'published'" class="mt-4 rounded-xl bg-[var(--ui-bg-muted)] p-3">
-            <p class="text-xs font-semibold uppercase tracking-wide text-[var(--ui-text-dimmed)]">Lowest listed price / 1M tokens</p>
-            <p class="mt-1 text-sm font-medium">Input {{ credits(lowestPrice(model, 'input')) }} · Output {{ credits(lowestPrice(model, 'output')) }} credits</p>
-            <p class="mt-1 text-xs text-[var(--ui-text-muted)]">Lowest listed rates; provider, tier, and input size affect charges.</p>
-          </div>
-          <UButton class="mt-4" color="neutral" variant="outline" size="sm" :aria-label="`View details for ${model.display_name || model.id}`" @click="openDetails(model, $event)">View details</UButton>
         </UCard>
       </div>
-      <div v-if="!loading && !error && !filteredModels.length" class="rounded-2xl border border-dashed border-[var(--ui-border)] py-16 text-center text-sm text-[var(--ui-text-muted)]">{{ models.length ? 'No models match your filters.' : 'No models are currently served.' }}</div>
+      <div v-if="catalogReady && !loading && !error && !filteredModels.length" class="rounded-2xl border border-dashed border-[var(--ui-border)] py-16 text-center text-sm text-[var(--ui-text-muted)]">{{ models.length ? 'No models match your filters.' : 'No models are currently served.' }}</div>
     </template>
 
-    <div v-else-if="capabilityLoading" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      <USkeleton v-for="index in 6" :key="index" class="h-72 rounded-xl" />
-    </div>
-
-    <UModal v-model:open="detailOpen" :title="selectedModel?.display_name || selectedModel?.id || 'Model details'" :description="selectedModel?.id">
+    <USlideover v-model:open="detailOpen" :title="selectedModel?.display_name || selectedModel?.id || 'Model details'" :description="selectedModel?.id" :ui="{ content: 'sm:max-w-xl' }">
       <template #body>
-        <div v-if="selectedModel" class="max-h-[70vh] space-y-6 overflow-y-auto text-sm">
+        <div v-if="selectedModel" class="space-y-6 text-sm">
+          <div class="flex items-center gap-3">
+            <div class="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[var(--ui-bg-muted)] text-[var(--ui-text-highlighted)]">
+              <UIcon :name="modelLogoIcon(selectedModel)" class="size-7" aria-hidden="true" />
+            </div>
+            <div class="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] px-3 py-2">
+              <code class="min-w-0 flex-1 break-all text-xs">{{ selectedModel.id }}</code>
+              <UButton color="neutral" variant="outline" size="xs" icon="i-tabler-copy" @click="copyModelId(selectedModel.id)">Copy ID</UButton>
+            </div>
+          </div>
           <p class="text-[var(--ui-text-muted)]">{{ selectedModel.description || 'No description has been published.' }}</p>
           <dl class="grid gap-3 sm:grid-cols-2">
             <div v-for="item in modelFacts(selectedModel)" :key="item.label"><dt class="text-xs text-[var(--ui-text-muted)]">{{ item.label }}</dt><dd class="break-words font-medium">{{ item.value }}</dd></div>
           </dl>
-          <section><h3 class="font-semibold">Serving providers</h3><p class="mt-1">{{ selectedModel.providers?.length ? selectedModel.providers.join(', ') : 'Not published' }}</p></section>
+
           <section><h3 class="font-semibold">Modalities</h3><p class="mt-1">Input: {{ modalityText(selectedModel, 'input') }}</p><p>Output: {{ modalityText(selectedModel, 'output') }}</p></section>
           <section class="space-y-1"><h3 class="font-semibold">Capabilities</h3>
             <p>Reasoning: {{ capabilityText(selectedModel.capabilities?.reasoning?.status) }}</p>
@@ -104,26 +97,14 @@
             <p v-if="selectedModel.availability.window">Window: {{ dateText(selectedModel.availability.window.from) }} – {{ dateText(selectedModel.availability.window.to) }}</p>
             <p>Last observed: {{ dateText(selectedModel.availability.last_observed_at) }}</p>
           </section>
-          <section v-if="selectedModel.pricing" class="space-y-3"><h3 class="font-semibold">Pricing · credits</h3>
-            <p v-if="selectedModel.pricing.status !== 'published'">No price published. This does not mean free.</p>
-            <div v-for="offer in selectedModel.pricing.providers || []" :key="offer.provider" class="space-y-3 rounded-xl border border-[var(--ui-border)] p-3">
-              <h4 class="font-semibold">{{ offer.provider }}</h4>
-              <div v-for="tier in offer.tiers" :key="tier.service_tier" class="space-y-2">
-                <p class="font-medium">{{ tier.is_default ? 'Default tier' : `Tier: ${tier.service_tier}` }}</p>
-                <div v-for="rung in tier.rungs" :key="rung.min_input_tokens" class="rounded-lg bg-[var(--ui-bg-muted)] p-3">
-                  <p class="font-medium">From {{ rung.min_input_tokens.toLocaleString() }} input tokens</p>
-                  <dl class="mt-2 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
-                    <div v-for="price in rungPrices(rung)" :key="price.label"><dt class="text-[var(--ui-text-muted)]">{{ price.label }}</dt><dd>{{ credits(price.value) }}</dd></div>
-                  </dl>
-                </div>
-              </div>
-            </div>
-            <p v-if="selectedModel.pricing.status === 'published'" class="text-xs text-[var(--ui-text-muted)]">Token prices are per 1M tokens; request price is per request. The last threshold reached in the selected tier applies.</p>
+          <section v-if="selectedModel.pricing" class="space-y-1"><h3 class="font-semibold">Pricing</h3>
+            <p v-if="selectedModel.pricing.status === 'published'">From {{ credits(lowestPrice(selectedModel, 'input')) }} in / {{ credits(lowestPrice(selectedModel, 'output')) }} out / 1M tokens</p>
+            <p v-else>No price published. This does not mean free.</p>
           </section>
           <p v-if="!selectedModel.pricing && !selectedModel.availability" class="text-xs text-[var(--ui-text-muted)]">Sign in to see pricing and observed availability for models covered by your keys.</p>
         </div>
       </template>
-    </UModal>
+    </USlideover>
   </div>
 </template>
 
@@ -131,7 +112,8 @@
 definePageMeta({ layout: 'app' })
 const route = useRoute()
 const router = useRouter()
-const { token, fetchAPI, capabilities, loadCapabilities } = useUserApi()
+const toast = useToast()
+const { token, fetchAPI, loadCapabilities } = useUserApi()
 type CapabilityFilter = 'tools' | 'structuredOutput' | 'reasoning'
 type CatalogModel = Omit<UserModel, 'availability'> & {
   accessible?: boolean
@@ -144,7 +126,7 @@ type CatalogModel = Omit<UserModel, 'availability'> & {
   }
 }
 type AccessSummary = { restricted: boolean; api_key_count: number; reason: string }
-type Rung = NonNullable<NonNullable<UserModel['pricing']>['providers']>[number]['tiers'][number]['rungs'][number]
+
 const capabilityOrder: CapabilityFilter[] = ['tools', 'structuredOutput', 'reasoning']
 const validSorts = new Set(['name', 'price-asc', 'price-desc'])
 const queryKeys = ['q', 'provider', 'modality', 'caps', 'mine', 'sort'] as const
@@ -153,13 +135,15 @@ const publicCatalog = ref<CatalogModel[]>([])
 const models = ref<CatalogModel[]>([])
 const loading = ref(false)
 const capabilityLoading = ref(true)
+const catalogReady = ref(false)
+const catalogUnsupported = ref(false)
 const error = ref('')
 const capabilityError = ref('')
 const accessibleWarning = ref('')
 const access = ref<AccessSummary | null>(null)
 const accessLoaded = ref(false)
 const search = ref(validQueryString(route.query.q))
-const provider = ref(validQueryString(route.query.provider))
+
 const inputModality = ref(validQueryString(route.query.modality))
 const selectedCapabilities = ref<CapabilityFilter[]>(parseCapabilities(route.query.caps))
 const mineOnly = ref(route.query.mine === 'true')
@@ -168,18 +152,16 @@ const selectedModel = ref<CatalogModel | null>(null)
 const detailOpen = ref(false)
 const detailTrigger = ref<HTMLElement | null>(null)
 let loadGeneration = 0
-const catalogEnabled = computed(() => capabilities.value.model_catalog === true)
+const capabilityOptions: { label: string; value: CapabilityFilter }[] = [{ label: 'Tools', value: 'tools' }, { label: 'Structured output', value: 'structuredOutput' }, { label: 'Reasoning', value: 'reasoning' }]
 const sortOptions = [{ label: 'Name A–Z', value: 'name' }, { label: 'Lowest opening price', value: 'price-asc' }, { label: 'Highest opening price', value: 'price-desc' }]
-const providerOptions = computed(() => [{ label: 'All providers', value: noFilterValue }, ...Array.from(new Set(models.value.flatMap(model => model.providers || []).filter(Boolean))).sort().map(value => ({ label: value, value }))])
+
 const modalityOptions = computed(() => [{ label: 'Any input modality', value: noFilterValue }, ...Array.from(new Set(models.value.flatMap(model => model.modalities?.input || []).filter(Boolean))).sort().map(value => ({ label: `Accepts ${value}`, value }))])
 const filteredModels = computed(() => {
   const query = search.value.trim().toLowerCase()
   return models.value.filter(model =>
-    (!mineOnly.value || !accessLoaded.value || model.accessible === true) &&
-    (!provider.value || model.providers?.includes(provider.value)) &&
     (!inputModality.value || model.modalities?.status === 'known' && model.modalities.input?.includes(inputModality.value)) &&
     selectedCapabilities.value.every(capability => supportsCapability(model, capability)) &&
-    (!query || [model.id, model.display_name, model.description, ...(model.providers || []), ...capabilityLabels(model)].some(value => String(value || '').toLowerCase().includes(query)))
+    (!query || [model.id, model.display_name, model.description, ...capabilityLabels(model)].some(value => String(value || '').toLowerCase().includes(query)))
   ).sort((a, b) => {
     const name = (a.display_name || a.id).localeCompare(b.display_name || b.id)
     if (sortBy.value === 'name') return name
@@ -199,10 +181,10 @@ watch(token, () => {
   accessLoaded.value = false
   accessibleWarning.value = ''
   if (!token.value) mineOnly.value = false
-  if (catalogEnabled.value) void loadModels()
+  void loadModels()
 })
 watch(() => route.query, applyRouteQuery)
-watch([search, provider, inputModality, selectedCapabilities, mineOnly, sortBy], () => { void syncRouteQuery() }, { deep: true })
+watch([search, inputModality, selectedCapabilities, mineOnly, sortBy], () => { void syncRouteQuery() }, { deep: true })
 watch(detailOpen, open => {
   if (!open && detailTrigger.value) {
     const trigger = detailTrigger.value
@@ -219,12 +201,12 @@ function parseCapabilities(value: unknown) {
 }
 function applyRouteQuery() {
   const nextSearch = validQueryString(route.query.q)
-  const nextProvider = validQueryString(route.query.provider)
+
   const nextModality = validQueryString(route.query.modality)
   const nextCapabilities = parseCapabilities(route.query.caps)
   const nextSort = validQueryString(route.query.sort)
   search.value = nextSearch
-  provider.value = nextProvider
+
   inputModality.value = nextModality
   selectedCapabilities.value = nextCapabilities
   mineOnly.value = Boolean(token.value) && route.query.mine === 'true'
@@ -234,7 +216,7 @@ async function syncRouteQuery() {
   const query = { ...route.query }
   for (const key of queryKeys) delete query[key]
   if (search.value) query.q = search.value
-  if (provider.value) query.provider = provider.value
+
   if (inputModality.value) query.modality = inputModality.value
   if (selectedCapabilities.value.length) query.caps = capabilityOrder.filter(item => selectedCapabilities.value.includes(item)).join(',')
   if (token.value && mineOnly.value) query.mine = 'true'
@@ -244,9 +226,7 @@ async function syncRouteQuery() {
 }
 function normalizedQueryValue(value: unknown) { return typeof value === 'string' ? value : '' }
 function validateCatalogFilters() {
-  const providers = new Set(models.value.flatMap(model => model.providers || []))
   const modalities = new Set(models.value.flatMap(model => model.modalities?.input || []))
-  if (provider.value && !providers.has(provider.value)) provider.value = ''
   if (inputModality.value && !modalities.has(inputModality.value)) inputModality.value = ''
 }
 function setCapability(capability: CapabilityFilter, enabled: boolean) {
@@ -260,28 +240,36 @@ function supportsCapability(model: CatalogModel, capability: CapabilityFilter) {
   if (capability === 'structuredOutput') return model.capabilities?.structured_output?.status === 'supported'
   return model.capabilities?.reasoning?.status === 'supported'
 }
+function modelLogoIcon(model: CatalogModel) {
+  const identity = [model.id, model.display_name, ...(model.providers || [])].join(' ').toLowerCase()
+  if (/claude|anthropic/.test(identity)) return 'i-tabler-sparkles'
+  if (/gemini|gemma|google|vertex|palm/.test(identity)) return 'i-tabler-brand-google'
+  if (/gpt|openai|o1|o3|o4|codex/.test(identity)) return 'i-tabler-brand-openai'
+  if (/grok|xai/.test(identity)) return 'i-tabler-brand-x'
+  if (/llama|meta/.test(identity)) return 'i-tabler-brand-meta'
+  if (/mistral|mixtral/.test(identity)) return 'i-tabler-wind'
+  if (/deepseek/.test(identity)) return 'i-tabler-fish'
+  if (/qwen|qwq|alibaba/.test(identity)) return 'i-tabler-cloud-computing'
+  if (/kimi|moonshot/.test(identity)) return 'i-tabler-moon-stars'
+  if (/cohere|command-r/.test(identity)) return 'i-tabler-affiliate'
+  if (/amazon|nova|titan/.test(identity)) return 'i-tabler-brand-amazon'
+  if (/microsoft|phi-/.test(identity)) return 'i-tabler-brand-windows'
+  if (/perplexity|sonar/.test(identity)) return 'i-tabler-search'
+  return 'i-tabler-robot'
+}
 async function refreshCatalog() {
   capabilityLoading.value = true
   capabilityError.value = ''
-  try {
-    await loadCapabilities()
-  } catch (cause: any) {
-    capabilityError.value = cause?.message || 'Unable to load server capabilities.'
-  } finally {
-    capabilityLoading.value = false
-  }
-  if (!catalogEnabled.value) {
-    loadGeneration++
-    publicCatalog.value = []
-    models.value = []
-    return
-  }
-  await loadModels()
+  const capabilityRequest = loadCapabilities().catch((cause: any) => {
+    if (!isNotFound(cause)) capabilityError.value = cause?.message || 'Unable to load server capabilities.'
+  }).finally(() => { capabilityLoading.value = false })
+  await Promise.all([capabilityRequest, loadModels()])
 }
 async function loadModels() {
   const generation = ++loadGeneration
   const tokenSnapshot = token.value
   loading.value = true
+  catalogUnsupported.value = false
   error.value = ''
   accessibleWarning.value = ''
   const publicRequest = fetchAPI<{ models?: CatalogModel[] }>('/models', { auth: false })
@@ -292,7 +280,15 @@ async function loadModels() {
   if (generation !== loadGeneration) return
   try {
     if (publicResult.status === 'rejected') {
-      error.value = errorMessage(publicResult.reason, 'Unable to load models.')
+      if (isNotFound(publicResult.reason)) {
+        catalogUnsupported.value = true
+        publicCatalog.value = []
+        models.value = []
+        access.value = null
+        accessLoaded.value = false
+      } else {
+        error.value = errorMessage(publicResult.reason, 'Unable to load models.')
+      }
       return
     }
     const publicModels = Array.isArray(publicResult.value.models) ? publicResult.value.models : []
@@ -302,26 +298,41 @@ async function loadModels() {
       access.value = null
       accessLoaded.value = false
     } else if (accessibleResult.status === 'fulfilled' && accessibleResult.value) {
+      const publicByID = new Map(publicCatalog.value.map(model => [normalizedModelId(model.id), model]))
       const accessibleModels = Array.isArray(accessibleResult.value.models) ? accessibleResult.value.models : []
-      const merged = new Map(publicCatalog.value.map(model => [model.id, { ...model, accessible: false } as CatalogModel]))
-      for (const model of accessibleModels) merged.set(model.id, { ...(merged.get(model.id) || {}), ...model, accessible: true })
-      models.value = Array.from(merged.values())
+      models.value = accessibleModels.map(model => {
+        const publicModel = publicByID.get(normalizedModelId(model.id))
+        return { ...publicModel, ...model, id: publicModel?.id || model.id, accessible: true }
+      })
       access.value = accessibleResult.value.access || null
       accessLoaded.value = true
     } else {
-      models.value = publicCatalog.value.map(model => ({ ...model }))
+      models.value = []
       access.value = null
       accessLoaded.value = false
       const warning = accessibleResult.status === 'rejected' ? errorMessage(accessibleResult.reason, 'Unable to load your key access.') : 'Unable to load your key access.'
-      accessibleWarning.value = `${warning} The public catalog is still available.`
+      accessibleWarning.value = warning
     }
     validateCatalogFilters()
-    if (selectedModel.value) selectedModel.value = models.value.find(model => model.id === selectedModel.value?.id) || selectedModel.value
+    if (selectedModel.value) selectedModel.value = models.value.find(model => normalizedModelId(model.id) === normalizedModelId(selectedModel.value?.id || '')) || selectedModel.value
   } finally {
-    if (generation === loadGeneration) loading.value = false
+    if (generation === loadGeneration) {
+      loading.value = false
+      catalogReady.value = true
+    }
   }
 }
 function errorMessage(cause: any, fallback: string) { return cause?.message || fallback }
+function isNotFound(cause: any) { return cause?.statusCode === 404 || cause?.status === 404 }
+function normalizedModelId(id: string) { return String(id || '').trim().toLowerCase() }
+async function copyModelId(id: string) {
+  try {
+    await navigator.clipboard.writeText(id)
+    toast.add({ title: 'Model ID copied', color: 'success' })
+  } catch {
+    toast.add({ title: 'Unable to copy model ID', color: 'error' })
+  }
+}
 function openDetails(model: CatalogModel, event: MouseEvent) {
   detailTrigger.value = event.currentTarget instanceof HTMLElement ? event.currentTarget : null
   selectedModel.value = model
@@ -336,7 +347,7 @@ function capabilityLabels(model: UserModel) {
   return labels
 }
 function formatTokens(value?: number) { if (!value) return 'Not published'; return value >= 1_000_000 ? `${(value / 1_000_000).toFixed(1)}M` : value >= 1000 ? `${(value / 1000).toFixed(1)}K` : String(value) }
-function availabilityColor(model: CatalogModel) { const rate = model.availability?.availability_rate; return typeof rate !== 'number' ? 'neutral' : rate >= 0.98 ? 'success' : rate >= 0.9 ? 'warning' : 'error' }
+
 function availabilityLabel(model: CatalogModel) { const rate = model.availability?.availability_rate; return model.availability?.status === 'observed' && typeof rate === 'number' ? `${(rate * 100).toFixed(1)}% observed` : 'Insufficient data' }
 function lowestPrice(model: UserModel, kind: 'input' | 'output') {
   if (model.pricing?.status !== 'published') return null
@@ -362,11 +373,7 @@ function modelFacts(model: UserModel) { return [
   { label: 'Maximum output', value: formatTokens(model.max_output_tokens) }, { label: 'Version', value: model.version || 'Not published' },
   { label: 'Owner', value: model.owned_by || 'Not published' }, { label: 'Type', value: model.type || 'Not published' }
 ] }
-function rungPrices(rung: Rung) { return [
-  { label: 'Input / 1M', value: rung.input_price_per_million }, { label: 'Output / 1M', value: rung.output_price_per_million },
-  { label: 'Cache read / 1M', value: rung.cache_read_price_per_million }, { label: 'Cache write / 1M', value: rung.cache_write_price_per_million },
-  { label: 'Per request', value: rung.request_price }
-] }
+
 
 onMounted(() => {
   void syncRouteQuery()

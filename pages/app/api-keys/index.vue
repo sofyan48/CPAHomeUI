@@ -1,5 +1,5 @@
 <template>
-  <AppUserWorkspace section="dashboard" />
+  <AppUserWorkspace section="api-keys" />
 </template>
 
 <script setup lang="ts">

@@ -6,7 +6,7 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      title: "CLIProxyAPI Home",
+      title: "CPAHome",
       meta: [
         { name: "viewport", content: "width=device-width, initial-scale=1" },
         { name: "theme-color", content: "#0f172a" },
@@ -29,6 +29,10 @@ export default defineNuxtConfig({
       apiBase: "/v0/management",
       secretKey: "",
     },
+  },
+
+  routeRules: {
+    "/": { redirect: "/app/login" },
   },
 
   vite: {

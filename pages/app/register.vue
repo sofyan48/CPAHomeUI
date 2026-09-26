@@ -1,9 +1,9 @@
 <template>
-  <div class="mx-auto max-w-md py-8">
-    <UCard class="shadow-xl shadow-primary-950/5">
+  <div class="mx-auto max-w-md py-12">
+    <UCard>
       <template #header>
         <h1 class="text-2xl font-bold text-[var(--ui-text-highlighted)]">Create your account</h1>
-        <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Start using models through CLIProxyAPI Home.</p>
+        <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Start using models through CPAHome.</p>
       </template>
       <form class="space-y-5" @submit.prevent="submit">
         <UAlert v-if="error" color="error" variant="subtle" title="Registration failed" :description="error" />
@@ -35,7 +35,8 @@ const { fetchAPI, saveSession, capabilities, loadCapabilities, rememberSession }
 const form = reactive({ username: '', email: '', password: '', confirmPassword: '', remember: false })
 const loading = ref(false)
 const error = ref('')
-const emailEnabled = computed(() => capabilities.value.email_registration === true)
+const capabilityLoaded = ref(false)
+const emailEnabled = computed(() => capabilityLoaded.value && capabilities.value.email_registration === true)
 
 async function submit() {
   error.value = ''
@@ -52,8 +53,13 @@ async function submit() {
   } finally { loading.value = false }
 }
 
-onMounted(() => {
+onMounted(async () => {
   form.remember = Boolean(rememberSession.value)
-  void loadCapabilities().catch(() => {})
+  try {
+    await loadCapabilities()
+    capabilityLoaded.value = true
+  } catch (cause: any) {
+    if (cause?.statusCode !== 404) return
+  }
 })
 </script>

@@ -58,7 +58,7 @@ export interface UserServerInfo {
 }
 
 export interface UserApiKey {
-  id: number
+  id?: number
   api_key: string
   channels: number[]
   model_groups: number[]
@@ -157,6 +157,29 @@ export class UserApiError extends Error {
 }
 
 const trimSlashes = (value: string) => value.replace(/^\/+|\/+$/g, '')
+const persistentSessionKey = 'home-management-center.userSession'
+const temporarySessionKey = 'home-management-center.temporaryUserSession'
+
+type StoredUserSession = UserSessionResponse & { baseUrl?: string; rememberSession?: boolean }
+
+const normalizeUser = (value: any): UserAccount => ({
+  id: Number(value?.id) || 0,
+  username: String(value?.username || ''),
+  credits: Number(value?.credits) || 0,
+  totp_enabled: Boolean(value?.totp_enabled ?? value?.totpEnabled),
+  passkey_count: Number(value?.passkey_count ?? value?.passkeyCount ?? value?.passkeys?.length) || 0,
+  email_status: {
+    configured: Boolean(value?.email_status?.configured ?? value?.emailStatus?.configured),
+    verified: Boolean(value?.email_status?.verified ?? value?.emailStatus?.verified),
+    masked: String(value?.email_status?.masked ?? value?.emailStatus?.masked ?? ''),
+    recovery_ready: Boolean(value?.email_status?.recovery_ready ?? value?.emailStatus?.recoveryReady)
+  },
+  passkeys: Array.isArray(value?.passkeys) ? value.passkeys.map((item: any) => ({ id: String(item.id || ''), name: item.name || undefined, created_at: item.created_at ?? item.createdAt, updated_at: item.updated_at ?? item.updatedAt })) : [],
+  created_at: value?.created_at ?? value?.createdAt,
+  updated_at: value?.updated_at ?? value?.updatedAt
+})
+
+const normalizeSession = (value: any): UserSessionResponse => ({ token: String(value?.token || ''), expires_at: String(value?.expires_at ?? value?.expiresAt ?? ''), user: normalizeUser(value?.user) })
 
 const apiErrorDetails = (error: any) => {
   const data = error?.data
@@ -238,6 +261,7 @@ export const useUserApi = () => {
     default: () => false
   })
   const currentUser = useState<UserAccount | null>('user-account', () => null)
+  const sessionHydrated = useState<boolean>('user-session-hydrated', () => false)
   const capabilities = useState<UserCapabilities>('user-capabilities', () => ({}))
   const serverInfo = useState<UserServerInfo>('user-server-info', () => ({}))
 
@@ -256,13 +280,15 @@ export const useUserApi = () => {
   }
 
   const clearSession = () => {
+    if (import.meta.client) { localStorage.removeItem(persistentSessionKey); sessionStorage.removeItem(temporarySessionKey) }
     token.value = null
     tokenExpiresAt.value = null
     rememberSession.value = false
     currentUser.value = null
   }
 
-  const saveSession = (session: UserSessionResponse, remember = rememberSession.value) => {
+  const saveSession = (sessionValue: UserSessionResponse, remember = rememberSession.value) => {
+    const session = normalizeSession(sessionValue)
     const expiresAt = new Date(session.expires_at)
     const cookieOptions = {
       sameSite: 'strict' as const,
@@ -276,6 +302,30 @@ export const useUserApi = () => {
     tokenExpiresAt.value = session.expires_at
     rememberSession.value = remember
     currentUser.value = session.user
+    if (import.meta.client) {
+      const stored: StoredUserSession = { ...session, baseUrl: apiBase, rememberSession: remember }
+      const target = remember ? localStorage : sessionStorage
+      const other = remember ? sessionStorage : localStorage
+      target.setItem(remember ? persistentSessionKey : temporarySessionKey, JSON.stringify(stored))
+      other.removeItem(remember ? temporarySessionKey : persistentSessionKey)
+    }
+  }
+
+  const hydrateSession = () => {
+    if (!import.meta.client || sessionHydrated.value) return
+    sessionHydrated.value = true
+    for (const [storage, key, remembered] of [[localStorage, persistentSessionKey, true], [sessionStorage, temporarySessionKey, false]] as const) {
+      try {
+        const raw = storage.getItem(key)
+        if (!raw) continue
+        const parsed = JSON.parse(raw)
+        const normalized = normalizeSession(parsed)
+        const expiry = new Date(normalized.expires_at)
+        if (!normalized.token || !Number.isFinite(expiry.getTime()) || expiry <= new Date()) { storage.removeItem(key); continue }
+        token.value = normalized.token; tokenExpiresAt.value = normalized.expires_at; rememberSession.value = remembered; currentUser.value = normalized.user
+        break
+      } catch { storage.removeItem(key) }
+    }
   }
 
   const fetchAPI = async <T = unknown>(path: string, options: UserApiRequestOptions = {}): Promise<T> => {
@@ -313,8 +363,8 @@ export const useUserApi = () => {
 
   const loadCurrentUser = async () => {
     const response = await fetchAPI<{ user: UserAccount }>('/me')
-    currentUser.value = response.user
-    return response.user
+    currentUser.value = normalizeUser(response.user)
+    return currentUser.value
   }
 
   const login = async (username: string, password: string, totpCode?: string, remember = false) => {
@@ -341,13 +391,13 @@ export const useUserApi = () => {
     return response
   }
 
-  const registerPasskey = async (name: string) => {
+  const registerPasskey = async (name = '') => {
     if (!import.meta.client || !window.PublicKeyCredential) throw new UserApiError('Passkeys are not supported by this browser.')
     const begin = await fetchAPI<{ challenge_id: string; publicKey: any }>('/passkeys/begin', { method: 'POST', body: {} })
     const credential = await navigator.credentials.create({ publicKey: creationOptions(begin.publicKey) }) as PublicKeyCredential | null
     if (!credential) throw new UserApiError('Passkey registration was cancelled.')
     const response = await fetchAPI<{ passkey: UserPasskey }>('/passkeys', {
-      method: 'POST', body: { name, challenge_id: begin.challenge_id, credential: credentialJSON(credential) }
+      method: 'POST', body: { ...(name.trim() ? { name: name.trim() } : {}), challenge_id: begin.challenge_id, credential: credentialJSON(credential) }
     })
     await loadCurrentUser()
     return response.passkey
@@ -365,6 +415,7 @@ export const useUserApi = () => {
     fetchAPI,
     clearSession,
     saveSession,
+    hydrateSession,
     loadCapabilities,
     loadCurrentUser,
     login,

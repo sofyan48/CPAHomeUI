@@ -8,12 +8,12 @@
       :class="[mobileOpen ? 'translate-x-0' : '-translate-x-full', sidebarCollapsed ? 'lg:w-13' : 'lg:w-56']"
     >
       <div class="flex h-14 items-center justify-between border-b border-[var(--workbench-sidebar-border)] px-4" :class="sidebarCollapsed ? 'lg:justify-center lg:px-2' : ''">
-        <NuxtLink to="/admin/dashboard" class="flex min-w-0 items-center gap-3" title="Home Center" @click="closeMobile">
+        <NuxtLink to="/admin/dashboard" class="flex min-w-0 items-center gap-3" title="CPAHome" @click="closeMobile">
           <div class="flex size-8 shrink-0 items-center justify-center rounded-md bg-[var(--workbench-sidebar-primary)] text-slate-950">
             <UIcon name="i-tabler-terminal-2" class="size-5" />
           </div>
           <div class="min-w-0" :class="sidebarCollapsed ? 'lg:hidden' : ''">
-            <p class="workbench-brand truncate text-sm font-semibold">Home Center</p>
+            <p class="workbench-brand truncate text-sm font-semibold">CPAHome</p>
             <p class="workbench-muted truncate text-[11px]">AI Gateway Management Console</p>
           </div>
         </NuxtLink>
@@ -151,6 +151,7 @@ const navigationSections: Array<{ label: string; items: NavigationItem[] }> = [
     label: 'Gateway',
     items: [
       { label: 'Upstream', to: '/admin/upstream', icon: 'i-tabler-cloud-upload', subtitle: 'Credentials and model providers' },
+      { label: 'Models', to: '/admin/routing/models', icon: 'i-tabler-box-multiple', subtitle: 'Available models and providers' },
       { label: 'Access keys', to: '/admin/access-keys', icon: 'i-tabler-key', subtitle: 'Client access control' },
       { label: 'Users & Access', to: '/admin/users', icon: 'i-tabler-users', subtitle: 'Users and access', capability: 'users' }
     ]
@@ -189,7 +190,7 @@ const isActive = (item: NavigationItem) => item.to === '/admin/upstream'
   : item.to === '/admin/usage'
     ? ['/admin/usage', '/admin/request-events'].includes(route.path)
     : item.to === '/admin/config'
-      ? route.path === '/admin/config' || route.path.startsWith('/admin/routing/')
+      ? route.path === '/admin/config' || (route.path.startsWith('/admin/routing/') && route.path !== '/admin/routing/models')
       : route.path === item.to
 
 const currentNavigation = computed(() => navigationSections.flatMap(section => section.items).find(isActive))
@@ -200,7 +201,7 @@ const versionLabel = computed(() => {
   const version = serverInfo.value.home_version
   const commit = serverInfo.value.home_commit
   if (version && commit) return `${version} · ${commit.slice(0, 8)}`
-  return version || 'CLIProxyAPI Home'
+  return version || 'CPAHome'
 })
 
 watch(() => route.fullPath, () => { mobileOpen.value = false })

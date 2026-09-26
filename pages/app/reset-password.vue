@@ -6,7 +6,13 @@
         <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Reset links are single-use and expire for your security.</p>
       </template>
 
-      <div v-if="complete" class="space-y-5 text-center">
+      <div v-if="securing" class="space-y-4 py-4 text-center">
+        <UIcon name="i-tabler-shield-lock" class="mx-auto size-12 text-primary-500" />
+        <p class="font-medium">Securing your reset link</p>
+        <p class="text-sm text-[var(--ui-text-muted)]">Removing the one-time token from the address bar before continuing…</p>
+      </div>
+
+      <div v-else-if="complete" class="space-y-5 text-center">
         <UIcon name="i-tabler-circle-check" class="mx-auto size-14 text-emerald-500" />
         <p>Your password has been reset. Your previous sessions have been signed out, so you can now sign in with the new password.</p>
         <UAlert color="info" variant="subtle" title="Your other security methods are unchanged" description="TOTP and registered passkeys remain enabled and will still apply when you sign in." />
@@ -38,6 +44,7 @@ const { fetchAPI, clearSession } = useUserApi()
 const resetToken = ref('')
 const password = ref('')
 const confirmPassword = ref('')
+const securing = ref(true)
 const loading = ref(false)
 const error = ref('')
 const complete = ref(false)
@@ -62,7 +69,8 @@ async function submit() {
   } catch (cause: any) {
     if (cause?.code === 'invalid_or_expired_token') {
       invalidToken.value = true
-      invalidTokenMessage.value = cause?.message || 'The password reset link is invalid or expired.'
+      invalidTokenMessage.value = 'The password reset link is invalid or expired.'
+      resetToken.value = ''
     } else {
       error.value = cause?.message || 'Unable to reset password.'
     }
@@ -71,9 +79,13 @@ async function submit() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   resetToken.value = typeof route.query.token === 'string' ? route.query.token.trim() : ''
   invalidToken.value = !resetToken.value
-  void scrubToken()
+  try {
+    await scrubToken()
+  } finally {
+    securing.value = false
+  }
 })
 </script>

@@ -9,7 +9,7 @@
             <UIcon name="i-tabler-terminal-2" class="size-6" />
           </div>
           <div>
-            <p class="font-semibold text-[var(--ui-text-highlighted)]">CLIProxyAPI Home</p>
+            <p class="font-semibold text-[var(--ui-text-highlighted)]">CPAHome</p>
             <p class="text-xs text-[var(--ui-text-muted)]">Management control plane</p>
           </div>
         </div>
