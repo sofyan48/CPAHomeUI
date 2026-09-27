@@ -9,7 +9,7 @@
 
 
 
-    <section class="overflow-hidden rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg)]">
+    <section>
       <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--ui-border)] px-4 py-3">
         <h2 class="font-semibold">Upstream accounts</h2>
         <div class="flex items-center gap-2">
@@ -33,8 +33,8 @@
           </div>
         </div>
       </div>
-      <div class="p-4">
-        <div v-if="selectedIDs.size" class="mb-3 flex flex-col gap-3 rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] px-3 py-2.5 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <div v-if="selectedIDs.size" class="mb-3 flex flex-col gap-3 rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] app-surface px-3 py-2.5 lg:flex-row lg:items-center lg:justify-between">
           <div><p class="text-sm font-medium">{{ selectedIDs.size }} selected</p><p class="mt-0.5 text-xs text-[var(--ui-text-muted)]">{{ selectedEnabledCount }} enabled · {{ selectedDisabledCount }} disabled</p></div>
           <div class="flex flex-wrap gap-2">
             <UButton size="sm" color="neutral" variant="ghost" :disabled="bulkBusy" @click="selectedIDs = new Set()">Clear selection</UButton>
@@ -43,8 +43,8 @@
             <UButton size="sm" color="error" variant="ghost" icon="i-tabler-trash" :disabled="busy || pending" @click="bulkDeleteOpen = true">Delete selected</UButton>
           </div>
         </div>
-        <div class="overflow-x-auto rounded-md border border-[var(--ui-border)]">
-      <UTable :columns="columns" :data="filteredCredentials" :loading="pending" class="accounts-table min-w-[1100px] table-fixed">
+      <AppCard :ui="{ body: 'p-0' }">
+      <AppTable :columns="columns" :data="filteredCredentials" :loading="pending" class="accounts-table min-w-0">
         <template #select-header><input type="checkbox" aria-label="Select all visible credentials" :checked="allVisibleSelected" :indeterminate="someVisibleSelected && !allVisibleSelected" :disabled="bulkBusy || pending || !filteredCredentials.length" @change="toggleAllVisible($event.target.checked)"></template>
         <template #select-cell="{ row }"><input type="checkbox" :aria-label="`Select ${value(row).label || value(row).name || value(row).id}`" :checked="selectedIDs.has(value(row).id)" :disabled="bulkBusy || pending" @change="toggleSelected(value(row).id, $event.target.checked)"></template>
         <template #identity-cell="{ row }"><div class="flex min-w-0 items-center gap-2.5"><span class="flex size-8 shrink-0 items-center justify-center rounded-md bg-[var(--ui-bg-elevated)] text-[var(--ui-primary)]"><UIcon name="i-tabler-key" class="size-4" /></span><div class="min-w-0"><p class="truncate font-medium">{{ value(row).label || value(row).name }}</p><p class="mt-1 truncate font-mono text-xs text-[var(--ui-text-muted)]">{{ value(row).name || value(row).auth_index || value(row).id }}</p><p v-if="value(row).note" class="mt-0.5 truncate text-xs text-[var(--ui-text-muted)]">{{ value(row).note }}</p></div></div></template>
@@ -80,8 +80,8 @@
         <template #priority-cell="{ row }"><span class="font-mono text-xs tabular-nums">{{ value(row).priority ?? 'Not set' }}</span></template>
         <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><AdminTableAction action="view" label="View credential details" @click="showDetails(value(row))" /><AdminTableAction action="test" label="Test connectivity" @click="openConnectivity(value(row))" /><AdminTableAction action="download" label="Download credential" :disabled="busy" @click="downloadCredential(value(row))" /><AdminTableAction action="delete" label="Delete credential" destructive :disabled="busy" @click="confirmDelete(value(row))" /></div></template>
         <template #empty><div class="py-14 text-center text-sm text-[var(--ui-text-muted)]"><p>{{ pending ? 'Loading accounts…' : pageError ? 'Could not load accounts. Check the connection and refresh.' : hasActiveFilters ? 'No matching credentials.' : 'No credentials have been added.' }}</p><UButton v-if="hasActiveFilters && !pending" class="mt-3" color="neutral" variant="outline" size="sm" @click="clearFilters">Clear filters</UButton></div></template>
-      </UTable>
-        </div>
+      </AppTable>
+      </AppCard>
       </div>
     </section>
 
@@ -325,7 +325,7 @@ function handleCreateOpen(open) {
   if (!open) { stopOAuthPolling(); oauthSessions.value = {}; uploadResults.value = []; if (fileInput.value) fileInput.value.value = '' }
 }
 
-const columns = [{ id: 'select', header: '' }, { accessorKey: 'identity', header: 'Credential' }, { accessorKey: 'provider', header: 'Provider' }, { accessorKey: 'status', header: 'Enabled' }, { accessorKey: 'quota', header: 'Quota / reset' }, { accessorKey: 'websockets', header: 'WS' }, { accessorKey: 'cooling', header: 'Cooling' }, { accessorKey: 'priority', header: 'Priority' }, { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head table-action-xwide', td: 'table-action-cell table-action-xwide' } } }]
+const columns = [{ id: 'select', header: '' }, { accessorKey: 'identity', header: 'Credential' }, { accessorKey: 'provider', header: 'Provider' }, { accessorKey: 'status', header: 'Enabled' }, { accessorKey: 'quota', header: 'Quota / reset' }, { accessorKey: 'websockets', header: 'WS' }, { accessorKey: 'cooling', header: 'Cooling' }, { accessorKey: 'priority', header: 'Priority' }, { id: 'actions', header: 'Actions', meta: { class: { th: 'w-px whitespace-nowrap text-right', td: 'w-px whitespace-nowrap text-right' } } }]
 
 const flightError = ref('')
 async function loadData() {
@@ -927,22 +927,6 @@ function message(error) { return error?.data?.message || error?.data?.error || e
 
 <style scoped>
 .accounts-table :deep(th:first-child),
-.accounts-table :deep(td:first-child) { width: 44px; }
-.accounts-table :deep(th:nth-child(2)),
-.accounts-table :deep(td:nth-child(2)) { width: 250px; }
-.accounts-table :deep(th:nth-child(3)),
-.accounts-table :deep(td:nth-child(3)) { width: 118px; }
-.accounts-table :deep(th:nth-child(4)),
-.accounts-table :deep(td:nth-child(4)) { width: 150px; }
-.accounts-table :deep(th:nth-child(5)),
-.accounts-table :deep(td:nth-child(5)) { width: 232px; }
-.accounts-table :deep(th:nth-child(6)),
-.accounts-table :deep(td:nth-child(6)) { width: 96px; }
-.accounts-table :deep(th:nth-child(7)),
-.accounts-table :deep(td:nth-child(7)) { width: 120px; }
-.accounts-table :deep(th:nth-child(8)),
-.accounts-table :deep(td:nth-child(8)) { width: 112px; }
-.accounts-table :deep(th:last-child),
-.accounts-table :deep(td:last-child) { position: sticky; right: 0; width: 96px; min-width: 96px; text-align: right; background: var(--ui-bg); box-shadow: -1px 0 var(--ui-border); }
-.accounts-table :deep(tr:hover td:last-child) { background: var(--ui-bg-elevated); }
+.accounts-table :deep(td:first-child) { width: 2.75rem; }
+
 </style>

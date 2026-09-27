@@ -49,7 +49,7 @@
       </button>
     </div>
 
-    <UCard>
+    <AppCard>
       <form class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6" @submit.prevent="applyFilters">
         <template v-if="activeView === 'error-logs'">
           <UFormField label="Search filename" class="md:col-span-2">
@@ -109,9 +109,9 @@
           <span class="ml-auto text-xs text-[var(--ui-text-muted)]">{{ activeDescription }}</span>
         </div>
       </form>
-    </UCard>
+    </AppCard>
 
-    <UCard v-if="activeView === 'events'" :ui="{ body: { padding: '' } }">
+    <AppCard v-if="activeView === 'events'" :ui="{ body: 'p-0' }">
       <template #header>
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -122,7 +122,7 @@
         </div>
       </template>
 
-      <UTable :columns="eventColumns" :data="events" :loading="eventsLoading">
+      <AppTable :columns="eventColumns" :data="events" :loading="eventsLoading">
         <template #empty>
           <EmptyState icon="i-tabler-list" message="No request events match these filters." />
         </template>
@@ -175,12 +175,12 @@
             </UButton>
           </div>
         </template>
-      </UTable>
+      </AppTable>
 
       <TablePager :page="eventsPage" :total="eventsTotal" :page-size="pageSize" :loading="eventsLoading" @previous="changeEventsPage(-1)" @next="changeEventsPage(1)" />
-    </UCard>
+    </AppCard>
 
-    <UCard v-else-if="activeView === 'request-logs'" :ui="{ body: { padding: '' } }">
+    <AppCard v-else-if="activeView === 'request-logs'" :ui="{ body: 'p-0' }">
       <template #header>
         <div>
           <h2 class="font-semibold">Request log files</h2>
@@ -188,7 +188,7 @@
         </div>
       </template>
 
-      <UTable :columns="requestLogColumns" :data="requestLogs" :loading="requestLogsLoading">
+      <AppTable :columns="requestLogColumns" :data="requestLogs" :loading="requestLogsLoading">
         <template #empty>
           <EmptyState icon="i-tabler-file-search" message="No request log files match these filters." />
         </template>
@@ -233,19 +233,19 @@
             </UButton>
           </div>
         </template>
-      </UTable>
+      </AppTable>
 
       <TablePager :page="requestLogsPage" :total="requestLogsTotal" :page-size="pageSize" :loading="requestLogsLoading" @previous="changeRequestLogsPage(-1)" @next="changeRequestLogsPage(1)" />
-    </UCard>
+    </AppCard>
 
-    <UCard v-else-if="activeView === 'error-logs'" :ui="{ body: { padding: '' } }">
+    <AppCard v-else-if="activeView === 'error-logs'" :ui="{ body: 'p-0' }">
       <template #header>
         <div>
           <h2 class="font-semibold">Request error logs</h2>
           <p class="text-xs text-[var(--ui-text-muted)]">{{ formatNumber(filteredErrorLogs.length) }} local files match. Files are listed only when detailed request logging is disabled.</p>
         </div>
       </template>
-      <UTable :columns="errorLogColumns" :data="pagedErrorLogs" :loading="errorLogsLoading">
+      <AppTable :columns="errorLogColumns" :data="pagedErrorLogs" :loading="errorLogsLoading">
         <template #empty><EmptyState icon="i-tabler-file-search" message="No local request error logs match this filename." /></template>
         <template #modified-cell="{ row }">{{ formatDateTime(Number(rowValue(row).modified) * 1000) }}</template>
         <template #size-cell="{ row }">{{ formatBytes(rowValue(row).size) }}</template>
@@ -254,11 +254,11 @@
             :disabled="!validErrorLogName(rowValue(row).name)" :loading="downloadingId === rowValue(row).name"
             @click="downloadErrorLog(rowValue(row).name)">Download</UButton>
         </template>
-      </UTable>
+      </AppTable>
       <TablePager :page="errorLogsPage" :total="filteredErrorLogs.length" :page-size="errorLogPageSize" :loading="errorLogsLoading" @previous="changeErrorLogsPage(-1)" @next="changeErrorLogsPage(1)" />
-    </UCard>
+    </AppCard>
 
-    <UCard v-else :ui="{ body: { padding: '' } }">
+    <AppCard v-else :ui="{ body: 'p-0' }">
       <template #header>
         <div>
           <h2 class="font-semibold">Application logs</h2>
@@ -266,7 +266,7 @@
         </div>
       </template>
 
-      <UTable :columns="applicationColumns" :data="applicationLogs" :loading="applicationLoading">
+      <AppTable :columns="applicationColumns" :data="applicationLogs" :loading="applicationLoading">
         <template #empty>
           <EmptyState icon="i-tabler-terminal-2" message="No application logs match these filters." />
         </template>
@@ -296,10 +296,10 @@
         <template #actions-cell="{ row }">
           <UButton size="sm" color="neutral" variant="ghost" icon="i-tabler-eye" @click="selectedApplicationLog = rowValue(row)">Details</UButton>
         </template>
-      </UTable>
+      </AppTable>
 
       <TablePager :page="applicationPage" :total="applicationTotal" :page-size="applicationPageSize" :loading="applicationLoading" @previous="changeApplicationPage(-1)" @next="changeApplicationPage(1)" />
-    </UCard>
+    </AppCard>
 
     <UModal v-model:open="eventDetailOpen" title="Request event details" description="Redacted event, routing, token, performance, and billing metadata.">
       <template #body>

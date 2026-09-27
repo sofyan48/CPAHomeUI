@@ -21,18 +21,18 @@
     />
 
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-      <UCard>
+      <AppCard>
         <p class="text-xs font-semibold uppercase tracking-wide text-[var(--ui-text-muted)]">Shown</p>
         <p class="mt-2 text-2xl font-bold">{{ filteredModels.length }}</p>
-      </UCard>
-      <UCard>
+      </AppCard>
+      <AppCard>
         <p class="text-xs font-semibold uppercase tracking-wide text-[var(--ui-text-muted)]">Providers</p>
         <p class="mt-2 text-2xl font-bold">{{ providerCount }}</p>
-      </UCard>
-      <UCard>
+      </AppCard>
+      <AppCard>
         <p class="text-xs font-semibold uppercase tracking-wide text-[var(--ui-text-muted)]">Channels</p>
         <p class="mt-2 text-2xl font-bold">{{ channelCount }}</p>
-      </UCard>
+      </AppCard>
     </div>
 
     <div class="flex flex-col gap-3 lg:flex-row lg:items-end">
@@ -51,7 +51,7 @@
       <USkeleton v-for="index in 8" :key="index" class="h-52 rounded-xl" />
     </div>
     <div v-else-if="filteredModels.length" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <UCard v-for="model in filteredModels" :key="`${model.channel}:${model.id}`" class="min-w-0">
+      <AppCard v-for="model in filteredModels" :key="`${model.channel}:${model.id}`" class="min-w-0">
         <div class="flex items-start justify-between gap-2">
           <div class="min-w-0">
             <h2 class="truncate font-semibold text-[var(--ui-text-highlighted)]" :title="model.display_name || model.id">{{ model.display_name || model.id }}</h2>
@@ -70,7 +70,7 @@
           <span class="truncate text-xs text-[var(--ui-text-muted)]">{{ model.type || model.owned_by || '—' }}</span>
           <UButton color="neutral" variant="outline" size="xs" :aria-label="`View details for ${model.id}`" @click="showDetails(model)">Details</UButton>
         </div>
-      </UCard>
+      </AppCard>
     </div>
     <div v-else-if="!pending" class="rounded-xl border border-dashed border-[var(--ui-border)] px-6 py-14 text-center">
       <UIcon name="i-tabler-box" class="mx-auto mb-3 size-8 text-[var(--ui-text-muted)]" />

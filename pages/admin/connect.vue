@@ -30,7 +30,7 @@
         </div>
       </section>
 
-      <UCard class="mx-auto w-full max-w-md shadow-2xl shadow-slate-950/10" :ui="{ body: 'p-6 sm:p-8', header: 'p-6 pb-0 sm:px-8 sm:pt-8' }">
+      <AppCard class="mx-auto w-full max-w-md shadow-2xl shadow-slate-950/10" :ui="{ body: 'p-6 sm:p-8', header: 'p-6 pb-0 sm:px-8 sm:pt-8' }">
         <template #header>
           <div class="text-center">
             <div class="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl bg-primary-500 text-white lg:hidden">
@@ -77,7 +77,7 @@
             Without persistence, the same-site cookie ends with this browser session. The key is sent only to the configured Management API path.
           </p>
         </form>
-      </UCard>
+      </AppCard>
     </div>
   </div>
 </template>

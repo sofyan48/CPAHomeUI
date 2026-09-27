@@ -10,7 +10,7 @@
 
     <UAlert v-if="errorMessage" color="error" variant="subtle" icon="i-tabler-alert-circle" title="Proxy request failed" :description="errorMessage" />
 
-    <UCard>
+    <AppCard>
       <template #header>
         <div>
           <h2 class="font-semibold">Active global proxy</h2>
@@ -24,11 +24,11 @@
         <UButton type="submit" icon="i-tabler-check" :loading="savingGlobal">Save</UButton>
         <UButton color="neutral" variant="outline" icon="i-tabler-x" :loading="savingGlobal" @click="clearGlobalProxy">Clear</UButton>
       </form>
-    </UCard>
+    </AppCard>
 
     <UAlert color="info" variant="subtle" icon="i-tabler-info-circle" title="Pool records are informational" description="Proxy-pool records can be stored and tested, but they do not currently alter runtime priority, auth selection, dispatch, or outbound routing. Only the global proxy above is active." />
 
-    <UCard :ui="{ body: { padding: '' } }">
+    <AppCard :ui="{ body: 'p-0' }">
       <template #header>
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -38,7 +38,7 @@
           <UButton icon="i-tabler-plus" @click="openCreate">Add proxy</UButton>
         </div>
       </template>
-      <UTable :columns="columns" :data="pools" :loading="loading">
+      <AppTable :columns="columns" :data="pools" :loading="loading">
         <template #identity-cell="{ row }">
           <div class="min-w-48">
             <p class="font-medium">{{ value(row).name }}</p>
@@ -62,8 +62,8 @@
           </div>
         </template>
         <template #empty><div class="py-12 text-center text-sm text-[var(--ui-text-muted)]">No proxy-pool records.</div></template>
-      </UTable>
-    </UCard>
+      </AppTable>
+    </AppCard>
 
     <UModal v-model:open="formOpen" :title="editing ? 'Edit proxy record' : 'Add proxy record'" description="Store a globally scoped proxy endpoint for operator testing.">
       <template #body>

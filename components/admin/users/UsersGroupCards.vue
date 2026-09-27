@@ -1,6 +1,6 @@
 <template>
   <div v-if="groups.length" class="grid gap-3">
-    <div v-for="group in groups" :key="group.id" class="rounded-md border border-[var(--ui-border)]">
+    <div v-for="group in groups" :key="group.id" class="min-w-0">
       <div class="flex flex-col gap-3 border-b border-[var(--ui-border)] p-4 md:flex-row md:items-start md:justify-between">
         <div>
           <div class="flex flex-wrap items-center gap-2">
@@ -16,31 +16,33 @@
           <UButton color="error" variant="ghost" size="sm" icon="i-tabler-trash" aria-label="Delete" @click="$emit('delete', group)" />
         </div>
       </div>
-      <div class="overflow-x-auto">
-        <table :class="['w-full text-sm', kind === 'model' && channelBindingsSupported ? 'min-w-[760px]' : 'min-w-[620px]']">
-          <thead class="bg-[var(--ui-bg-muted)] text-left text-xs text-[var(--ui-text-muted)]">
+      <AppCard :ui="{ body: 'p-0' }">
+      <AppTable native>
+        <table class="text-left text-sm">
+          <thead>
             <tr>
-              <th class="px-3 py-2">{{ kind === 'channel' ? 'Credential ID' : 'Model ID' }}</th>
-              <th v-if="kind === 'model' && channelBindingsSupported" class="w-[26%] px-3 py-2">Credential scope</th>
-              <th class="w-[20%] px-3 py-2">Updated</th>
-              <th class="w-px whitespace-nowrap px-3 py-2 text-right">Actions</th>
+              <th>{{ kind === 'channel' ? 'Credential ID' : 'Model ID' }}</th>
+              <th v-if="kind === 'model' && channelBindingsSupported">Credential scope</th>
+              <th class="whitespace-nowrap">Updated</th>
+              <th class="w-px whitespace-nowrap text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="!groupDetails(group).length">
-              <td :colspan="kind === 'model' && channelBindingsSupported ? 4 : 3" class="px-3 py-8 text-center text-[var(--ui-text-muted)]">No bindings yet.</td>
+              <td :colspan="kind === 'model' && channelBindingsSupported ? 4 : 3" class="px-4 py-12 text-center text-sm text-muted">No bindings yet.</td>
             </tr>
-            <tr v-for="detail in groupDetails(group)" :key="detail.id" class="border-t border-[var(--ui-border)]">
-              <td class="truncate px-3 py-2 font-mono text-xs" :title="target(detail)">{{ target(detail) }}</td>
-              <td v-if="kind === 'model' && channelBindingsSupported" class="truncate px-3 py-2 text-[var(--ui-text-muted)]" :title="channels(detail)">{{ channels(detail) }}</td>
-              <td class="truncate px-3 py-2 text-[var(--ui-text-muted)]">{{ updated(detail) }}</td>
-              <td class="w-px whitespace-nowrap px-3 py-2 text-right">
+            <tr v-for="detail in groupDetails(group)" :key="detail.id">
+              <td class="min-w-32 max-w-64 truncate font-mono text-xs" :title="target(detail)">{{ target(detail) }}</td>
+              <td v-if="kind === 'model' && channelBindingsSupported" class="min-w-32 max-w-64 truncate text-muted" :title="channels(detail)">{{ channels(detail) }}</td>
+              <td class="whitespace-nowrap text-muted">{{ updated(detail) }}</td>
+              <td class="w-px whitespace-nowrap text-right">
                 <UButton color="error" variant="ghost" size="sm" icon="i-tabler-trash" aria-label="Remove binding" title="Remove binding" @click="$emit('delete-detail', detail)" />
               </td>
             </tr>
           </tbody>
         </table>
-      </div>
+      </AppTable>
+      </AppCard>
     </div>
   </div>
   <UsersEmptyState v-else :icon="kind === 'channel' ? 'i-tabler-layout-grid' : 'i-tabler-cube'" :text="kind === 'channel' ? 'No credential scopes yet.' : 'No model scopes yet.'" />

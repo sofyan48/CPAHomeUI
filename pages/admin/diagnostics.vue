@@ -24,13 +24,13 @@
       <p class="text-xs text-[var(--ui-text-muted)]">Overview and health use the selected rolling window; realtime always shows the last 15 minutes. Health reflects observed usage, not a provider probe.</p>
 
       <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <UCard v-for="metric in summaryMetrics" :key="metric.label">
+        <AppCard v-for="metric in summaryMetrics" :key="metric.label">
           <p class="text-sm text-[var(--ui-text-muted)]">{{ metric.label }}</p>
           <p class="mt-2 text-2xl font-semibold tabular-nums">{{ metric.value }}</p>
-        </UCard>
+        </AppCard>
       </div>
       <div class="grid gap-6 xl:grid-cols-2">
-        <UCard>
+        <AppCard>
           <template #header><h2 class="font-semibold">Realtime · last 15 minutes</h2></template>
           <div class="grid grid-cols-3 gap-3 text-sm">
             <div><p class="text-[var(--ui-text-muted)]">Requests/min</p><p class="font-semibold">{{ decimal(latestVelocity?.rpm) }}</p></div>
@@ -43,15 +43,15 @@
           <h3 class="mt-5 text-sm font-medium">Latency distribution</h3>
           <div v-for="bucket in realtime?.latency_distribution || []" :key="bucket.bucket" class="flex justify-between gap-3 py-1 text-sm"><span>{{ bucket.bucket }}</span><span>{{ number(bucket.request_count) }}</span></div>
           <p v-if="!realtime?.latency_distribution?.length" class="mt-2 text-sm text-[var(--ui-text-muted)]">No latency data.</p>
-        </UCard>
-        <UCard>
+        </AppCard>
+        <AppCard>
           <template #header><h2 class="font-semibold">Recent activity</h2></template>
           <div v-for="point in recentActivity" :key="point.bucket_start" class="flex items-center justify-between gap-3 border-b border-[var(--ui-border)] py-2 text-sm">
             <span>{{ formatTime(point.bucket_start) }}</span><span>{{ number(point.request_count) }} requests · {{ percent(point.error_rate) }} errors</span><UBadge :color="healthColor(point.status)" variant="subtle">{{ point.status }}</UBadge>
           </div>
           <p v-if="!recentActivity.length" class="text-sm text-[var(--ui-text-muted)]">No activity in this window.</p>
-        </UCard>
-        <UCard v-for="section in healthSections" :key="section.label">
+        </AppCard>
+        <AppCard v-for="section in healthSections" :key="section.label">
           <template #header><h2 class="font-semibold">{{ section.label }} health</h2></template>
           <div v-for="item in section.items" :key="item.id" class="border-b border-[var(--ui-border)] py-3 text-sm">
             <div class="flex flex-wrap items-center justify-between gap-2"><span class="font-medium">{{ item.label || item.id }}</span><UBadge :color="healthColor(item.status)" variant="subtle">{{ item.status }}</UBadge></div>
@@ -60,20 +60,20 @@
             <p v-if="item.next_retry_at" class="text-xs text-[var(--ui-text-muted)]">Next retry: {{ formatTime(item.next_retry_at) }}</p>
           </div>
           <p v-if="!section.items.length" class="text-sm text-[var(--ui-text-muted)]">No health data in this window.</p>
-        </UCard>
+        </AppCard>
       </div>
-      <UCard>
+      <AppCard>
         <template #header>
           <div class="flex flex-wrap items-center justify-between gap-3"><div><h2 class="font-semibold">Request logs</h2><p class="text-xs text-[var(--ui-text-muted)]">{{ number(logs?.total) }} indexed requests · local availability or remote routability</p></div>
             <form class="flex gap-2" @submit.prevent="applyLogSearch"><UInput v-model="logSearch" placeholder="Request ID, model, status or file" aria-label="Search request logs" /><UButton type="submit" color="neutral" variant="outline" :disabled="loadingConsole">Search</UButton></form>
           </div>
         </template>
-        <div class="overflow-x-auto"><table class="w-full min-w-[42rem] text-left text-sm"><thead><tr class="border-b border-[var(--ui-border)]"><th class="py-2">Request</th><th>Provider / model</th><th>Home</th><th>File</th><th>Status</th><th>Log</th></tr></thead><tbody>
-          <tr v-for="item in logItems" :key="item.id" class="border-b border-[var(--ui-border)]"><td class="py-3"><div>{{ formatTime(item.timestamp) }}</div><div class="font-mono text-xs">{{ item.request_id || '—' }}</div></td><td>{{ item.provider || '—' }} / {{ item.model || '—' }}</td><td>{{ item.home_ip || '—' }}{{ item.home_port ? `:${item.home_port}` : '' }}</td><td class="font-mono text-xs">{{ item.file_name || 'Remote / unavailable' }}</td><td>{{ item.status }}</td><td><UButton size="xs" color="neutral" variant="outline" :disabled="!item.download_url" :loading="downloadingId === item.id" @click="downloadLog(item)">Download</UButton></td></tr>
-        </tbody></table></div>
+        <AppCard :ui="{ body: 'p-0' }"><AppTable native><table class="min-w-[42rem] text-left text-sm"><thead><tr><th>Request</th><th>Provider / model</th><th>Home</th><th>File</th><th>Status</th><th>Log</th></tr></thead><tbody>
+          <tr v-for="item in logItems" :key="item.id"><td><div>{{ formatTime(item.timestamp) }}</div><div class="font-mono text-xs">{{ item.request_id || '—' }}</div></td><td>{{ item.provider || '—' }} / {{ item.model || '—' }}</td><td>{{ item.home_ip || '—' }}{{ item.home_port ? `:${item.home_port}` : '' }}</td><td class="font-mono text-xs">{{ item.file_name || 'Remote / unavailable' }}</td><td>{{ item.status }}</td><td><UButton size="xs" color="neutral" variant="outline" :disabled="!item.download_url" :loading="downloadingId === item.id" @click="downloadLog(item)">Download</UButton></td></tr>
+        </tbody></table></AppTable></AppCard>
         <p v-if="!logItems.length" class="py-5 text-center text-sm text-[var(--ui-text-muted)]">No request logs match this window and search.</p>
         <div class="mt-4 flex items-center justify-end gap-3 text-sm"><UButton size="sm" color="neutral" variant="outline" :disabled="logPage === 1 || loadingConsole" @click="changeLogPage(-1)">Previous</UButton><span>Page {{ logPage }} / {{ logPages }}</span><UButton size="sm" color="neutral" variant="outline" :disabled="logPage >= logPages || loadingConsole" @click="changeLogPage(1)">Next</UButton></div>
-      </UCard>
+      </AppCard>
     </section>
 
     <section v-else class="space-y-6" role="tabpanel">
@@ -82,7 +82,7 @@
     <UAlert v-if="errorMessage" color="error" variant="subtle" icon="i-tabler-alert-circle" title="Request failed" :description="errorMessage" />
 
     <div class="grid gap-6 xl:grid-cols-2">
-      <UCard>
+      <AppCard>
         <template #header><h2 class="font-semibold">Request</h2></template>
         <form class="space-y-4" @submit.prevent="sendRequest">
           <div class="grid gap-4 sm:grid-cols-[10rem_1fr]">
@@ -107,9 +107,9 @@
             <UButton type="submit" icon="i-tabler-send" :loading="sending">Send request</UButton>
           </div>
         </form>
-      </UCard>
+      </AppCard>
 
-      <UCard>
+      <AppCard>
         <template #header>
           <div class="flex items-center justify-between gap-3">
             <h2 class="font-semibold">Response</h2>
@@ -133,7 +133,7 @@
           <UIcon name="i-tabler-terminal-2" class="size-10" />
           <p class="mt-3 text-sm">Send a request to inspect its status, headers, and body.</p>
         </div>
-      </UCard>
+      </AppCard>
     </div>
     </section>
   </div>

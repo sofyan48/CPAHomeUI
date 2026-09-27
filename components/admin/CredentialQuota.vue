@@ -3,10 +3,10 @@
     <div class="workbench-toolbar justify-between"><div><h2 class="font-semibold">Provider quota snapshots</h2><p class="text-xs text-[var(--ui-text-muted)]">Inspect normalized quota windows and request active collection.</p></div><div class="flex gap-2"><UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="pending" @click="refreshQuota">Refresh</UButton><UButton icon="i-tabler-bolt" :loading="collectingAll" @click="collectAll">Collect all</UButton></div></div>
     <UAlert v-if="pageError" color="error" variant="subtle" title="Unable to load quota" :description="pageError" />
     <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-      <UCard><p class="text-xs font-semibold uppercase text-[var(--ui-text-muted)]">Credentials</p><p class="mt-2 text-2xl font-bold">{{ summary.total_credentials ?? total }}</p></UCard>
-      <UCard><p class="text-xs font-semibold uppercase text-[var(--ui-text-muted)]">Healthy</p><p class="mt-2 text-2xl font-bold">{{ summary.healthy ?? 0 }}</p></UCard>
-      <UCard><p class="text-xs font-semibold uppercase text-[var(--ui-text-muted)]">Low / exhausted</p><p class="mt-2 text-2xl font-bold">{{ (summary.low ?? 0) + (summary.exhausted ?? 0) }}</p></UCard>
-      <UCard><p class="text-xs font-semibold uppercase text-[var(--ui-text-muted)]">Stale / never</p><p class="mt-2 text-2xl font-bold">{{ (summary.stale ?? 0) + (summary.never ?? 0) }}</p></UCard>
+      <AppCard><p class="text-xs font-semibold uppercase text-[var(--ui-text-muted)]">Credentials</p><p class="mt-2 text-2xl font-bold">{{ summary.total_credentials ?? total }}</p></AppCard>
+      <AppCard><p class="text-xs font-semibold uppercase text-[var(--ui-text-muted)]">Healthy</p><p class="mt-2 text-2xl font-bold">{{ summary.healthy ?? 0 }}</p></AppCard>
+      <AppCard><p class="text-xs font-semibold uppercase text-[var(--ui-text-muted)]">Low / exhausted</p><p class="mt-2 text-2xl font-bold">{{ (summary.low ?? 0) + (summary.exhausted ?? 0) }}</p></AppCard>
+      <AppCard><p class="text-xs font-semibold uppercase text-[var(--ui-text-muted)]">Stale / never</p><p class="mt-2 text-2xl font-bold">{{ (summary.stale ?? 0) + (summary.never ?? 0) }}</p></AppCard>
     </div>
     <div class="workbench-toolbar grid lg:grid-cols-[1fr_220px_220px_auto]">
       <UInput v-model="search" icon="i-tabler-search" placeholder="Search label, account, project..." @keyup.enter="applyFilters" />
@@ -14,8 +14,8 @@
       <USelect v-model="quotaStatus" :items="statusOptions" value-key="value" label-key="label" />
       <UButton color="neutral" variant="outline" @click="applyFilters">Apply filters</UButton>
     </div>
-    <UCard :ui="{ body: { padding: '' } }">
-      <UTable :columns="columns" :data="items" :loading="pending">
+    <AppCard :ui="{ body: 'p-0' }">
+      <AppTable :columns="columns" :data="items" :loading="pending">
         <template #identity-cell="{ row }"><button class="min-w-0 text-left" @click="openDetail(value(row))"><p class="truncate font-medium text-primary-500 hover:underline">{{ value(row).label || value(row).credential_id }}</p><p class="mt-1 max-w-64 truncate font-mono text-xs text-[var(--ui-text-muted)]">{{ value(row).credential_id }}</p></button></template>
         <template #provider-cell="{ row }"><div><UBadge color="neutral" variant="subtle">{{ value(row).provider }}</UBadge><p v-if="value(row).plan?.name" class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ value(row).plan.name }}</p></div></template>
         <template #quota-cell="{ row }"><div><UBadge :color="statusColor(value(row).quota_status)" variant="subtle">{{ value(row).quota_status }}</UBadge><p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ value(row).window_count || 0 }} window(s)</p></div></template>
@@ -23,8 +23,8 @@
         <template #observed-cell="{ row }"><div class="text-xs"><p>{{ formatDate(value(row).observed_at) }}</p><p v-if="value(row).earliest_reset_at" class="mt-1 text-[var(--ui-text-muted)]">Reset {{ formatDate(value(row).earliest_reset_at) }}</p></div></template>
         <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><AdminTableAction action="view" label="View quota details" @click="openDetail(value(row))" /><AdminTableAction action="refresh" label="Collect quota" :loading="collectingID === value(row).credential_id" @click="collectOne(value(row))" /></div></template>
         <template #empty><div class="py-14 text-center text-sm text-[var(--ui-text-muted)]">No quota snapshots match these filters.</div></template>
-      </UTable>
-    </UCard>
+      </AppTable>
+    </AppCard>
     <div class="flex items-center justify-between"><p class="text-xs text-[var(--ui-text-muted)]">Showing {{ items.length }} of {{ total }}</p><div class="flex gap-2"><UButton color="neutral" variant="outline" size="sm" :disabled="offset === 0" @click="previousPage">Previous</UButton><UButton color="neutral" variant="outline" size="sm" :disabled="offset + limit >= total" @click="nextPage">Next</UButton></div></div>
 
     <UModal v-model:open="detailOpen" :title="detail?.credential?.label || 'Quota details'" description="Latest normalized quota snapshot and provider windows.">

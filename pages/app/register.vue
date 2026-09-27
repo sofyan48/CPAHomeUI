@@ -1,6 +1,6 @@
 <template>
   <div class="mx-auto max-w-md py-12">
-    <UCard>
+    <AppCard>
       <template #header>
         <h1 class="text-2xl font-bold text-[var(--ui-text-highlighted)]">Create your account</h1>
         <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Start using models through CPAHome.</p>
@@ -24,7 +24,7 @@
         <UButton type="submit" color="primary" block size="lg" :loading="loading">Create account</UButton>
       </form>
       <template #footer><p class="text-center text-sm text-[var(--ui-text-muted)]">Already registered? <NuxtLink to="/app/login" class="font-medium text-primary-500">Sign in</NuxtLink></p></template>
-    </UCard>
+    </AppCard>
   </div>
 </template>
 

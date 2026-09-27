@@ -11,15 +11,15 @@
       <span class="text-xs text-[var(--ui-text-muted)]">Exports use applied record filters and sort (up to 10,000 rows). Overview and insights support only date, provider, model, endpoint, and Home IP filters; without dates they default to 24 hours. Realtime uses the last 15 minutes.</span>
     </div>
     <div class="grid gap-4 xl:grid-cols-2">
-      <UCard>
+      <AppCard>
         <template #header><h3 class="font-semibold">Ranking by {{ groupBy }}</h3></template>
         <div v-for="item in aggregates?.items || []" :key="JSON.stringify(item)" class="flex justify-between gap-3 border-b border-[var(--ui-border)] py-2 text-sm">
           <span class="truncate">{{ item.label || item.name || item.id || item.key || 'Unknown' }}</span>
           <span class="font-mono">{{ item[metric] ?? item.value ?? 0 }}</span>
         </div>
         <p v-if="!aggregates?.items?.length" class="text-sm text-[var(--ui-text-muted)]">No ranking data.</p>
-      </UCard>
-      <UCard>
+      </AppCard>
+      <AppCard>
         <template #header><h3 class="font-semibold">Realtime snapshot (last 15 minutes)</h3></template>
         <div v-if="realtime" class="space-y-4 text-sm">
           <p class="text-xs text-[var(--ui-text-muted)]">Grouped by {{ realtime.group_by }} · Updated {{ new Date(realtime.updated_at).toLocaleString() }}</p>
@@ -43,21 +43,21 @@
           </div>
         </div>
         <p v-else class="text-sm text-[var(--ui-text-muted)]">Load insights to see realtime usage.</p>
-      </UCard>
-      <UCard v-for="health in healthSections" :key="health.label">
+      </AppCard>
+      <AppCard v-for="health in healthSections" :key="health.label">
         <template #header><h3 class="font-semibold">{{ health.label }} health</h3></template>
         <div v-for="item in health.items" :key="item.id" class="flex items-center justify-between gap-3 border-b border-[var(--ui-border)] py-2 text-sm">
           <span>{{ item.label || item.id }}</span><UBadge :color="item.status === 'healthy' ? 'success' : 'warning'" variant="subtle">{{ item.status }}</UBadge>
         </div>
         <p v-if="!health.items.length" class="text-sm text-[var(--ui-text-muted)]">No health data available.</p>
-      </UCard>
+      </AppCard>
     </div>
-    <UCard>
+    <AppCard>
       <template #header><h3 class="font-semibold">Session tree</h3></template>
       <form class="flex flex-wrap gap-2" @submit.prevent="loadTree"><UInput v-model="sessionID" placeholder="Session or request ID" class="min-w-64 flex-1" /><UButton type="submit" :loading="loadingTree">Find session</UButton></form>
       <UAlert v-if="treeError" class="mt-3" color="error" variant="subtle" :description="treeError" />
       <pre v-if="tree" class="mt-4 max-h-96 overflow-auto whitespace-pre-wrap text-xs">{{ JSON.stringify(tree, null, 2) }}</pre>
-    </UCard>
+    </AppCard>
   </section>
 </template>
 

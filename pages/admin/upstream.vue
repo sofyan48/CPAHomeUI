@@ -11,16 +11,13 @@
     <p v-if="summaryPending" role="status" class="text-sm text-[var(--ui-text-muted)]">Loading Upstream summary…</p>
     <UAlert v-if="summaryError" color="warning" variant="subtle" title="Upstream summary unavailable" :description="summaryError" />
     <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-      <UCard><p class="text-xs font-semibold uppercase text-[var(--ui-text-muted)]">Accounts</p><p class="mt-1 text-2xl font-bold">{{ accounts.length }}</p><p class="text-xs text-[var(--ui-text-muted)]">{{ activeAccounts }} active · {{ disabledAccounts }} disabled · {{ unavailableAccounts }} unavailable</p></UCard>
-      <UCard><p class="text-xs font-semibold uppercase text-[var(--ui-text-muted)]">Provider keys</p><p class="mt-1 text-2xl font-bold">{{ providerKeyCount }}</p><p class="truncate text-xs text-[var(--ui-text-muted)]" :title="providerGroups">{{ providerGroups || 'No entries' }}</p></UCard>
-      <UCard><button type="button" class="w-full cursor-pointer text-left" aria-label="Show accounts needing attention" @click="showAttention"><p class="text-xs font-semibold uppercase text-[var(--ui-text-muted)]">Quota attention</p><p class="mt-1 text-2xl font-bold">{{ quotaError ? 'Unavailable' : attentionCount }}</p><p class="text-xs text-[var(--ui-text-muted)]">Quota status and collection freshness</p></button></UCard>
-      <UCard><p class="text-xs font-semibold uppercase text-[var(--ui-text-muted)]">WebSockets</p><p class="mt-1 text-2xl font-bold">{{ accounts.filter(item => item.websockets).length }}</p><p class="text-xs text-[var(--ui-text-muted)]">Enabled accounts</p></UCard>
+      <AppCard><p class="text-xs font-semibold uppercase text-[var(--ui-text-muted)]">Accounts</p><p class="mt-1 text-2xl font-bold">{{ accounts.length }}</p><p class="text-xs text-[var(--ui-text-muted)]">{{ activeAccounts }} active · {{ disabledAccounts }} disabled · {{ unavailableAccounts }} unavailable</p></AppCard>
+      <AppCard><p class="text-xs font-semibold uppercase text-[var(--ui-text-muted)]">Provider keys</p><p class="mt-1 text-2xl font-bold">{{ providerKeyCount }}</p><p class="truncate text-xs text-[var(--ui-text-muted)]" :title="providerGroups">{{ providerGroups || 'No entries' }}</p></AppCard>
+      <AppCard><button type="button" class="w-full cursor-pointer text-left" aria-label="Show accounts needing attention" @click="showAttention"><p class="text-xs font-semibold uppercase text-[var(--ui-text-muted)]">Quota attention</p><p class="mt-1 text-2xl font-bold">{{ quotaError ? 'Unavailable' : attentionCount }}</p><p class="text-xs text-[var(--ui-text-muted)]">Quota status and collection freshness</p></button></AppCard>
+      <AppCard><p class="text-xs font-semibold uppercase text-[var(--ui-text-muted)]">WebSockets</p><p class="mt-1 text-2xl font-bold">{{ accounts.filter(item => item.websockets).length }}</p><p class="text-xs text-[var(--ui-text-muted)]">Enabled accounts</p></AppCard>
     </div>
 
-    <div role="tablist" aria-label="Upstream" class="workbench-page-tabs">
-      <UButton role="tab" :aria-selected="tab === 'accounts'" color="neutral" :variant="tab === 'accounts' ? 'soft' : 'ghost'" @click="selectTab('accounts')">Accounts</UButton>
-      <UButton role="tab" :aria-selected="tab === 'providers'" color="neutral" :variant="tab === 'providers' ? 'soft' : 'ghost'" @click="selectTab('providers')">Providers</UButton>
-    </div>
+    <AppPanelTabs :model-value="tab" :items="upstreamTabs" label="Upstream" @update:model-value="selectTab" />
     <AdminUpstreamAccounts v-if="tab === 'accounts'" :attention-request="attentionRequest" :sync-request="syncRequest" @changed="refreshSummary" />
     <AdminUpstreamProviders v-else :sync-request="syncRequest" @changed="refreshSummary" />
   </div>
@@ -34,6 +31,7 @@ const router = useRouter()
 const { fetchAPI } = useApi()
 const toast = useToast()
 const tab = computed(() => route.query.credential ? 'accounts' : route.query.tab === 'providers' ? 'providers' : 'accounts')
+const upstreamTabs = [{ label: 'Accounts', value: 'accounts' }, { label: 'Providers', value: 'providers' }]
 const summaryError = ref('')
 const quotaError = ref('')
 const syncing = ref(false)

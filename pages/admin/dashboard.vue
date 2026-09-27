@@ -5,7 +5,7 @@
     </UAlert>
 
     <template v-if="snapshot && !loadError">
-      <section class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg)] p-5">
+      <section class="rounded-lg border border-white/40 bg-white/40 app-surface p-5 dark:border-white/10 dark:bg-neutral-900/40">
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div>
             <UBadge :color="health.color" variant="subtle">{{ health.label }}</UBadge>
@@ -24,7 +24,7 @@
       </section>
 
       <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <NuxtLink v-for="card in operatingCards" :key="card.label" :to="card.to" class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg)] p-4 transition-colors hover:bg-[var(--ui-bg-elevated)]">
+        <NuxtLink v-for="card in operatingCards" :key="card.label" :to="card.to" class="rounded-lg border border-white/40 bg-white/40 app-surface p-4 transition-colors hover:bg-white/60 dark:border-white/10 dark:bg-neutral-900/40 dark:hover:bg-neutral-800/50">
           <p class="text-sm text-[var(--ui-text-muted)]">{{ card.label }}</p>
           <p class="mt-3 text-2xl font-semibold tabular-nums">{{ card.value }}</p>
           <p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ card.detail }}</p>
@@ -37,39 +37,39 @@
       </section>
 
       <section class="grid gap-4 lg:grid-cols-2">
-        <UCard>
+        <AppCard class="border-white/40 bg-white/40 dark:border-white/10 dark:bg-neutral-900/40">
           <template #header><div class="flex items-center justify-between"><div><h2 class="font-semibold">Key status</h2><p class="text-xs text-[var(--ui-text-muted)]">{{ formatNumber(usage?.totals?.active_client_key_count ?? 0) }} active · {{ formatNumber(quietKeyCount) }} quiet · {{ formatNumber(clientKeys.length) }} configured</p></div><UButton to="/admin/usage" color="neutral" variant="ghost" size="sm">Usage details</UButton></div></template>
           <div v-if="topClientKeys.length" class="space-y-3"><div v-for="(item, index) in topClientKeys" :key="item.id || index" class="flex items-center justify-between gap-3 border-b border-[var(--ui-border)] pb-3 last:border-0 last:pb-0"><div class="min-w-0"><p class="truncate text-sm font-medium">{{ index + 1 }}. {{ keyLabel(item) }}</p><p class="text-xs text-[var(--ui-text-muted)]">{{ formatNumber(item.request_count) }} requests · {{ formatPercent(item.success_rate) }} success<span v-if="item.failed_count"> · {{ formatNumber(item.failed_count) }} failed</span></p></div><span class="shrink-0 text-sm font-semibold">{{ item.token_breakdown?.total_tokens == null ? '--' : formatCompact(item.token_breakdown.total_tokens) }} tokens</span></div></div>
           <p v-else class="py-8 text-center text-sm text-[var(--ui-text-muted)]">{{ usage ? 'No client key activity in this range.' : 'Key usage is unavailable.' }}</p>
-        </UCard>
-        <UCard>
+        </AppCard>
+        <AppCard class="border-white/40 bg-white/40 dark:border-white/10 dark:bg-neutral-900/40">
           <template #header><div class="flex items-center justify-between"><div><h2 class="font-semibold">Model usage distribution</h2><p class="text-xs text-[var(--ui-text-muted)]">{{ formatNumber(usage?.totals?.active_model_count ?? 0) }} models used</p></div><UButton to="/admin/usage" color="neutral" variant="ghost" size="sm">Usage details</UButton></div></template>
           <div v-if="topModels.length" class="space-y-3"><div v-for="(item, index) in topModels" :key="item.id || index" class="flex items-center justify-between gap-3 border-b border-[var(--ui-border)] pb-3 last:border-0 last:pb-0"><div class="min-w-0"><p class="truncate text-sm font-medium">{{ index + 1 }}. {{ item.label || item.id }}</p><p class="text-xs text-[var(--ui-text-muted)]">{{ formatNumber(item.request_count) }} requests · {{ formatPercent(item.success_rate) }} success<span v-if="item.failed_count"> · {{ formatNumber(item.failed_count) }} failed</span></p></div><span class="shrink-0 text-sm font-semibold">{{ item.token_breakdown?.total_tokens == null ? '--' : formatCompact(item.token_breakdown.total_tokens) }} tokens</span></div></div>
           <p v-else class="py-8 text-center text-sm text-[var(--ui-text-muted)]">{{ usage ? 'No model activity in this range.' : 'Model usage is unavailable.' }}</p>
-        </UCard>
+        </AppCard>
       </section>
 
       <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <NuxtLink v-for="card in inventoryCards" :key="card.label" :to="card.to" class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg)] p-4 transition-colors hover:bg-[var(--ui-bg-elevated)]"><p class="text-sm text-[var(--ui-text-muted)]">{{ card.label }}</p><p class="mt-2 text-2xl font-semibold">{{ formatNumber(card.value) }}</p><p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ card.detail }}</p></NuxtLink>
+        <NuxtLink v-for="card in inventoryCards" :key="card.label" :to="card.to" class="rounded-lg border border-white/40 bg-white/40 app-surface p-4 transition-colors hover:bg-white/60 dark:border-white/10 dark:bg-neutral-900/40 dark:hover:bg-neutral-800/50"><p class="text-sm text-[var(--ui-text-muted)]">{{ card.label }}</p><p class="mt-2 text-2xl font-semibold">{{ formatNumber(card.value) }}</p><p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ card.detail }}</p></NuxtLink>
       </section>
 
       <section class="grid gap-4 lg:grid-cols-2">
-        <UCard><template #header><div class="flex items-center justify-between"><h2 class="font-semibold">Model service access</h2><UButton to="/admin/providers" color="neutral" variant="ghost" size="sm">Manage</UButton></div></template>
+        <AppCard class="border-white/40 bg-white/40 dark:border-white/10 dark:bg-neutral-900/40"><template #header><div class="flex items-center justify-between"><h2 class="font-semibold">Model service access</h2><UButton to="/admin/providers" color="neutral" variant="ghost" size="sm">Manage</UButton></div></template>
           <div class="space-y-2"><div v-for="provider in providerRows" :key="provider.path" class="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--ui-border)] py-2 text-sm last:border-0"><div><p class="font-medium">{{ provider.label }}</p><p class="font-mono text-xs text-[var(--ui-text-muted)]">{{ provider.path }}</p></div><p class="text-xs">{{ provider.total }} total · {{ provider.active }} available · {{ provider.disabled }} disabled</p></div></div>
           <UButton v-if="providerRows.every(item => item.total === 0)" to="/admin/providers" color="neutral" variant="outline" size="sm" class="mt-4">Configure model service</UButton>
-        </UCard>
-        <UCard><template #header><h2 class="font-semibold">Key switches</h2></template>
+        </AppCard>
+        <AppCard class="border-white/40 bg-white/40 dark:border-white/10 dark:bg-neutral-900/40"><template #header><h2 class="font-semibold">Key switches</h2></template>
           <div class="space-y-3"><div v-for="item in configChecks" :key="item.label" class="flex items-center justify-between gap-4 text-sm"><span>{{ item.label }}</span><UBadge :color="item.color" variant="subtle">{{ item.value }}</UBadge></div></div>
-        </UCard>
+        </AppCard>
       </section>
 
       <section class="grid gap-4 lg:grid-cols-2">
-        <UCard v-if="dataIssues.length || missingCapabilities.length"><template #header><h2 class="font-semibold">Data loading status · {{ dataIssues.length + missingCapabilities.length }}</h2></template>
+        <AppCard v-if="dataIssues.length || missingCapabilities.length" class="border-white/40 bg-white/40 dark:border-white/10 dark:bg-neutral-900/40"><template #header><h2 class="font-semibold">Data loading status · {{ dataIssues.length + missingCapabilities.length }}</h2></template>
           <div class="space-y-2"><div v-for="item in statusItems.slice(0, 4)" :key="item.label" class="flex items-center justify-between gap-2 text-sm"><span>{{ item.label }} · {{ item.detail }}</span><UButton :to="item.to" size="xs" color="neutral" variant="ghost">Review</UButton></div></div>
-        </UCard>
-        <UCard><template #header><h2 class="font-semibold">Account credential sources</h2></template>
+        </AppCard>
+        <AppCard class="border-white/40 bg-white/40 dark:border-white/10 dark:bg-neutral-900/40"><template #header><h2 class="font-semibold">Account credential sources</h2></template>
           <div v-if="credentialSources.length" class="space-y-2"><div v-for="source in credentialSources" :key="source.label" class="flex justify-between text-sm"><span>{{ source.label }}</span><strong>{{ source.count }}</strong></div></div><p v-else class="py-6 text-center text-sm text-[var(--ui-text-muted)]">No account credential sources available.</p>
-        </UCard>
+        </AppCard>
       </section>
     </template>
     <p v-else-if="loading" class="py-12 text-center text-sm text-[var(--ui-text-muted)]">Loading dashboard…</p>

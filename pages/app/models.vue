@@ -36,7 +36,7 @@
         <USkeleton v-for="index in 12" :key="index" class="h-52 rounded-xl" />
       </div>
       <div v-else class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-        <UCard v-for="model in filteredModels" :key="model.id" class="min-w-0" :ui="{ body: 'flex h-full flex-col p-3 sm:p-3' }">
+        <AppCard v-for="model in filteredModels" :key="model.id" class="min-w-0" :ui="{ body: 'flex h-full flex-col p-3 sm:p-3' }">
           <div class="flex items-start justify-between gap-2">
             <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--ui-bg-muted)] text-[var(--ui-text-highlighted)]">
               <UIcon :name="modelLogoIcon(model)" class="size-6" aria-hidden="true" />
@@ -55,7 +55,7 @@
           <div class="mt-auto pt-3">
             <UButton block color="neutral" variant="outline" size="xs" :aria-label="`View details for ${model.display_name || model.id}`" @click="openDetails(model, $event)">Details</UButton>
           </div>
-        </UCard>
+        </AppCard>
       </div>
       <div v-if="catalogReady && !loading && !error && !filteredModels.length" class="rounded-2xl border border-dashed border-[var(--ui-border)] py-16 text-center text-sm text-[var(--ui-text-muted)]">{{ models.length ? 'No models match your filters.' : 'No models are currently served.' }}</div>
     </template>

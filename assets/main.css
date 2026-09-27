@@ -1,68 +1,8 @@
-@import "tailwindcss";
+@import "tailwindcss" theme(static);
 @import "@nuxt/ui";
 
 :root {
-  color-scheme: light;
-  --ui-radius: 0.3125rem;
-  --ui-container: 90rem;
-  --ui-bg: #f7f7f6;
-  --ui-bg-muted: #ececea;
-  --ui-bg-elevated: #fcfcfb;
-  --ui-bg-accented: #e5e5e2;
-  --ui-border: #d8d8d4;
-  --ui-border-muted: #e5e5e2;
-  --ui-text: #343431;
-  --ui-text-highlighted: #1c1c1a;
-  --ui-text-muted: #656560;
-  --ui-text-dimmed: #858580;
-  --ui-primary: #0f766e;
-  --ui-hover: rgba(28, 28, 26, 0.045);
-  --ui-active: rgba(28, 28, 26, 0.075);
-  --ui-selected: rgba(15, 118, 110, 0.09);
-  --ui-focus: rgba(15, 118, 110, 0.28);
-  --ui-overlay: rgba(255, 255, 255, 0.88);
-  --glass-card: rgba(255, 255, 255, 0.66);
-  --glass-card-strong: rgba(255, 255, 255, 0.80);
-  --glass-soft: rgba(247, 247, 246, 0.72);
-  --glass-border: rgba(255, 255, 255, 0.72);
-  --glass-shadow: 0 12px 36px rgba(31, 38, 36, 0.07), 0 2px 8px rgba(31, 38, 36, 0.04);
-  --workbench-sidebar: rgba(244, 244, 242, 0.76);
-  --workbench-sidebar-accent: #e6e6e3;
-  --workbench-sidebar-border: #d8d8d4;
-  --workbench-sidebar-text: #292927;
-  --workbench-sidebar-muted: #6f6f69;
-  --workbench-sidebar-primary: #0f766e;
-}
-
-.dark {
-  color-scheme: dark;
-  --ui-bg: #171816;
-  --ui-bg-muted: #222320;
-  --ui-bg-elevated: #1e1f1d;
-  --ui-bg-accented: #2b2c29;
-  --ui-border: #363733;
-  --ui-border-muted: #2b2c29;
-  --ui-text: #d8d9d4;
-  --ui-text-highlighted: #f0f1ec;
-  --ui-text-muted: #a8aaa2;
-  --ui-text-dimmed: #898b84;
-  --ui-primary: #5db5aa;
-  --ui-hover: rgba(240, 241, 236, 0.055);
-  --ui-active: rgba(240, 241, 236, 0.09);
-  --ui-selected: rgba(93, 181, 170, 0.13);
-  --ui-focus: rgba(93, 181, 170, 0.34);
-  --ui-overlay: rgba(37, 38, 36, 0.92);
-  --glass-card: rgba(31, 33, 31, 0.68);
-  --glass-card-strong: rgba(31, 33, 31, 0.84);
-  --glass-soft: rgba(23, 24, 22, 0.72);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-shadow: 0 16px 42px rgba(0, 0, 0, 0.20), 0 2px 8px rgba(0, 0, 0, 0.16);
-  --workbench-sidebar: rgba(20, 21, 19, 0.78);
-  --workbench-sidebar-accent: #20211e;
-  --workbench-sidebar-border: #2b2c29;
-  --workbench-sidebar-text: #e4e5df;
-  --workbench-sidebar-muted: #979991;
-  --workbench-sidebar-primary: #5db5aa;
+  --ui-container: var(--container-7xl);
 }
 
 html {
@@ -92,10 +32,16 @@ pre,
   background: transparent;
 }
 
+.app-surface {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-bg-elevated) !important;
+  color: var(--ui-text);
+}
+
 .workbench-sidebar {
-  background: var(--workbench-sidebar);
-  color: var(--workbench-sidebar-text);
-  border-color: var(--glass-border);
+  background: color-mix(in oklch, var(--ui-bg) 30%, transparent);
+  color: var(--ui-text-highlighted);
+  border-color: var(--ui-border);
   -webkit-backdrop-filter: blur(18px) saturate(115%);
   backdrop-filter: blur(18px) saturate(115%);
   box-shadow: 8px 0 32px rgba(20, 20, 18, 0.04);
@@ -103,46 +49,46 @@ pre,
 
 .workbench-sidebar .workbench-brand,
 .workbench-sidebar .workbench-section-title {
-  color: var(--workbench-sidebar-text);
+  color: var(--ui-text-highlighted);
 }
 
 .workbench-sidebar .workbench-muted {
-  color: var(--workbench-sidebar-muted);
+  color: var(--ui-text-muted);
 }
 
 .workbench-sidebar nav a,
 .workbench-sidebar nav button {
   min-height: 2rem;
   border-radius: 0.375rem;
-  color: var(--workbench-sidebar-muted);
+  color: var(--ui-text-muted);
   font-size: 0.8125rem;
   font-weight: 500;
 }
 
 .workbench-sidebar nav a:hover,
 .workbench-sidebar nav button:hover {
-  color: var(--workbench-sidebar-text);
-  background: var(--workbench-sidebar-accent);
+  color: var(--ui-text-highlighted);
+  background: var(--ui-bg-elevated);
 }
 
 .workbench-sidebar nav a.router-link-active,
 .workbench-sidebar nav a[aria-current="page"] {
-  color: var(--workbench-sidebar-text);
-  background: color-mix(in oklch, var(--workbench-sidebar-primary) 11%, transparent);
+  color: var(--ui-text-highlighted);
+  background: color-mix(in oklch, var(--ui-primary) 11%, transparent);
   font-weight: 600;
 }
 
 .workbench-sidebar nav a.router-link-active svg,
 .workbench-sidebar nav a[aria-current="page"] svg {
-  color: var(--workbench-sidebar-primary);
+  color: var(--ui-primary);
 }
 
 .workbench-header {
-  background: var(--glass-soft);
-  border-color: var(--glass-border);
+  background: color-mix(in oklch, var(--ui-bg) 50%, transparent);
+  border-color: var(--ui-border);
   -webkit-backdrop-filter: blur(16px) saturate(120%);
   backdrop-filter: blur(16px) saturate(120%);
-  box-shadow: 0 1px 0 color-mix(in oklch, var(--glass-border) 80%, transparent), 0 8px 24px rgba(20, 20, 18, 0.035);
+  box-shadow: 0 1px 0 var(--ui-border), 0 8px 24px rgba(20, 20, 18, 0.035);
 }
 
 .workbench-main {
@@ -187,7 +133,7 @@ pre,
 .workbench-main .rounded-lg { border-radius: 0.4375rem; }
 .workbench-main .rounded-xl,
 .workbench-main .rounded-2xl,
-.workbench-main .rounded-3xl { border-radius: 0.625rem; }
+.workbench-main .rounded-3xl { border-radius: 0.5rem; }
 
 .workbench-main input:not([type="checkbox"]):not([type="radio"]),
 .workbench-main textarea,
@@ -203,12 +149,10 @@ pre,
 }
 
 [role="dialog"] {
-  border: 1px solid var(--glass-border) !important;
-  border-radius: 0.875rem !important;
-  background: var(--ui-overlay) !important;
+  border-color: var(--ui-border);
+  border-radius: 0.5rem;
   -webkit-backdrop-filter: blur(20px) saturate(120%);
   backdrop-filter: blur(20px) saturate(120%);
-  box-shadow: 0 20px 60px rgba(20, 20, 18, 0.16), 0 8px 24px rgba(20, 20, 18, 0.10) !important;
 }
 
 [role="dialog"] input:not([type="checkbox"]):not([type="radio"]),
@@ -218,31 +162,6 @@ pre,
   border-radius: 0.3125rem;
 }
 
-/* Glass cards: translucent enough to separate surfaces, solid enough for readability. */
-.workbench-main [data-slot="root"]:has(> [data-slot="body"]) {
-  background: var(--glass-card);
-  border-color: var(--glass-border);
-  -webkit-backdrop-filter: blur(14px) saturate(112%);
-  backdrop-filter: blur(14px) saturate(112%);
-  box-shadow: var(--glass-shadow);
-}
-
-.workbench-main [data-slot="header"] {
-  padding: 0.6875rem 0.875rem;
-}
-
-.workbench-main [data-slot="body"] {
-  padding: 0.875rem;
-}
-
-.workbench-main [data-slot="footer"] {
-  padding: 0.6875rem 0.875rem;
-}
-
-/* Keep modal bodies comfortable while making page panels compact. */
-[role="dialog"] [data-slot="body"] {
-  padding: 1.25rem;
-}
 
 /* Compact forms and controls. */
 .workbench-main input:not([type="checkbox"]):not([type="radio"]),
@@ -289,143 +208,19 @@ pre,
 .workbench-main textarea { border-radius: 0.4375rem; }
 .workbench-main fieldset { border-radius: 0.4375rem; }
 
-/* Separate information cards from data panels. */
-.workbench-main [data-slot="root"]:has(> [data-slot="body"]) {
-  border-color: var(--glass-border);
-  border-radius: 0.625rem;
-  background: var(--glass-card);
-}
-
-/* Card containing a table: one quiet, cohesive data panel. */
-.workbench-main [data-slot="root"]:has(> [data-slot="body"] table) {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid var(--glass-border) !important;
-  border-radius: 0.5rem !important;
-  background: var(--glass-card-strong);
-  box-shadow: none !important;
-}
-
-
-.workbench-main [data-slot="root"]:has(> [data-slot="body"] table) > [data-slot="header"] {
-  min-height: 3.5rem;
-  padding: 0.875rem 1rem 0.75rem;
-  border-bottom: 1px solid var(--glass-border);
-  background: color-mix(in oklch, var(--glass-card-strong) 92%, var(--ui-bg-muted));
-}
-
-.workbench-main [data-slot="root"]:has(> [data-slot="body"] table) > [data-slot="body"] {
-  padding: 0;
-  background: var(--glass-card-strong);
-}
-
-.workbench-main [data-slot="root"]:has(> [data-slot="body"] table) > [data-slot="footer"] {
-  border-top: 1px solid var(--ui-border);
-  background: color-mix(in oklch, var(--ui-bg-muted) 28%, var(--ui-bg-elevated));
-}
-
-/* UTable itself is only a viewport, never another card. */
-.workbench-main [data-slot="root"]:has(> table) {
-  overflow: auto;
-  border: 1px solid var(--glass-border) !important;
-  border-radius: 0.5rem !important;
-  background: var(--glass-card-strong);
-  box-shadow: none !important;
-}
-
-.workbench-main [data-slot="body"] > [data-slot="root"]:has(> table) {
-  margin: 0;
-}
-
-.workbench-main table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  font-size: 0.8125rem;
-}
-
-.workbench-main [data-slot="root"]:has(table) .overflow-x-auto {
-  scrollbar-width: thin;
-  scrollbar-color: var(--ui-border) transparent;
-}
 
 .workbench-main .table-action-head,
 .workbench-main .table-action-cell {
-  position: sticky;
-  right: 0;
   width: 1%;
-  min-width: 0;
-  max-width: max-content;
-  padding-inline: 0.375rem !important;
-  text-align: right !important;
   white-space: nowrap;
-  background: var(--glass-card-strong);
-  box-shadow: -1px 0 0 var(--ui-border-muted);
-}
-
-.workbench-main .table-action-head {
-  z-index: 4;
-  background: color-mix(in oklch, var(--glass-card-strong) 84%, var(--ui-bg-muted));
-}
-
-/* Action width is content-driven; legacy size classes intentionally share the same behavior. */
-.workbench-main .table-action-medium,
-.workbench-main .table-action-wide,
-.workbench-main .table-action-xwide {
-  width: 1% !important;
-  min-width: 0 !important;
-  max-width: max-content !important;
-}
-
-.workbench-main .table-action-cell {
-  z-index: 2;
-}
-
-.workbench-main tbody tr:hover .table-action-cell,
-.workbench-main tbody tr[data-selected="true"] .table-action-cell {
-  background: color-mix(in oklch, var(--ui-hover) 86%, var(--glass-card-strong));
+  text-align: right !important;
 }
 
 .workbench-main .table-action-cell > * {
   display: inline-flex;
-  width: max-content;
-  max-width: none;
   align-items: center;
   justify-content: flex-end;
   gap: 0.125rem;
-  overflow: visible;
-  vertical-align: middle;
-}
-
-.workbench-main .table-action-cell button {
-  flex: 0 0 auto;
-  width: auto !important;
-  min-width: 1.75rem !important;
-  height: 1.75rem !important;
-  min-height: 1.75rem !important;
-  padding-inline: 0.375rem !important;
-  border: 1px solid transparent !important;
-  border-radius: 0.25rem !important;
-  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
-}
-
-.workbench-main .table-action-cell button:hover:not(:disabled),
-.workbench-main .table-action-cell button:focus-visible {
-  border-color: var(--ui-border) !important;
-  background: color-mix(in oklch, var(--ui-primary) 12%, var(--ui-bg-elevated)) !important;
-  color: var(--ui-primary) !important;
-  box-shadow: 0 1px 2px color-mix(in oklch, var(--ui-text) 12%, transparent);
-  transform: translateY(-1px);
-}
-
-.workbench-main .table-action-cell button:focus-visible {
-  outline: 2px solid color-mix(in oklch, var(--ui-primary) 45%, transparent);
-  outline-offset: 1px;
-}
-
-.workbench-main .table-action-cell button:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
 }
 
 /* Fallback label for legacy table actions not yet using AdminTableAction. */
@@ -468,15 +263,9 @@ pre,
 
 .workbench-main table + [class*="border-t"],
 .workbench-main [data-slot="body"] > [class*="border-t"]:last-child {
-  background: color-mix(in oklch, var(--ui-bg-muted) 24%, var(--ui-bg-elevated));
+  background: transparent;
 }
 
-/* Data surfaces stay flat; information cards retain a subtle lift. */
-.workbench-main [data-slot="root"]:has(table),
-.workbench-main [data-slot="root"]:has(> [data-slot="body"] table) {
-  box-shadow: none !important;
-  filter: none !important;
-}
 
 [data-reka-popper-content-wrapper] > *,
 [role="menu"],
@@ -513,7 +302,7 @@ button[aria-expanded="true"] > svg {
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
   .workbench-sidebar,
   .workbench-header,
-  .workbench-main [data-slot="root"]:has(> [data-slot="body"]),
+
   [role="dialog"],
   [data-reka-popper-content-wrapper] > * {
     background: var(--ui-bg-elevated) !important;
@@ -529,23 +318,6 @@ button[aria-expanded="true"] > svg {
   }
 }
 
-.workbench-page-tabs {
-  display: flex;
-  gap: 0.25rem;
-  overflow-x: auto;
-  border-bottom: 1px solid var(--ui-border-muted);
-}
-
-.workbench-page-tabs > button {
-  border-radius: 0 !important;
-  border-bottom: 2px solid transparent;
-}
-
-.workbench-page-tabs > button[aria-selected="true"] {
-  border-bottom-color: var(--ui-primary);
-  background: transparent !important;
-  color: var(--ui-text-highlighted);
-}
 
 .workbench-toolbar {
   display: flex;
@@ -556,4 +328,5 @@ button[aria-expanded="true"] > svg {
   border: 1px solid var(--ui-border);
   border-radius: 0.4375rem;
   background: var(--ui-bg-elevated);
+  backdrop-filter: blur(12px);
 }

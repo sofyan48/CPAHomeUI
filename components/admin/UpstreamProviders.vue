@@ -10,7 +10,7 @@
     />
 
     <section class="grid gap-4 xl:grid-cols-[240px_minmax(0,1fr)]">
-      <aside class="self-start rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg)] p-3 max-xl:hidden" aria-label="Provider categories">
+      <aside class="self-start rounded-lg border border-white/40 bg-white/40 app-surface p-3 dark:border-white/10 dark:bg-neutral-900/40 max-xl:hidden" aria-label="Provider categories">
         <p class="px-2 pb-2 text-xs font-medium uppercase text-[var(--ui-text-muted)]">Provider categories</p>
         <nav class="grid gap-1" aria-label="Provider categories">
           <button
@@ -20,11 +20,11 @@
             :disabled="providerEditorOpen || deleteOpen"
             :aria-current="selectedProviderRoute === category.value ? 'page' : undefined"
             class="flex w-full min-w-0 items-center justify-between gap-3 rounded-md border px-3 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-            :class="selectedProviderRoute === category.value ? 'border-[var(--ui-primary)] bg-[var(--ui-primary)]/10 text-[var(--ui-primary)]' : 'border-transparent hover:border-[var(--ui-border)] hover:bg-[var(--ui-bg-elevated)]'"
+            :class="selectedProviderRoute === category.value ? 'border-[var(--ui-primary)] bg-[var(--ui-primary)]/10 text-[var(--ui-primary)]' : 'border-transparent hover:border-[var(--ui-border)] hover:bg-white/60 dark:hover:bg-neutral-800/50'"
             @click="selectedProviderRoute = category.value"
           >
             <span class="flex min-w-0 items-center gap-2.5">
-              <span class="flex size-6 shrink-0 items-center justify-center rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] text-[10px] font-semibold" aria-hidden="true">{{ category.mark }}</span>
+              <span class="flex size-6 shrink-0 items-center justify-center rounded-md border border-white/40 bg-white/40 app-surface text-[10px] font-semibold dark:border-white/10 dark:bg-neutral-900/40" aria-hidden="true">{{ category.mark }}</span>
               <span class="min-w-0">
               <span class="block truncate text-sm font-medium">{{ category.label }}</span>
               <span class="mt-0.5 block text-xs text-[var(--ui-text-muted)]">
@@ -40,7 +40,7 @@
       </aside>
 
       <div class="min-w-0">
-        <UCard :ui="{ body: { padding: '' } }">
+        <AppCard :ui="{ body: 'p-0' }">
         <div class="flex flex-col gap-3 border-b border-[var(--ui-border)] px-4 py-4 md:flex-row md:items-center md:justify-between">
           <div class="w-full sm:w-auto">
             <label class="mb-1.5 block text-sm font-medium xl:hidden">Provider category</label>
@@ -61,7 +61,7 @@
           </div>
         </div>
 
-        <UTable :columns="providerColumns" :data="filteredProviderEntries" :loading="pending">
+        <AppTable :columns="providerColumns" :data="filteredProviderEntries" :loading="pending">
           <template #identity-cell="{ row }">
             <div class="min-w-0">
               <p class="max-w-52 truncate font-medium text-[var(--ui-text-highlighted)]">{{ providerEntryLabel(rowValue(row)) }}</p>
@@ -84,15 +84,15 @@
 
           <template #empty>
             <div class="flex flex-col items-center justify-center px-6 py-14 text-center">
-              <div class="mb-3 rounded-full bg-[var(--ui-bg-elevated)] p-3">
+              <div class="mb-3 rounded-full bg-white/40 p-3 dark:bg-neutral-900/40">
                 <UIcon name="i-tabler-server-2" class="size-6 text-[var(--ui-text-muted)]" />
               </div>
               <p class="font-medium">{{ pending ? 'Loading provider entries…' : pageError ? 'Provider entries unavailable' : providerSearch ? 'No matching entries' : `No ${selectedProvider.label} entries` }}</p>
               <p class="mt-1 text-sm text-[var(--ui-text-muted)]">{{ pageError ? 'Check the error above and retry.' : providerSearch ? 'Try a different search.' : 'Add an entry to configure this provider category.' }}</p>
             </div>
           </template>
-        </UTable>
-        </UCard>
+        </AppTable>
+        </AppCard>
       </div>
     </section>
 
@@ -136,7 +136,7 @@
             </div>
             <UCheckbox v-if="supportsWebsockets" v-model="providerForm.websockets" label="WebSocket support" />
             <UCheckbox v-if="isCompat" v-model="providerForm.disabled" label="Disabled" />
-            <details v-if="selectedProviderRoute === 'claude-api-key'" class="space-y-3 rounded-lg border border-[var(--ui-border)] p-4">
+            <details v-if="selectedProviderRoute === 'claude-api-key'" class="space-y-3 rounded-lg border border-white/40 bg-white/40 app-surface p-4 dark:border-white/10 dark:bg-neutral-900/40">
               <summary class="cursor-pointer font-medium">Cloak configuration</summary>
               <div class="mt-3 space-y-3">
                 <UFormField label="Cloak mode" hint="Auto cloaks clients other than Claude Code."><USelect v-model="cloakMode" :items="cloakModeOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
@@ -146,11 +146,11 @@
               </div>
             </details>
 
-            <details class="space-y-3 rounded-lg border border-[var(--ui-border)] p-4">
+            <details class="space-y-3 rounded-lg border border-white/40 bg-white/40 app-surface p-4 dark:border-white/10 dark:bg-neutral-900/40">
               <summary class="cursor-pointer font-medium">Custom models</summary>
               <div class="mt-3 flex justify-end"><UButton type="button" size="sm" color="neutral" variant="outline" icon="i-tabler-plus" @click="addProviderModel">Add model</UButton></div>
 
-              <div v-if="supportsDiscovery" class="space-y-3 rounded-lg border border-[var(--ui-border)] p-3">
+              <div v-if="supportsDiscovery" class="space-y-3 rounded-lg border border-white/40 bg-white/40 app-surface p-3 dark:border-white/10 dark:bg-neutral-900/40">
                 <p class="text-sm font-medium">Discover models</p>
                 <p class="text-xs text-[var(--ui-text-muted)]">Fetch available models from the upstream provider.</p>
                 <div class="flex flex-wrap items-center gap-2">
@@ -171,12 +171,12 @@
                   <div class="flex justify-end gap-2"><UButton type="button" size="sm" color="neutral" variant="ghost" @click="discoveryVisible = false">Close</UButton><UButton type="button" size="sm" color="primary" :disabled="!selectedDiscovered.length" @click="applyDiscoveredModels">Apply</UButton></div>
                 </div>
               </div>
-              <div v-for="(model, index) in providerForm.models" :key="index" class="space-y-2 rounded-lg bg-[var(--ui-bg-muted)] p-3">
+              <div v-for="(model, index) in providerForm.models" :key="index" class="space-y-2 rounded-lg border border-white/40 bg-white/40 app-surface p-3 dark:border-white/10 dark:bg-neutral-900/40">
                 <div class="grid gap-2 sm:grid-cols-2"><UFormField label="Model ID"><UInputMenu v-model="model.name" :items="modelSuggestions" create-item class="w-full" placeholder="Search catalog or enter model" @create="model.name = $event.trim()" /></UFormField><UFormField label="Alias"><UInput v-model="model.alias" class="w-full" /></UFormField><UFormField v-if="supportsModelMapping" label="Display name"><UInput v-model="model['display-name']" class="w-full" /></UFormField><div class="flex items-end justify-between gap-2"><UCheckbox v-if="supportsModelMapping" v-model="model['force-mapping']" label="Force response model mapping" /><UButton type="button" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove model" :disabled="providerForm.models.length <= 1" @click="removeProviderModel(index)" /></div></div>
               </div>
             </details>
-            <details class="rounded-lg border border-[var(--ui-border)] p-4"><summary class="cursor-pointer font-medium">Excluded models</summary><UTextarea v-model="excludedModelsText" :rows="3" class="mt-3 w-full" placeholder="Separate model IDs with commas or new lines" /></details>
-            <details class="space-y-3 rounded-lg border border-[var(--ui-border)] p-4">
+            <details class="rounded-lg border border-white/40 bg-white/40 app-surface p-4 dark:border-white/10 dark:bg-neutral-900/40"><summary class="cursor-pointer font-medium">Excluded models</summary><UTextarea v-model="excludedModelsText" :rows="3" class="mt-3 w-full" placeholder="Separate model IDs with commas or new lines" /></details>
+            <details class="space-y-3 rounded-lg border border-white/40 bg-white/40 app-surface p-4 dark:border-white/10 dark:bg-neutral-900/40">
               <summary class="cursor-pointer font-medium">Request headers</summary>
               <div class="mt-3 space-y-3">
                 <div class="flex justify-end"><UButton type="button" size="sm" color="neutral" variant="outline" icon="i-tabler-plus" @click="headerRows.push({ name: '', value: '' })">Add header</UButton></div>
@@ -187,7 +187,7 @@
               </div>
               </div>
             </details>
-            <div v-if="supportsTest" class="space-y-3 rounded-lg border border-[var(--ui-border)] p-4">
+            <div v-if="supportsTest" class="space-y-3 rounded-lg border border-white/40 bg-white/40 app-surface p-4 dark:border-white/10 dark:bg-neutral-900/40">
               <UFormField label="Test model"><USelect v-model="testModel" :items="testModelOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
               <UButton type="button" color="neutral" variant="outline" :loading="testingConnection" @click="testProviderConnection">Test connectivity</UButton>
               <UAlert v-if="testError" color="error" variant="subtle" title="Connectivity test failed" :description="testError" />
@@ -320,7 +320,7 @@ const providerColumns = [
   { accessorKey: 'prefix', header: 'Prefix' },
   { accessorKey: 'models', header: 'Models' },
   { accessorKey: 'status', header: 'Status' },
-  { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head table-action-wide', td: 'table-action-cell table-action-wide' } } }
+  { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }
 ]
 
 const selectedProvider = computed(() => providerCategories.find(item => item.value === selectedProviderRoute.value) || providerCategories[0])

@@ -10,7 +10,7 @@
     />
 
     <template v-for="section in sections" :key="section.id">
-    <UCard :id="`config-${section.id}`">
+    <AppCard :id="`config-${section.id}`">
       <template #header>
         <div class="flex items-start justify-between gap-4">
           <div>
@@ -113,7 +113,7 @@
           </UFormField>
         </template>
       </div>
-    </UCard>
+    </AppCard>
     <slot v-if="section.id === 'plugins'" name="oauth-rules" />
     <slot v-if="section.id === 'network'" name="proxy-pool" />
     <slot v-if="section.id === 'retry-routing'" name="payload" />

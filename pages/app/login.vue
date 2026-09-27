@@ -1,7 +1,7 @@
 <template>
   <div class="mx-auto max-w-md py-8">
 
-    <UCard>
+    <AppCard>
       <template #header>
         <div class="flex items-start gap-3">
           <span class="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary-500/10 text-primary-500"><UIcon :name="passkeyRequired ? 'i-tabler-fingerprint' : needsTOTP ? 'i-tabler-device-mobile' : 'i-tabler-user'" class="size-5" /></span>
@@ -25,7 +25,7 @@
         <UButton v-if="token && currentUser" to="/app" color="neutral" variant="outline" block>User workspace</UButton>
       </form>
       <template #footer><p class="text-center text-sm text-[var(--ui-text-muted)]">Need an account? <NuxtLink to="/app/register" class="font-medium text-primary-500">Create account</NuxtLink></p></template>
-    </UCard>
+    </AppCard>
   </div>
 </template>
 

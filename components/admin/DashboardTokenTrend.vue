@@ -1,5 +1,5 @@
 <template>
-  <section class="rounded-xl border border-[var(--ui-border)] bg-[var(--ui-bg)] p-4 sm:p-5" aria-labelledby="token-trend-title">
+  <section class="rounded-xl border border-white/40 bg-white/40 app-surface p-4 dark:border-white/10 dark:bg-neutral-900/40 sm:p-5" aria-labelledby="token-trend-title">
     <div class="flex flex-wrap items-start justify-between gap-2">
       <div>
         <h2 id="token-trend-title" class="font-semibold text-[var(--ui-text-highlighted)]">Overall consumption trend</h2>

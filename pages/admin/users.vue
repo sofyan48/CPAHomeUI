@@ -22,9 +22,7 @@
       </template>
 
       <div class="min-w-0">
-        <div role="tablist" aria-label="Users & Access" class="workbench-page-tabs">
-          <UButton v-for="tab in tabs" :key="tab.value" role="tab" color="neutral" :aria-selected="activeTab === tab.value" :variant="activeTab === tab.value ? 'soft' : 'ghost'" @click="activeTab = tab.value">{{ tab.label }}</UButton>
-        </div>
+        <AppPanelTabs v-model="activeTab" :items="tabs" label="Users & Access" />
 
         <div v-if="activeTab === 'users'" class="grid gap-3 p-4">
           <div class="flex justify-end"><UButton icon="i-tabler-plus" @click="openUserCreate">New user</UButton></div>
@@ -32,49 +30,26 @@
             <div><p class="text-sm font-medium">{{ selectedUsers.length }} users selected</p><p class="mt-0.5 text-xs text-[var(--ui-text-muted)]">Bulk operations create separate balance records for each user.</p></div>
             <div class="flex flex-wrap gap-2"><UButton color="neutral" variant="ghost" @click="selectedUserIds = new Set()">Clear selection</UButton><UButton color="neutral" variant="ghost" icon="i-tabler-cash-banknote" @click="openBalance(selectedUsers)">Balance operation</UButton></div>
           </div>
-          <div ref="userTableScrollRef" class="user-table-scroll relative max-h-[min(65vh,40rem)] overflow-auto rounded-md border border-[var(--ui-border)]" :aria-busy="loading">
-            <div v-if="loading" class="pointer-events-none sticky top-0 z-30 h-0" aria-hidden="true"><div class="h-0.5 animate-pulse bg-[var(--ui-primary)]" /></div>
-            <table class="users-table w-full min-w-[1160px] text-sm" :aria-rowcount="filteredUsers.length">
-              <caption class="sr-only">Users and access settings</caption>
-              <thead class="text-left text-xs text-[var(--ui-text-muted)]">
-                <tr>
-                  <th scope="col" class="w-12 px-4 py-3"><UCheckbox :model-value="allFilteredUsersSelected" :indeterminate="someFilteredUsersSelected" :disabled="!operableFilteredUsers.length" aria-label="Select operable users in the current list" @update:model-value="toggleAllFilteredUsers(Boolean($event))" /></th>
-                  <th scope="col" class="px-4 py-3 font-medium">User</th>
-                  <th scope="col" class="px-4 py-3 font-medium">Status</th>
-                  <th scope="col" class="px-4 py-3 font-medium">Credits</th>
-                  <th scope="col" class="px-4 py-3 font-medium">Period limits</th>
-                  <th scope="col" class="px-4 py-3 font-medium">Client keys</th>
-                  <th scope="col" class="px-4 py-3 font-medium">Credential scope</th>
-                  <th scope="col" class="px-4 py-3 font-medium">Model scope</th>
-                  <th scope="col" class="px-4 py-3 font-medium">Updated</th>
-                  <th scope="col" class="table-action-head user-action-column font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-if="userVirtualPaddingTop" class="user-spacer-row" aria-hidden="true"><td :colspan="userColumnCount" :style="{ height: `${userVirtualPaddingTop}px` }" /></tr>
-                <tr v-for="virtualRow in userVirtualRows" :key="virtualRow.key" :ref="measureUserRow" :data-index="virtualRow.index" :aria-rowindex="virtualRow.index + 2" class="user-data-row border-t border-[var(--ui-border)]">
-                  <td class="px-4 py-3"><UCheckbox :model-value="selectedUserIds.has(filteredUsers[virtualRow.index].id)" :disabled="!isOperableUser(filteredUsers[virtualRow.index])" :aria-label="`Select user ${filteredUsers[virtualRow.index].username}`" @update:model-value="toggleUserSelection(filteredUsers[virtualRow.index].id, Boolean($event))" /></td>
-                  <td class="px-4 py-3"><p class="font-medium">{{ filteredUsers[virtualRow.index].username }}</p></td>
-                  <td class="px-4 py-3"><UBadge :color="filteredUsers[virtualRow.index].deleted_at ? 'warning' : 'success'" variant="subtle">{{ filteredUsers[virtualRow.index].deleted_at ? 'Deleted' : 'Active' }}</UBadge></td>
-                  <td class="px-4 py-3"><span class="tabular-nums">{{ formatCredits(filteredUsers[virtualRow.index].credits) }}</span></td>
-                  <td class="px-4 py-3"><span v-if="zeroPeriodWindows(filteredUsers[virtualRow.index]).length" class="inline-flex rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300">Blocked: {{ zeroPeriodWindows(filteredUsers[virtualRow.index]).join(', ') }}</span><span v-else-if="periodWindows(filteredUsers[virtualRow.index]).length" class="inline-flex rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] px-2 py-1 text-xs text-[var(--ui-text-muted)]">{{ periodWindows(filteredUsers[virtualRow.index]).length }} windows</span><span v-else class="text-[var(--ui-text-muted)]">—</span></td>
-                  <td class="px-4 py-3">{{ keysForUser(filteredUsers[virtualRow.index].id).length }}</td>
-                  <td class="px-4 py-3"><span class="block max-w-52 truncate" :title="effectiveChannelScopes(filteredUsers[virtualRow.index].id).join(', ')">{{ scopeSummary(effectiveChannelScopes(filteredUsers[virtualRow.index].id)) }}</span></td>
-                  <td class="px-4 py-3"><span class="block max-w-52 truncate" :title="effectiveModelScopes(filteredUsers[virtualRow.index].id).join(', ')">{{ scopeSummary(effectiveModelScopes(filteredUsers[virtualRow.index].id)) }}</span></td>
-                  <td class="px-4 py-3"><span class="whitespace-nowrap text-[var(--ui-text-muted)]">{{ formatDate(filteredUsers[virtualRow.index].updated_at) }}</span></td>
-                  <td class="table-action-cell user-action-column"><div class="flex justify-end gap-1"><UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-eye" aria-label="View user" title="View user" @click="openUserDetail(filteredUsers[virtualRow.index])" /><UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-pencil" aria-label="Edit user" title="Edit user" @click="openUserEdit(filteredUsers[virtualRow.index])" /><UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-cash-banknote" aria-label="Balance operation" title="Balance operation" :disabled="!isOperableUser(filteredUsers[virtualRow.index])" @click="openBalance([filteredUsers[virtualRow.index]])" /><UButton size="xs" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Delete user" title="Delete user" @click="confirmUserDelete(filteredUsers[virtualRow.index])" /></div></td>
-                </tr>
-                <tr v-if="userVirtualPaddingBottom" class="user-spacer-row" aria-hidden="true"><td :colspan="userColumnCount" :style="{ height: `${userVirtualPaddingBottom}px` }" /></tr>
-                <tr v-if="!filteredUsers.length"><td :colspan="userColumnCount"><EmptyState icon="i-tabler-users" text="No users match the current filter." /></td></tr>
-              </tbody>
-            </table>
-          </div>
+          <AppTable :columns="userColumns" :data="filteredUsers" :loading="loading" empty="No users match the current filter.">
+            <template #select-header>
+              <UCheckbox :model-value="allFilteredUsersSelected" :indeterminate="someFilteredUsersSelected" :disabled="!operableFilteredUsers.length" aria-label="Select operable users in the current list" @update:model-value="toggleAllFilteredUsers(Boolean($event))" />
+            </template>
+            <template #select-cell="{ row }"><UCheckbox :model-value="selectedUserIds.has(row.original.id)" :disabled="!isOperableUser(row.original)" :aria-label="`Select user ${row.original.username}`" @update:model-value="toggleUserSelection(row.original.id, Boolean($event))" /></template>
+            <template #user-cell="{ row }"><p class="font-medium">{{ row.original.username }}</p></template>
+            <template #status-cell="{ row }"><UBadge :color="row.original.deleted_at ? 'warning' : 'success'" variant="subtle">{{ row.original.deleted_at ? 'Deleted' : 'Active' }}</UBadge></template>
+            <template #credits-cell="{ row }"><span class="tabular-nums">{{ formatCredits(row.original.credits) }}</span></template>
+            <template #periodLimits-cell="{ row }"><span v-if="zeroPeriodWindows(row.original).length" class="inline-flex rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300">Blocked: {{ zeroPeriodWindows(row.original).join(', ') }}</span><span v-else-if="periodWindows(row.original).length" class="inline-flex rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] px-2 py-1 text-xs text-[var(--ui-text-muted)]">{{ periodWindows(row.original).length }} windows</span><span v-else class="text-[var(--ui-text-muted)]">—</span></template>
+            <template #keys-cell="{ row }">{{ keysForUser(row.original.id).length }}</template>
+            <template #credentialScope-cell="{ row }"><span class="block max-w-52 truncate" :title="effectiveChannelScopes(row.original.id).join(', ')">{{ scopeSummary(effectiveChannelScopes(row.original.id)) }}</span></template>
+            <template #modelScope-cell="{ row }"><span class="block max-w-52 truncate" :title="effectiveModelScopes(row.original.id).join(', ')">{{ scopeSummary(effectiveModelScopes(row.original.id)) }}</span></template>
+            <template #updatedAt-cell="{ row }"><span class="whitespace-nowrap text-[var(--ui-text-muted)]">{{ formatDate(row.original.updated_at) }}</span></template>
+            <template #actions-cell="{ row }"><div class="flex items-center justify-end gap-1"><UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-eye" aria-label="View user" title="View user" @click="openUserDetail(row.original)" /><UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-pencil" aria-label="Edit user" title="Edit user" @click="openUserEdit(row.original)" /><UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-cash-banknote" aria-label="Balance operation" title="Balance operation" :disabled="!isOperableUser(row.original)" @click="openBalance([row.original])" /><UButton size="xs" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Delete user" title="Delete user" @click="confirmUserDelete(row.original)" /></div></template>
+          </AppTable>
         </div>
 
         <div v-else-if="activeTab === 'keys'" class="grid gap-3 p-4">
           <div class="flex justify-end"><UButton icon="i-tabler-plus" @click="openKeyCreate">New key</UButton></div>
-          <div class="overflow-x-auto rounded-md border border-[var(--ui-border)]">
-            <UTable :columns="keyColumns" :data="filteredKeys" :loading="loading" class="keys-table min-w-[920px]">
+            <AppTable :columns="keyColumns" :data="filteredKeys" :loading="loading" class="min-w-0">
               <template #key-cell="{ row }"><div><p class="font-mono text-xs">{{ maskKey(rowValue(row).api_key) }}</p><p class="mt-1 text-xs text-[var(--ui-text-muted)]">Sequence {{ keySequence(rowValue(row)) }}</p></div></template>
               <template #owner-cell="{ row }"><span v-if="userById(rowValue(row).user_id)">{{ userById(rowValue(row).user_id).username }}</span><span v-else class="text-[var(--ui-text-muted)]">Unassigned</span></template>
               <template #credentialScope-cell="{ row }"><span class="block max-w-60 truncate">{{ scopeSummary(keyChannelNames(rowValue(row))) }}</span></template>
@@ -82,8 +57,7 @@
               <template #length-cell="{ row }">{{ rowValue(row).api_key.length }}</template>
               <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><AdminTableAction action="edit" label="Edit client key" @click="openKeyEdit(rowValue(row))" /><AdminTableAction action="delete" label="Delete client key" destructive @click="confirmKeyDelete(rowValue(row))" /></div></template>
               <template #empty><EmptyState icon="i-tabler-key" text="No client keys yet." /></template>
-            </UTable>
-          </div>
+            </AppTable>
         </div>
 
         <div v-else-if="activeTab === 'channelGroups'" class="grid gap-3 p-4">
@@ -101,7 +75,7 @@
               <div class="flex items-center justify-between px-2 pb-2"><p class="text-xs font-medium uppercase text-[var(--ui-text-muted)]">Model scopes</p><UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-plus" aria-label="New model scope" @click="openGroupForm('model')" /></div>
               <nav class="grid gap-1" aria-label="Model scopes">
                 <button v-for="group in filteredModelGroups" :key="group.id" type="button" :aria-current="Number(selectedModelGroup?.id) === Number(group.id) ? 'page' : undefined" class="flex w-full min-w-0 items-center justify-between gap-3 rounded-md border px-3 py-3 text-left transition-colors" :class="Number(selectedModelGroup?.id) === Number(group.id) ? 'border-[var(--ui-primary)] bg-[var(--ui-primary)]/10 text-[var(--ui-primary)]' : 'border-transparent hover:border-[var(--ui-border)] hover:bg-[var(--ui-bg-elevated)]'" @click="selectedModelGroupId = group.id">
-                  <span class="flex min-w-0 items-center gap-2.5"><span class="flex size-6 shrink-0 items-center justify-center rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] text-[10px] font-semibold">M</span><span class="min-w-0"><span class="block truncate text-sm font-medium">{{ group.group_name }}</span><span class="mt-0.5 block text-xs text-[var(--ui-text-muted)]">{{ modelDetailsFor(group.id).length }} models</span></span></span>
+                  <span class="flex min-w-0 items-center gap-2.5"><span class="flex size-6 shrink-0 items-center justify-center rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] app-surface text-[10px] font-semibold">M</span><span class="min-w-0"><span class="block truncate text-sm font-medium">{{ group.group_name }}</span><span class="mt-0.5 block text-xs text-[var(--ui-text-muted)]">{{ modelDetailsFor(group.id).length }} models</span></span></span>
                   <UIcon v-if="group.disabled" name="i-tabler-alert-triangle" class="size-4 shrink-0 text-[var(--ui-warning)]" /><span v-else class="shrink-0 rounded-md border border-[var(--ui-border)] px-2 py-1 text-xs">{{ modelDetailsFor(group.id).length }}</span>
                 </button>
                 <p v-if="!filteredModelGroups.length" class="px-3 py-8 text-center text-sm text-[var(--ui-text-muted)]">No model scopes match.</p>
@@ -116,14 +90,14 @@
                   <UButton v-if="selectedModelGroup" size="sm" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Delete model scope" @click="confirmGroupDelete('model', selectedModelGroup)" />
                   <UButton size="sm" icon="i-tabler-plus" @click="selectedModelGroup ? openBindings('model', selectedModelGroup) : openGroupForm('model')">{{ selectedModelGroup ? 'Add models' : 'New scope' }}</UButton>
                 </template>
-                <div class="m-3 overflow-hidden rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] shadow-[0_1px_2px_color-mix(in_oklch,var(--ui-text)_6%,transparent)]">
-                  <UTable :columns="modelBindingColumns" :data="selectedModelBindings" :loading="loading" class="model-binding-table min-w-[760px]">
+                <div class="m-3 min-w-0">
+                  <AppTable :columns="modelBindingColumns" :data="selectedModelBindings" :loading="loading" class="min-w-0">
                     <template #model-cell="{ row }"><div class="min-w-0"><p class="truncate font-mono text-xs font-medium text-[var(--ui-text-highlighted)]" :title="rowValue(row).model_id">{{ rowValue(row).model_id }}</p></div></template>
                     <template #channels-cell="{ row }"><span class="block max-w-64 truncate text-xs text-[var(--ui-text-muted)]" :title="modelBindingChannelLabel(rowValue(row))">{{ modelBindingChannelLabel(rowValue(row)) }}</span></template>
                     <template #updated-cell="{ row }"><span class="whitespace-nowrap text-xs text-[var(--ui-text-muted)]">{{ formatDate(rowValue(row).updated_at) }}</span></template>
                     <template #actions-cell="{ row }"><div class="flex justify-end"><AdminTableAction action="remove" label="Remove model from scope" destructive @click="confirmDetailDelete('model', rowValue(row))" /></div></template>
                     <template #empty><EmptyState icon="i-tabler-cube" :text="selectedModelGroup ? 'No models are bound to this scope.' : 'Select a model scope.'" /></template>
-                  </UTable>
+                  </AppTable>
                 </div>
               </AdminDataPanel>
             </div>
@@ -188,7 +162,7 @@
 </template>
 
 <script setup>
-import { useVirtualizer } from '@tanstack/vue-virtual'
+
 import EmptyState from '@/components/admin/users/UsersEmptyState.vue'
 
 import UnsupportedScopes from '@/components/admin/users/UsersUnsupportedScopes.vue'
@@ -211,28 +185,12 @@ const users = computed(() => usersData.value), keys = computed(() => keysData.va
 const usersSupported = computed(() => supports('users', true)), accessGroupsSupported = computed(() => supports('access_groups', true)), periodLimitsSupported = computed(() => supports('user_period_limits', false)), modelChannelBindingsSupported = computed(() => supports('model_channel_bindings', false))
 const unassignedKeyCount = computed(() => keys.value.filter(key => key.user_id == null || Number(key.user_id) === 0).length)
 const rowValue = row => row?.original ?? row
-const userColumns = [{ id: 'select', header: '' }, { accessorKey: 'user', header: 'User' }, { accessorKey: 'status', header: 'Status' }, { accessorKey: 'credits', header: 'Credits' }, { accessorKey: 'periodLimits', header: 'Period limits' }, { accessorKey: 'keys', header: 'Client keys' }, { accessorKey: 'credentialScope', header: 'Credential scope' }, { accessorKey: 'modelScope', header: 'Model scope' }, { accessorKey: 'updatedAt', header: 'Updated' }, { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }]
-const keyColumns = [{ accessorKey: 'key', header: 'Client key' }, { accessorKey: 'owner', header: 'Owner' }, { accessorKey: 'credentialScope', header: 'Credential scope' }, { accessorKey: 'modelScope', header: 'Model scope' }, { accessorKey: 'length', header: 'Length' }, { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }]
+const userColumns = [{ id: 'select', header: '' }, { accessorKey: 'user', header: 'User' }, { accessorKey: 'status', header: 'Status' }, { accessorKey: 'credits', header: 'Credits' }, { accessorKey: 'periodLimits', header: 'Period limits' }, { accessorKey: 'keys', header: 'Client keys' }, { accessorKey: 'credentialScope', header: 'Credential scope' }, { accessorKey: 'modelScope', header: 'Model scope' }, { accessorKey: 'updatedAt', header: 'Updated' }, { id: 'actions', header: 'Actions', meta: { class: { th: 'w-px whitespace-nowrap text-right', td: 'w-px whitespace-nowrap text-right' } } }]
+const keyColumns = [{ accessorKey: 'key', header: 'Client key' }, { accessorKey: 'owner', header: 'Owner' }, { accessorKey: 'credentialScope', header: 'Credential scope' }, { accessorKey: 'modelScope', header: 'Model scope' }, { accessorKey: 'length', header: 'Length' }, { id: 'actions', header: 'Actions', meta: { class: { th: 'w-px whitespace-nowrap text-right', td: 'w-px whitespace-nowrap text-right' } } }]
 const normalize = value => String(value ?? '').toLowerCase()
 const matches = values => { const query = normalize(search.value).trim(); return !query || values.some(value => normalize(value).includes(query)) }
 const filteredUsers = computed(() => users.value.filter(user => matches([user.id, user.username])))
-const userTableScrollRef = ref(null)
-const userColumnCount = userColumns.length
-const userRowVirtualizer = useVirtualizer(computed(() => ({
-  count: filteredUsers.value.length,
-  getScrollElement: () => userTableScrollRef.value,
-  estimateSize: () => 57,
-  getItemKey: index => filteredUsers.value[index]?.id ?? index,
-  overscan: 8
-})))
-const userVirtualRows = computed(() => userRowVirtualizer.value.getVirtualItems())
-const userVirtualPaddingTop = computed(() => userVirtualRows.value[0]?.start ?? 0)
-const userVirtualPaddingBottom = computed(() => {
-  const lastRow = userVirtualRows.value.at(-1)
-  return lastRow ? Math.max(0, userRowVirtualizer.value.getTotalSize() - lastRow.end) : 0
-})
-function measureUserRow(element) { if (element) userRowVirtualizer.value.measureElement(element) }
-watch(search, () => userRowVirtualizer.value.scrollToOffset(0))
+
 const filteredKeys = computed(() => keys.value.filter(key => matches([key.api_key, userById(key.user_id)?.username, ...keyChannelNames(key), ...keyModelNames(key)])))
 const filteredChannelGroups = computed(() => channelGroups.value.filter(group => matches([group.id, group.channel_name, ...channelDetailsFor(group.id).map(item => item.auth_id)])))
 const selectedModelGroupId = ref(null)
@@ -244,7 +202,7 @@ const modelBindingColumns = [
   { accessorKey: 'model', header: 'Model ID' },
   { accessorKey: 'channels', header: 'Credential scope' },
   { accessorKey: 'updated', header: 'Updated' },
-  { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }
+  { id: 'actions', header: 'Actions', meta: { class: { th: 'w-px whitespace-nowrap text-right', td: 'w-px whitespace-nowrap text-right' } } }
 ]
 watch(filteredModelGroups, groups => { if (!groups.length) selectedModelGroupId.value = null; else if (!groups.some(group => Number(group.id) === Number(selectedModelGroupId.value))) selectedModelGroupId.value = Number(groups[0].id) }, { immediate: true })
 
@@ -438,29 +396,3 @@ function openDelete(kind, target, subkind = '') { deleteKind.value = kind; delet
 function confirmUserDelete(user) { openDelete('user', user) } function confirmKeyDelete(key) { openDelete('key', key) } function confirmGroupDelete(kind, group) { openDelete('group', group, kind) } function confirmDetailDelete(kind, detail) { openDelete('detail', detail, kind) }
 async function performDelete() { const target = deleteTarget.value; if (!target) return; let url = ''; if (deleteKind.value === 'user') url = `/users/${encodeURIComponent(target.id)}`; if (deleteKind.value === 'key') url = `/api-keys?${target.numeric_id != null ? `id=${encodeURIComponent(target.numeric_id)}` : `index=${encodeURIComponent(target.index)}`}`; if (deleteKind.value === 'group') url = `/${target.subkind === 'channel' ? 'channel-groups' : 'model-groups'}/${encodeURIComponent(target.id)}`; if (deleteKind.value === 'detail') url = `/${target.subkind === 'channel' ? 'channel-group-details' : 'model-group-details'}/${encodeURIComponent(target.id)}`; saving.value = true; try { await fetchAPI(url, { method: 'DELETE' }); deleteOpen.value = false; await syncAll(); toast.add({ title: deleteKind.value === 'detail' ? 'Binding deleted.' : deleteKind.value === 'group' ? 'Scope deleted.' : deleteKind.value === 'key' ? 'Client key deleted.' : 'User deleted.', color: 'success' }) } catch (error) { toast.add({ title: 'Delete failed', description: errorMessage(error), color: 'error' }) } finally { saving.value = false } }
 </script>
-
-<style scoped>
-.user-action-column { width: 1% !important; min-width: 0 !important; white-space: nowrap; }
-.users-table { border-collapse: separate; border-spacing: 0; }
-.users-table thead th { position: sticky; top: 0; z-index: 4; background: var(--ui-bg-muted); box-shadow: 0 1px 0 var(--ui-border); }
-.users-table .user-data-row { height: 57px; }
-.users-table .user-spacer-row td { padding: 0; border: 0; }
-.users-table thead > tr > th:last-child, .users-table .user-data-row > td:last-child, .keys-table :deep(th:last-child), .keys-table :deep(td:last-child) { position: sticky; right: 0; z-index: 2; background: var(--ui-bg); box-shadow: -1px 0 0 var(--ui-border); }
-.users-table thead > tr > th:last-child, .keys-table :deep(th:last-child) { z-index: 5; }
-.users-table .user-data-row > td:last-child { background: var(--ui-bg); }
-.model-binding-table { background: var(--ui-bg-elevated); }
-.model-binding-table :deep(thead) { background: color-mix(in oklch, var(--ui-bg-muted) 82%, var(--ui-bg-elevated)); }
-.model-binding-table :deep(th) { border-bottom: 1px solid var(--ui-border); background: transparent; }
-.model-binding-table :deep(tbody tr) { background: var(--ui-bg-elevated); }
-.model-binding-table :deep(tbody tr + tr td) { border-top: 1px solid var(--ui-border-muted); }
-.model-binding-table :deep(tbody tr:hover td) { background: color-mix(in oklch, var(--ui-hover) 55%, var(--ui-bg-elevated)); }
-.model-binding-table :deep(.table-action-head),
-.model-binding-table :deep(.table-action-cell) { background: inherit; }
-@media (max-width: 767px) {
-  .users-table { min-width: 34rem !important; }
-  .users-table th:nth-child(n+4):nth-child(-n+9), .users-table td:nth-child(n+4):nth-child(-n+9) { display: none; }
-  .keys-table { min-width: 32rem !important; }
-  .keys-table :deep(th:nth-child(n+2):nth-child(-n+5)), .keys-table :deep(td:nth-child(n+2):nth-child(-n+5)) { display: none; }
-}
-
-</style>

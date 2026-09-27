@@ -7,7 +7,7 @@
 
     <UAlert v-if="pageError" color="error" variant="subtle" title="System config could not be loaded" :description="pageError" />
 
-    <div class="sticky top-16 z-20 flex flex-col gap-3 rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg)]/95 p-3 backdrop-blur xl:flex-row xl:items-center xl:justify-between">
+    <div class="sticky top-16 z-20 flex flex-col gap-3 rounded-lg border border-white/40 bg-white/40 app-surface p-3 backdrop-blur dark:border-white/10 dark:bg-neutral-900/40 xl:flex-row xl:items-center xl:justify-between">
       <div class="flex flex-wrap items-center gap-2">
         <UBadge color="neutral" variant="subtle">Runtime: {{ runtimeMode }}</UBadge>
         <UBadge color="neutral" variant="subtle">Updated {{ updatedLabel }}</UBadge>
@@ -28,21 +28,21 @@
     </div>
 
     <div v-else class="grid gap-5 xl:grid-cols-[240px_minmax(0,1fr)]">
-      <aside class="sticky top-[8.5rem] hidden max-h-[calc(100dvh-10rem)] self-start overflow-y-auto rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg)] p-2 xl:block">
+      <aside class="sticky top-[8.5rem] hidden max-h-[calc(100dvh-10rem)] self-start overflow-y-auto rounded-lg border border-white/40 bg-white/40 app-surface p-2 dark:border-white/10 dark:bg-neutral-900/40 xl:block">
         <p class="px-2 pb-2 text-xs font-semibold uppercase text-[var(--ui-text-muted)]">Configuration</p>
-        <button v-for="section in outline" :key="section.id" type="button" class="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm hover:bg-[var(--ui-bg-elevated)]" @click="scrollToSection(section.id)">
+        <button v-for="section in outline" :key="section.id" type="button" class="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm hover:bg-white/60 dark:hover:bg-neutral-800/50" @click="scrollToSection(section.id)">
           <span>{{ section.short }}</span><span v-if="sectionDirty(section.keys)" class="size-2 rounded-full bg-[var(--ui-primary)]" />
         </button>
       </aside>
 
       <div class="min-w-0">
-        <div class="sticky top-[8.5rem] z-10 mb-4 flex gap-1 overflow-x-auto rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg)]/95 p-2 backdrop-blur xl:hidden">
+        <div class="sticky top-[8.5rem] z-10 mb-4 flex gap-1 overflow-x-auto rounded-lg border border-white/40 bg-white/40 app-surface p-2 backdrop-blur dark:border-white/10 dark:bg-neutral-900/40 xl:hidden">
           <UButton v-for="section in outline" :key="section.id" size="sm" color="neutral" variant="ghost" class="shrink-0" @click="scrollToSection(section.id)">{{ section.short }}</UButton>
         </div>
 
         <AdminConfigVisualSections v-model:draft="draft" :validation-errors="validationErrors" :loading="loading">
           <template #oauth-rules>
-            <UCard id="config-oauth-rules">
+            <AppCard id="config-oauth-rules" class="border-white/40 bg-white/40 dark:border-white/10 dark:bg-neutral-900/40">
               <template #header><div><h2 class="font-semibold">OAuth model rules</h2><p class="text-xs text-[var(--ui-text-muted)]">Configure disabled models and client-visible aliases for OAuth and file-backed credentials.</p></div></template>
               <div class="space-y-6">
                 <section class="space-y-3">
@@ -56,30 +56,30 @@
 
                 <section class="space-y-3 border-t border-[var(--ui-border)] pt-5">
                   <div class="flex items-center justify-between"><div><h3 class="font-semibold">Model aliases</h3><p class="text-xs text-[var(--ui-text-muted)]">Map upstream model names to client-visible aliases.</p></div><UButton size="sm" color="neutral" variant="outline" @click="addAlias">Add alias</UButton></div>
-                  <div v-for="(row, index) in aliasRows" :key="row.key" class="grid gap-3 rounded-md border border-[var(--ui-border)] p-3 lg:grid-cols-[1fr_1.3fr_1.3fr_auto_auto_auto] lg:items-end"><UFormField label="Channel"><UInput v-model="row.channel" /></UFormField><UFormField label="Upstream model"><UInput v-model="row.name" /></UFormField><UFormField label="Client alias"><UInput v-model="row.alias" /></UFormField><UCheckbox v-model="row.fork" label="Fork" /><UCheckbox v-model="row.forceMapping" label="Force mapping" /><UButton color="error" variant="ghost" icon="i-tabler-trash" @click="aliasRows.splice(index, 1)" /></div>
+                  <div v-for="(row, index) in aliasRows" :key="row.key" class="grid gap-3 rounded-md border border-white/40 bg-white/40 app-surface p-3 dark:border-white/10 dark:bg-neutral-900/40 lg:grid-cols-[1fr_1.3fr_1.3fr_auto_auto_auto] lg:items-end"><UFormField label="Channel"><UInput v-model="row.channel" /></UFormField><UFormField label="Upstream model"><UInput v-model="row.name" /></UFormField><UFormField label="Client alias"><UInput v-model="row.alias" /></UFormField><UCheckbox v-model="row.fork" label="Fork" /><UCheckbox v-model="row.forceMapping" label="Force mapping" /><UButton color="error" variant="ghost" icon="i-tabler-trash" @click="aliasRows.splice(index, 1)" /></div>
                   <p v-if="!aliasRows.length" class="py-6 text-center text-sm text-[var(--ui-text-muted)]">No rules configured.</p>
                 </section>
               </div>
-            </UCard>
+            </AppCard>
           </template>
 
           <template #proxy-pool><div id="config-proxy-pool"><AdminConfigProxyPool /></div></template>
 
           <template #payload>
-            <UCard id="config-payload">
+            <AppCard id="config-payload" class="border-white/40 bg-white/40 dark:border-white/10 dark:bg-neutral-900/40">
               <template #header><div><h2 class="font-semibold">Request parameter rewriting</h2><p class="text-xs text-[var(--ui-text-muted)]">Match requests by model and protocol, then fill, override, or remove parameters.</p></div></template>
               <div class="space-y-4">
-                <div class="grid gap-2 sm:grid-cols-5"><div v-for="mode in payloadModes" :key="mode.value" class="rounded-md border border-[var(--ui-border)] p-3"><p class="text-xs text-[var(--ui-text-muted)]">{{ mode.label }}</p><p class="text-xl font-semibold">{{ payloadDraft[mode.value]?.length || 0 }}</p></div></div>
-                <div v-for="mode in payloadModes" :key="mode.value" class="space-y-2"><div class="flex items-center justify-between"><h3 class="font-semibold">{{ mode.label }}</h3><UButton size="sm" color="neutral" variant="outline" @click="addPayloadRule(mode.value)">Add rule</UButton></div><div v-for="(rule, index) in payloadDraft[mode.value] || []" :key="index" class="rounded-md border border-[var(--ui-border)] p-3"><div class="flex items-center justify-between gap-3"><div><p class="text-sm font-medium">{{ payloadRuleSummary(rule) }}</p><p class="text-xs text-[var(--ui-text-muted)]">{{ payloadRulePaths(rule, mode.value) }}</p></div><div class="flex gap-1"><UButton size="sm" color="neutral" variant="ghost" @click="editPayload(mode.value, index)">Edit</UButton><UButton size="sm" color="neutral" variant="ghost" @click="duplicatePayload(mode.value, index)">Duplicate</UButton><UButton size="sm" color="error" variant="ghost" @click="removePayload(mode.value, index)">Remove</UButton></div></div></div></div>
+                <div class="grid gap-2 sm:grid-cols-5"><div v-for="mode in payloadModes" :key="mode.value" class="rounded-md border border-white/40 bg-white/40 app-surface p-3 dark:border-white/10 dark:bg-neutral-900/40"><p class="text-xs text-[var(--ui-text-muted)]">{{ mode.label }}</p><p class="text-xl font-semibold">{{ payloadDraft[mode.value]?.length || 0 }}</p></div></div>
+                <div v-for="mode in payloadModes" :key="mode.value" class="space-y-2"><div class="flex items-center justify-between"><h3 class="font-semibold">{{ mode.label }}</h3><UButton size="sm" color="neutral" variant="outline" @click="addPayloadRule(mode.value)">Add rule</UButton></div><div v-for="(rule, index) in payloadDraft[mode.value] || []" :key="index" class="rounded-md border border-white/40 bg-white/40 app-surface p-3 dark:border-white/10 dark:bg-neutral-900/40"><div class="flex items-center justify-between gap-3"><div><p class="text-sm font-medium">{{ payloadRuleSummary(rule) }}</p><p class="text-xs text-[var(--ui-text-muted)]">{{ payloadRulePaths(rule, mode.value) }}</p></div><div class="flex gap-1"><UButton size="sm" color="neutral" variant="ghost" @click="editPayload(mode.value, index)">Edit</UButton><UButton size="sm" color="neutral" variant="ghost" @click="duplicatePayload(mode.value, index)">Duplicate</UButton><UButton size="sm" color="error" variant="ghost" @click="removePayload(mode.value, index)">Remove</UButton></div></div></div></div>
                 <details><summary class="cursor-pointer text-sm">View payload JSON to save</summary><pre class="mt-2 max-h-80 overflow-auto rounded-md bg-[var(--ui-bg-muted)] p-3 text-xs">{{ JSON.stringify(payloadDraft, null, 2) }}</pre></details>
               </div>
-            </UCard>
+            </AppCard>
           </template>
         </AdminConfigVisualSections>
       </div>
     </div>
 
-    <USlideover v-model:open="changesOpen" title="Configuration changes" description="Review changed visual fields before saving." :ui="{ content: 'sm:max-w-xl' }"><template #body><div class="space-y-2"><button v-for="change in changes" :key="change.key" type="button" class="w-full rounded-md border border-[var(--ui-border)] p-3 text-left" @click="changesOpen = false; scrollToSection(change.section)"><p class="font-medium">{{ change.label }}</p><p class="mt-1 break-all text-xs text-[var(--ui-text-muted)]">{{ change.before }} → {{ change.after }}</p></button></div></template></USlideover>
+    <USlideover v-model:open="changesOpen" title="Configuration changes" description="Review changed visual fields before saving." :ui="{ content: 'sm:max-w-xl' }"><template #body><div class="space-y-2"><button v-for="change in changes" :key="change.key" type="button" class="w-full rounded-md border border-white/40 bg-white/40 app-surface p-3 text-left hover:bg-white/60 dark:border-white/10 dark:bg-neutral-900/40 dark:hover:bg-neutral-800/50" @click="changesOpen = false; scrollToSection(change.section)"><p class="font-medium">{{ change.label }}</p><p class="mt-1 break-all text-xs text-[var(--ui-text-muted)]">{{ change.before }} → {{ change.after }}</p></button></div></template></USlideover>
 
     <UModal v-model:open="reloadConfirmOpen" title="Reload config?" description="Discard unsaved local changes and reload?"><template #body><div class="flex justify-end gap-2"><UButton color="neutral" variant="ghost" @click="reloadConfirmOpen = false">Cancel</UButton><UButton color="error" @click="reloadConfirmOpen = false; loadWorkspace()">Discard and reload</UButton></div></template></UModal>
 

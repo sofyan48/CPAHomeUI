@@ -21,8 +21,7 @@
     />
     </div>
 
-      <div class="overflow-x-auto">
-        <UTable :columns="columns" :data="sortedPools" :loading="loading" class="min-w-[1180px]">
+        <AppTable :columns="columns" :data="sortedPools" :loading="loading" class="min-w-[1180px]">
           <template #name-cell="{ row }">
             <span class="font-medium text-[var(--ui-text-highlighted)]">{{ rowValue(row).name }}</span>
           </template>
@@ -72,8 +71,7 @@
               {{ unsupported ? 'Proxy pools are unavailable on this Home instance.' : 'No proxy-pool records.' }}
             </div>
           </template>
-        </UTable>
-      </div>
+        </AppTable>
 
     <UModal v-model:open="formOpen" :title="editingId ? 'Edit proxy' : 'New proxy'" description="Proxy-pool changes take effect immediately.">
       <template #body>
@@ -164,7 +162,7 @@ const columns = [
   { accessorKey: 'priority', header: 'Priority' },
   { accessorKey: 'last_test', header: 'Last test' },
   { accessorKey: 'note', header: 'Note' },
-  { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head table-action-medium', td: 'table-action-cell table-action-medium' } } }
+  { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }
 ]
 
 const pools = ref<ProxyPool[]>([])

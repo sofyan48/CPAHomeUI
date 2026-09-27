@@ -15,7 +15,7 @@
       </div>
     </header>
 
-    <UCard v-if="primaryError">
+    <AppCard v-if="primaryError">
       <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 class="font-semibold text-[var(--ui-text-highlighted)]">Access keys could not be loaded</h2>
@@ -23,14 +23,14 @@
         </div>
         <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" @click="syncData">Retry</UButton>
       </div>
-    </UCard>
+    </AppCard>
 
-    <UCard v-else-if="loading && !hasLoaded">
+    <AppCard v-else-if="loading && !hasLoaded">
       <div class="py-8 text-center">
         <h2 class="font-semibold text-[var(--ui-text-highlighted)]">Loading access keys</h2>
         <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Reading client access keys and related ownership metadata from the Management API.</p>
       </div>
-    </UCard>
+    </AppCard>
 
     <AdminDataPanel
       v-else
@@ -59,13 +59,11 @@
           </div>
         </div>
 
-        <div class="overflow-x-auto rounded-md border border-[var(--ui-border)]">
-          <UTable
+          <AppTable
             :columns="columns"
             :data="filteredResources"
             :loading="loading"
-            class="access-keys-table sm:min-w-[952px]"
-            :class="{ 'table-fixed': !wideTable }"
+            class="access-keys-table"
           >
             <template #select-header>
               <UCheckbox
@@ -146,8 +144,7 @@
             <template #empty>
               <div class="px-6 py-12 text-center text-sm text-[var(--ui-text-muted)]">No access keys match the current filter.</div>
             </template>
-          </UTable>
-        </div>
+          </AppTable>
       </div>
     </AdminDataPanel>
 
@@ -301,7 +298,7 @@ const compactColumns = [
   { accessorKey: 'select', header: '' },
   { accessorKey: 'identity', header: 'Name / key' },
   { accessorKey: 'status', header: 'Status' },
-  { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head table-action-wide', td: 'table-action-cell table-action-wide' } } }
+  { id: 'actions', header: 'Actions', meta: { class: { th: 'w-px whitespace-nowrap text-right', td: 'w-px whitespace-nowrap text-right' } } }
 ]
 
 const fullColumns = [
@@ -313,7 +310,7 @@ const fullColumns = [
   { accessorKey: 'model-scope', header: 'Model scope' },
   { accessorKey: 'length', header: 'Length' },
   { accessorKey: 'status', header: 'Status' },
-  { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head table-action-wide', td: 'table-action-cell table-action-wide' } } }
+  { id: 'actions', header: 'Actions', meta: { class: { th: 'w-px whitespace-nowrap text-right', td: 'w-px whitespace-nowrap text-right' } } }
 ]
 
 const columns = computed(() => wideTable.value ? fullColumns : compactColumns)
@@ -834,43 +831,15 @@ await syncData()
   min-width: 2.75rem;
 }
 
-.access-keys-table.table-fixed :deep(th:nth-child(2)),
-.access-keys-table.table-fixed :deep(td:nth-child(2)) {
-  width: 220px;
+.access-keys-table :deep(th:nth-child(2)),
+.access-keys-table :deep(td:nth-child(2)) {
+  min-width: 12rem;
 }
 
 .access-keys-table :deep(th:nth-last-child(2)),
 .access-keys-table :deep(td:nth-last-child(2)) {
-  width: 7rem;
-  min-width: 7rem;
+  white-space: nowrap;
 }
 
-.access-keys-table :deep(th:last-child),
-.access-keys-table :deep(td:last-child) {
-  position: sticky;
-  right: 0;
-  z-index: 2;
-  width: 4.5rem;
-  min-width: 4.5rem;
-  text-align: right;
-  background: var(--ui-bg);
-  box-shadow: -1px 0 0 var(--ui-border);
-}
 
-.access-keys-table :deep(th:last-child) {
-  z-index: 3;
-}
-
-@media (min-width: 640px) {
-  .access-keys-table :deep(th:nth-child(3)),
-  .access-keys-table :deep(td:nth-child(3)) {
-    width: 220px;
-  }
-
-  .access-keys-table :deep(th:last-child),
-  .access-keys-table :deep(td:last-child) {
-    width: 20.5rem;
-    min-width: 20.5rem;
-  }
-}
 </style>

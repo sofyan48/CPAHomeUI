@@ -22,24 +22,10 @@
       :description="pageError"
     />
 
-    <div class="flex flex-wrap items-center justify-between gap-2">
-      <div class="workbench-page-tabs">
-        <UButton
-          v-for="item in sections"
-          :key="item.value"
-          :color="activeSection === item.value ? 'primary' : 'neutral'"
-          :variant="activeSection === item.value ? 'soft' : 'ghost'"
-          :icon="item.icon"
-          @click="activeSection = item.value"
-        >
-          {{ item.label }}
-        </UButton>
-      </div>
-
-    </div>
+    <AppPanelTabs v-model="activeSection" :items="sections" label="Billing sections" />
 
     <template v-if="activeSection === 'overview'">
-      <UCard class="workbench-filter-panel">
+      <AppCard class="workbench-filter-panel">
         <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6" @submit.prevent="applyOverviewFilters">
           <UFormField label="Time range"><USelect v-model="overviewPreset" :items="rangeOptions" value-key="value" label-key="label" class="w-full" @update:model-value="selectRange('overview', $event)" /></UFormField>
           <UFormField label="From">
@@ -66,10 +52,10 @@
             <span class="ml-auto text-xs text-[var(--ui-text-muted)]">Date-only “To” includes the full selected day.</span>
           </div>
         </form>
-      </UCard>
+      </AppCard>
 
       <template v-if="overview">
-        <UCard>
+        <AppCard>
           <template #header><h2 class="text-sm font-semibold">Finance summary</h2></template>
           <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div v-for="metric in financeMetrics" :key="metric.label" class="min-w-0 border-t pt-3 first:border-t-0 first:pt-0 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0 lg:first:border-l-0 lg:first:pl-0">
@@ -78,8 +64,8 @@
               <p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ metric.hint }}</p>
             </div>
           </div>
-        </UCard>
-        <UCard>
+        </AppCard>
+        <AppCard>
           <template #header><h2 class="text-sm font-semibold">Usage summary</h2></template>
           <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <div v-for="metric in usageMetrics" :key="metric.label" class="min-w-0 border-t pt-3 first:border-t-0 first:pt-0 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0 lg:first:border-l-0 lg:first:pl-0">
@@ -87,12 +73,12 @@
               <p class="mt-2 text-xl font-semibold tabular-nums">{{ metric.value }}</p>
             </div>
           </div>
-        </UCard>
+        </AppCard>
       </template>
       <p v-else-if="!overviewLoading && !pageError" class="py-8 text-center text-sm text-[var(--ui-text-muted)]">No billing overview available.</p>
 
       <div v-if="overview" class="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <UCard class="xl:col-span-2">
+        <AppCard class="xl:col-span-2">
           <template #header>
             <div class="flex items-center justify-between gap-3">
               <div>
@@ -115,9 +101,9 @@
             </div>
           </div>
           <div v-else class="py-12 text-center text-sm text-[var(--ui-text-muted)]">No charges in the selected range.</div>
-        </UCard>
+        </AppCard>
 
-        <UCard>
+        <AppCard>
           <template #header>
             <div>
               <h2 class="font-semibold">Top consumers</h2>
@@ -134,11 +120,11 @@
             </div>
           </div>
           <div v-else class="py-8 text-center text-sm text-[var(--ui-text-muted)]">No user charges found.</div>
-        </UCard>
+        </AppCard>
       </div>
 
       <div v-if="overview" class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <UCard>
+        <AppCard>
           <template #header><h2 class="font-semibold">Top models</h2></template>
           <div v-if="topModels.length" class="space-y-3">
             <div v-for="item in topModels" :key="item.id || item.label" class="flex items-center justify-between gap-3 text-sm">
@@ -147,8 +133,8 @@
             </div>
           </div>
           <p v-else class="py-8 text-center text-sm text-[var(--ui-text-muted)]">No model charges found.</p>
-        </UCard>
-        <UCard>
+        </AppCard>
+        <AppCard>
           <template #header><h2 class="font-semibold">Top providers</h2></template>
           <div v-if="topProviders.length" class="space-y-3">
             <div v-for="item in topProviders" :key="item.id || item.label" class="flex items-center justify-between gap-3 text-sm">
@@ -157,12 +143,12 @@
             </div>
           </div>
           <p v-else class="py-8 text-center text-sm text-[var(--ui-text-muted)]">No provider charges found.</p>
-        </UCard>
+        </AppCard>
       </div>
     </template>
 
     <template v-else-if="activeSection === 'charges'">
-      <UCard class="workbench-filter-panel">
+      <AppCard class="workbench-filter-panel">
         <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5" @submit.prevent="applyChargeFilters">
           <UFormField label="Time range"><USelect v-model="chargePreset" :items="rangeOptions" value-key="value" label-key="label" class="w-full" @update:model-value="selectRange('charges', $event)" /></UFormField>
           <UFormField label="From"><UInput v-model="chargeFilters.from" type="date" class="w-full" @update:model-value="chargePreset = 'custom'" /></UFormField>
@@ -175,10 +161,10 @@
             <UButton color="neutral" variant="ghost" @click="resetChargeFilters">Reset</UButton>
           </div>
         </form>
-      </UCard>
+      </AppCard>
 
       <AdminDataPanel title="Charges" :description="`${formatNumber(chargesTotal)} matching records`">
-        <UTable :columns="chargeColumns" :data="charges" :loading="chargesLoading">
+        <AppTable :columns="chargeColumns" :data="charges" :loading="chargesLoading">
           <template #created_at-cell="{ row }"><div class="min-w-36"><p class="text-sm">{{ formatDateTime(rowValue(row).created_at) }}</p><p class="font-mono text-xs text-[var(--ui-text-muted)]">{{ rowValue(row).request_id || rowValue(row).id }}</p></div></template>
           <template #user-cell="{ row }"><div class="min-w-32"><p class="text-sm">{{ chargeUserName(rowValue(row)) }}</p><p class="font-mono text-xs text-[var(--ui-text-muted)]">{{ rowValue(row).api_key_masked || rowValue(row).api_key_label || 'No client key' }}</p></div></template>
           <template #model-cell="{ row }"><div class="min-w-40"><p class="font-medium">{{ rowValue(row).model || 'Unknown' }}</p><p class="text-xs text-[var(--ui-text-muted)]">{{ rowValue(row).provider || 'Unknown' }}<span v-if="rowValue(row).original_model && rowValue(row).original_model !== rowValue(row).model"> · from {{ rowValue(row).original_model }}</span></p></div></template>
@@ -186,14 +172,14 @@
           <template #amount-cell="{ row }"><div class="text-right"><p class="font-mono font-semibold">{{ formatCredits(rowValue(row).amount) }}</p><p class="text-xs text-[var(--ui-text-muted)]">Bal. {{ formatCredits(rowValue(row).balance_after) }}</p></div></template>
           <template #actions-cell="{ row }"><div class="flex justify-end"><AdminTableAction action="view" label="View charge details" @click="openChargeDetail(rowValue(row))" /></div></template>
           <template #empty><div class="py-12 text-center text-sm text-[var(--ui-text-muted)]">No charges match these filters.</div></template>
-        </UTable>
+        </AppTable>
         <template v-if="chargesTotal > 0" #footer><div class="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"><p class="text-sm text-[var(--ui-text-muted)]">{{ chargeRangeStart }}–{{ chargeRangeEnd }} / {{ formatNumber(chargesTotal) }} total</p><div class="flex flex-wrap items-center gap-2"><span class="text-xs text-[var(--ui-text-muted)]">Rows per page</span><USelect v-model="chargePageSize" :items="pageSizeOptions" value-key="value" label-key="label" class="w-24" @update:model-value="changePageSize('charges')" /><UButton size="sm" color="neutral" variant="outline" :disabled="chargePage <= 1 || chargesLoading" @click="changeChargePage(-1)">Previous</UButton><UButton size="sm" color="neutral" variant="outline" :disabled="chargePage >= chargePageCount || chargesLoading" @click="changeChargePage(1)">Next</UButton></div></div></template>
       </AdminDataPanel>
     </template>
 
     <template v-else-if="activeSection === 'balances'">
 
-      <UCard class="workbench-filter-panel">
+      <AppCard class="workbench-filter-panel">
         <form class="grid grid-cols-1 gap-3 md:grid-cols-4" @submit.prevent="applyBalanceFilters">
           <UFormField label="Time range"><USelect v-model="balancePreset" :items="rangeOptions" value-key="value" label-key="label" class="w-full" @update:model-value="selectRange('balances', $event)" /></UFormField>
           <UFormField label="From"><UInput v-model="balanceFilters.from" type="date" class="w-full" @update:model-value="balancePreset = 'custom'" /></UFormField>
@@ -201,10 +187,10 @@
           <UFormField label="User"><UInputMenu v-model="balanceFilters.user" :items="userSearchOptions" create-item @create="balanceFilters.user = $event.trim()" placeholder="Search users..." class="w-full" /></UFormField>
           <div class="flex items-end gap-2"><UButton type="submit" :loading="balancesLoading">Apply</UButton><UButton color="neutral" variant="ghost" @click="resetBalanceFilters">Reset</UButton></div>
         </form>
-      </UCard>
+      </AppCard>
       <AdminDataPanel title="Balance records" :description="`${formatNumber(balancesTotal)} matching adjustments`">
         <template #actions><USelect v-model="balancePageSize" :items="pageSizeOptions" value-key="value" label-key="label" class="w-24" @update:model-value="changePageSize('balances')" /></template>
-        <UTable :columns="balanceColumns" :data="balanceRecords" :loading="balancesLoading">
+        <AppTable :columns="balanceColumns" :data="balanceRecords" :loading="balancesLoading">
           <template #created_at-cell="{ row }"><div><p class="text-sm">{{ formatDateTime(rowValue(row).created_at) }}</p><p class="font-mono text-xs text-[var(--ui-text-muted)]">{{ rowValue(row).id }}</p></div></template>
           <template #type-cell="{ row }"><UBadge :color="rowValue(row).type === 'recharge' ? 'success' : 'warning'" variant="subtle">{{ rowValue(row).type }}</UBadge></template>
           <template #amount-cell="{ row }"><span class="font-mono font-semibold" :class="rowValue(row).type === 'recharge' ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'">{{ rowValue(row).type === 'recharge' ? '+' : '−' }}{{ formatCredits(rowValue(row).amount) }}</span></template>
@@ -212,7 +198,7 @@
           <template #note-cell="{ row }"><div class="max-w-72"><p class="truncate text-sm">{{ rowValue(row).note || '—' }}</p><p class="text-xs text-[var(--ui-text-muted)]">{{ rowValue(row).operator || '—' }}</p></div></template>
           <template #actions-cell="{ row }"><AdminTableAction action="view" label="View balance details" @click="openBalanceDetail(rowValue(row))" /></template>
           <template #empty><div class="py-12 text-center text-sm text-[var(--ui-text-muted)]">No balance records match these filters.</div></template>
-        </UTable>
+        </AppTable>
         <template #footer><PaginationFooter :page="balancePage" :total="balancesTotal" :page-size="balancePageSize" :loading="balancesLoading" @previous="changeBalancePage(-1)" @next="changeBalancePage(1)" /></template>
       </AdminDataPanel>
     </template>
@@ -231,7 +217,7 @@
       </div>
 
       <AdminDataPanel title="Model prices" :description="`${filteredPriceRules.length} rules`">
-        <UTable :columns="priceColumns" :data="filteredPriceRules" :loading="pricesLoading" class="min-w-[1260px]">
+        <AppTable :columns="priceColumns" :data="filteredPriceRules" :loading="pricesLoading" class="min-w-[1260px]">
           <template #provider-cell="{ row }"><span class="font-medium">{{ rowValue(row).provider }}</span></template>
           <template #model-cell="{ row }"><div class="flex min-w-52 items-center gap-1"><span class="truncate font-mono">{{ rowValue(row).model }}</span><UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-clipboard" aria-label="Copy model ID" @click="copyText(rowValue(row).model)" /></div></template>
           <template #scope-cell="{ row }"><div class="min-w-36"><template v-if="priceSchemaVersion >= 2"><UBadge color="neutral" variant="subtle">{{ rowValue(row).service_tier || '*' }}</UBadge><p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ contextBandLabel(rowValue(row).min_input_tokens) }}</p></template><span v-else class="text-xs text-[var(--ui-text-muted)]">Flat price compatibility rule</span></div></template>
@@ -245,7 +231,7 @@
           <template #updated-cell="{ row }"><span class="whitespace-nowrap text-xs text-[var(--ui-text-muted)]">{{ formatDateTime(rowValue(row).updated_at) }}</span></template>
           <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><AdminTableAction action="edit" label="Edit model price" @click="openPriceForm(rowValue(row))" /><AdminTableAction action="delete" label="Delete model price" destructive @click="confirmDeletePrice(rowValue(row))" /></div></template>
           <template #empty><div class="py-12 text-center text-sm text-[var(--ui-text-muted)]">No model price rules match these filters.</div></template>
-        </UTable>
+        </AppTable>
       </AdminDataPanel>
     </template>
 

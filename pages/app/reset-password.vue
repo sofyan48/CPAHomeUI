@@ -1,6 +1,6 @@
 <template>
   <div class="mx-auto max-w-md py-12">
-    <UCard>
+    <AppCard>
       <template #header>
         <h1 class="text-2xl font-bold">Choose a new password</h1>
         <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Reset links are single-use and expire for your security.</p>
@@ -32,7 +32,7 @@
         <UFormField label="Confirm password" required><UInput v-model="confirmPassword" class="w-full" type="password" autocomplete="new-password" /></UFormField>
         <UButton type="submit" color="primary" block :loading="loading">Reset password</UButton>
       </form>
-    </UCard>
+    </AppCard>
   </div>
 </template>
 

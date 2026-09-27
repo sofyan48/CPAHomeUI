@@ -4,7 +4,7 @@
     <UAlert v-if="pageError" color="error" variant="subtle" icon="i-tabler-alert-triangle" title="Some workspace data could not be loaded" :description="pageError" />
 
     <section v-if="section === 'dashboard'" class="dashboard-limit-grid grid grid-cols-1 gap-4" :style="dashboardGridStyle" aria-label="Account summary and period limits">
-      <UCard>
+      <AppCard>
         <div class="flex items-start justify-between gap-4">
           <div class="min-w-0">
             <p class="text-sm text-[var(--ui-text-muted)]">Credit balance</p>
@@ -12,13 +12,13 @@
           </div>
           <span class="rounded-xl bg-primary-500/10 p-2.5 text-primary-500"><UIcon name="i-tabler-wallet" class="size-5" /></span>
         </div>
-      </UCard>
-      <UCard v-for="window in activePeriodWindows" :key="window.id">
+      </AppCard>
+      <AppCard v-for="window in activePeriodWindows" :key="window.id">
         <div class="flex items-center justify-between gap-3"><p class="text-sm font-semibold">{{ periodWindowLabel(window.id) }}</p><span class="text-xs font-medium tabular-nums" :class="periodWindowColor(window)">{{ formatPercent(periodWindowRatio(window)) }}</span></div>
         <div class="mt-3 h-2 overflow-hidden rounded-full bg-[var(--ui-bg-muted)]"><div class="h-full rounded-full transition-all" :class="periodWindowBarColor(window)" :style="{ width: `${Math.round(periodWindowRatio(window) * 100)}%` }" /></div>
         <div class="mt-3 flex items-end justify-between gap-3"><div><p class="text-xs text-[var(--ui-text-muted)]">Used</p><p class="font-semibold tabular-nums">{{ formatCredits(window.used) }} / {{ formatCredits(window.limit) }}</p></div><div class="text-right"><p class="text-xs text-[var(--ui-text-muted)]">Remaining</p><p class="text-sm font-medium tabular-nums">{{ formatCredits(window.remaining) }}</p></div></div>
         <p v-if="window.reset_at" class="mt-2 text-xs text-[var(--ui-text-dimmed)]">Resets {{ formatDate(window.reset_at) }}</p>
-      </UCard>
+      </AppCard>
     </section>
 
     <section v-if="section === 'dashboard'" class="space-y-5" aria-labelledby="billing-title">
@@ -30,7 +30,7 @@
         <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="billingLoading" @click="loadBilling">Refresh report</UButton>
       </div>
 
-      <UCard class="workbench-filter-panel">
+      <AppCard class="workbench-filter-panel">
         <form class="flex flex-wrap items-end gap-3" @submit.prevent="applyBillingRange">
           <UFormField label="Time range">
             <USelect v-model="rangePreset" :items="rangeOptions" value-key="value" label-key="label" class="w-44" @update:model-value="selectRange" />
@@ -42,18 +42,18 @@
           </template>
         </form>
         <UAlert v-if="billingError" class="mt-4" color="error" variant="subtle" title="Billing request failed" :description="billingError" />
-      </UCard>
+      </AppCard>
 
       <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <UCard v-for="metric in billingMetrics" :key="metric.label">
+        <AppCard v-for="metric in billingMetrics" :key="metric.label">
           <p class="text-sm text-[var(--ui-text-muted)]">{{ metric.label }}</p>
           <p class="mt-2 text-2xl font-bold tabular-nums text-[var(--ui-text-highlighted)]">{{ metric.value }}</p>
           <p class="mt-1 text-xs text-[var(--ui-text-dimmed)]">{{ metric.detail }}</p>
-        </UCard>
+        </AppCard>
       </div>
 
       <div class="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
-        <UCard>
+        <AppCard class="min-w-0">
           <template #header>
             <div>
               <h3 class="font-semibold">Top models</h3>
@@ -70,9 +70,9 @@
             </div>
           </div>
           <p v-else class="py-10 text-center text-sm text-[var(--ui-text-muted)]">No model charges in this range.</p>
-        </UCard>
+        </AppCard>
 
-        <UCard>
+        <AppCard class="min-w-0" :ui="{ body: 'p-0' }">
           <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -85,16 +85,15 @@
             </div>
           </template>
           <div class="overflow-x-auto">
-            <UTable :data="charges" :columns="chargeColumns" :loading="billingLoading" class="min-w-[980px]">
+            <AppTable :data="charges" :columns="chargeColumns" :loading="billingLoading" empty="No billing charges found." class="min-w-[800px]">
               <template #created_at-cell="{ row }"><span class="whitespace-nowrap text-sm">{{ formatDate(rowValue(row).created_at) }}</span></template>
               <template #provider-cell="{ row }"><span class="text-sm">{{ rowValue(row).provider || '—' }}</span></template>
               <template #model-cell="{ row }"><span class="text-sm font-medium">{{ rowValue(row).model || '—' }}</span></template>
               <template #input_tokens-cell="{ row }"><span class="tabular-nums">{{ formatNumber(rowValue(row).input_tokens) }}</span></template>
               <template #output_tokens-cell="{ row }"><span class="tabular-nums">{{ formatNumber(rowValue(row).output_tokens) }}</span></template>
-              <template #amount-cell="{ row }"><span class="font-mono font-semibold text-red-600 dark:text-red-400">−{{ formatCredits(Math.abs(Number(rowValue(row).amount) || 0)) }}</span></template>
+              <template #amount-cell="{ row }"><span class="font-mono font-semibold tabular-nums text-[var(--ui-text-highlighted)]">−{{ formatCredits(Math.abs(Number(rowValue(row).amount) || 0)) }}</span></template>
               <template #balance_after-cell="{ row }"><span class="font-mono">{{ formatCredits(rowValue(row).balance_after) }}</span></template>
-              <template #empty><div class="py-12 text-center text-sm text-[var(--ui-text-muted)]">No billing charges found.</div></template>
-            </UTable>
+            </AppTable>
           </div>
           <div class="flex flex-col gap-3 border-t border-[var(--ui-border)] px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
             <span class="text-[var(--ui-text-muted)]">Showing {{ chargeRangeStart }}–{{ chargeRangeEnd }} of {{ formatNumber(chargesTotal) }}</span>
@@ -104,7 +103,7 @@
               <UButton size="sm" color="neutral" variant="outline" :disabled="chargePage >= chargePages || billingLoading" @click="changeChargePage(1)">Next</UButton>
             </div>
           </div>
-        </UCard>
+        </AppCard>
       </div>
     </section>
 
@@ -116,34 +115,23 @@
         </div>
         <UButton icon="i-tabler-plus" @click="openKeyForm()">Create key</UButton>
       </div>
-      <div v-if="keysLoading && !keys.length" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <USkeleton v-for="index in 4" :key="index" class="h-44 rounded-xl" />
-      </div>
-      <div v-else-if="keys.length" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <UCard v-for="key in keys" :key="key.id ?? key.api_key" class="min-w-0" :ui="{ body: 'flex h-full flex-col p-4' }">
-          <div class="flex min-w-0 items-center gap-3">
-            <span class="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary-500/10 text-primary-500"><UIcon name="i-tabler-key" class="size-5" /></span>
-            <div class="min-w-0">
-              <p class="truncate text-sm font-semibold" :title="key.display_name || undefined">{{ key.display_name || 'Unnamed key' }}</p>
-              <code class="block truncate text-xs text-[var(--ui-text-muted)]" :title="maskKey(key.api_key)">{{ maskKey(key.api_key) }}</code>
-            </div>
-          </div>
-          <div class="mt-4 text-xs text-[var(--ui-text-muted)]">
-            <p>Updated {{ formatDate(key.updated_at || key.created_at) }}</p>
-            <p v-if="key.created_at" class="mt-1">Created {{ formatDate(key.created_at) }}</p>
-          </div>
-          <div class="mt-auto flex justify-end gap-1 pt-4">
-            <AdminTableAction action="copy" :label="`Copy ${maskKey(key.api_key)}`" @click="copyKey(key.api_key)" />
-            <AdminTableAction action="edit" :label="`Edit ${maskKey(key.api_key)}`" @click="openKeyForm(key)" />
-            <AdminTableAction action="delete" :label="`Delete ${maskKey(key.api_key)}`" destructive @click="confirmKeyDelete(key)" />
-          </div>
-        </UCard>
-      </div>
-      <div v-else class="rounded-xl border border-dashed border-[var(--ui-border)] py-14 text-center">
-        <UIcon name="i-tabler-key" class="mx-auto size-8 text-[var(--ui-text-dimmed)]" />
-        <p class="mt-3 font-medium">No client access keys</p>
-        <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Create a key to authenticate client requests.</p>
-      </div>
+      <AppCard :ui="{ body: 'p-0' }">
+        <div class="overflow-x-auto">
+          <AppTable :data="keys" :columns="keyColumns" :loading="keysLoading" empty="No client access keys. Create a key to authenticate client requests." class="min-w-[640px]">
+            <template #display_name-cell="{ row }"><span class="font-medium">{{ row.original.display_name || 'Unnamed key' }}</span></template>
+            <template #api_key-cell="{ row }"><code class="text-xs text-muted">{{ maskKey(row.original.api_key) }}</code></template>
+            <template #updated_at-cell="{ row }">{{ formatDate(row.original.updated_at || row.original.created_at) }}</template>
+            <template #created_at-cell="{ row }">{{ formatDate(row.original.created_at) }}</template>
+            <template #actions-cell="{ row }">
+              <div class="flex items-center justify-end gap-1">
+                <AdminTableAction action="copy" :label="`Copy ${maskKey(row.original.api_key)}`" @click="copyKey(row.original.api_key)" />
+                <AdminTableAction action="edit" :label="`Edit ${maskKey(row.original.api_key)}`" @click="openKeyForm(row.original)" />
+                <AdminTableAction action="delete" :label="`Delete ${maskKey(row.original.api_key)}`" destructive @click="confirmKeyDelete(row.original)" />
+              </div>
+            </template>
+          </AppTable>
+        </div>
+      </AppCard>
     </section>
 
     <section v-if="section === 'settings'" class="space-y-4" aria-labelledby="security-title">
@@ -153,7 +141,7 @@
       </div>
 
       <div class="grid gap-5 lg:grid-cols-2">
-        <UCard>
+        <AppCard>
           <template #header><div><h3 class="font-semibold">Password</h3><p class="text-xs text-[var(--ui-text-muted)]">Changing your password refreshes the active session.</p></div></template>
           <form class="space-y-4" @submit.prevent="changePassword">
             <UAlert v-if="passwordError" color="error" variant="subtle" :description="passwordError" />
@@ -161,9 +149,9 @@
             <UFormField label="Confirm password" required><UInput v-model="passwordForm.confirm" type="password" autocomplete="new-password" class="w-full" /></UFormField>
             <div class="flex justify-end"><UButton type="submit" :loading="passwordSaving">Change password</UButton></div>
           </form>
-        </UCard>
+        </AppCard>
 
-        <UCard>
+        <AppCard>
           <template #header><div><h3 class="font-semibold">Recovery email</h3><p class="text-xs text-[var(--ui-text-muted)]">{{ emailDetail }}</p></div></template>
           <form class="space-y-4" @submit.prevent="updateEmail">
             <UAlert v-if="emailError" color="error" variant="subtle" :description="emailError" />
@@ -174,9 +162,9 @@
               <UButton type="submit" :loading="emailSaving" :disabled="capabilities.email_verification === false">Save and verify</UButton>
             </div>
           </form>
-        </UCard>
+        </AppCard>
 
-        <UCard>
+        <AppCard>
           <template #header>
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div><h3 class="font-semibold">Authenticator app</h3><p class="text-xs text-[var(--ui-text-muted)]">{{ user?.totp_enabled ? 'TOTP is enabled for this account.' : 'Add a time-based one-time password.' }}</p></div>
@@ -190,7 +178,7 @@
               <UButton color="neutral" variant="outline" :loading="totpLoading" @click="showTOTP(true)">Regenerate setup</UButton>
               <UButton v-if="user?.totp_enabled" color="error" variant="soft" @click="openTOTPDelete">Disable TOTP</UButton>
             </div>
-            <form v-if="totpSetup" class="space-y-4 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] p-4" @submit.prevent="bindTOTP">
+            <form v-if="totpSetup" class="space-y-4 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] app-surface p-4" @submit.prevent="bindTOTP">
               <p class="text-sm text-[var(--ui-text-muted)]">Open the setup link in a compatible authenticator or enter the raw secret manually, then confirm a current code.</p>
               <div>
                 <p class="text-xs font-medium text-[var(--ui-text-dimmed)]">Raw secret</p>
@@ -205,25 +193,28 @@
               <div class="flex justify-end"><UButton type="submit" :loading="totpSaving">{{ user?.totp_enabled ? 'Confirm regenerated setup' : 'Enable TOTP' }}</UButton></div>
             </form>
           </div>
-        </UCard>
+        </AppCard>
 
-        <UCard>
+        <AppCard :ui="{ body: 'p-0' }">
           <template #header><div><h3 class="font-semibold">Passkeys</h3><p class="text-xs text-[var(--ui-text-muted)]">Use a device authenticator or hardware security key.</p></div></template>
-          <form class="flex flex-col gap-3 sm:flex-row sm:items-end" @submit.prevent="addPasskey">
-            <UFormField label="Passkey name" hint="Optional" class="flex-1"><UInput v-model="passkeyName" class="w-full" placeholder="MacBook Touch ID" /></UFormField>
-            <UButton type="submit" icon="i-tabler-fingerprint" :loading="passkeySaving">Add passkey</UButton>
-          </form>
-          <UAlert v-if="passkeyError" class="mt-4" color="error" variant="subtle" :description="passkeyError" />
-          <div class="mt-5 overflow-x-auto rounded-lg border border-[var(--ui-border)]">
-            <table class="w-full min-w-[560px] text-left text-sm">
-              <thead class="bg-[var(--ui-bg-muted)] text-xs text-[var(--ui-text-muted)]"><tr><th class="px-4 py-3 font-medium">Name</th><th class="px-4 py-3 font-medium">Created</th><th class="px-4 py-3 font-medium">Updated</th><th class="px-4 py-3 text-right font-medium">Actions</th></tr></thead>
-              <tbody class="divide-y divide-[var(--ui-border)]">
-                <tr v-for="passkey in user?.passkeys || []" :key="passkey.id"><td class="px-4 py-3 font-medium">{{ passkey.name || 'Unnamed passkey' }}</td><td class="px-4 py-3 text-[var(--ui-text-muted)]">{{ formatDate(passkey.created_at) }}</td><td class="px-4 py-3 text-[var(--ui-text-muted)]">{{ formatDate(passkey.updated_at) }}</td><td class="px-4 py-3 text-right"><UButton icon="i-tabler-trash" color="error" variant="ghost" size="sm" :aria-label="`Delete ${passkey.name || 'passkey'}`" @click="confirmPasskeyDelete(passkey)" /></td></tr>
-                <tr v-if="!(user?.passkeys || []).length"><td colspan="4" class="px-4 py-10 text-center text-[var(--ui-text-muted)]">No passkeys registered.</td></tr>
-              </tbody>
-            </table>
+          <div class="p-4 sm:p-6">
+            <form class="flex flex-col gap-3 sm:flex-row sm:items-end" @submit.prevent="addPasskey">
+              <UFormField label="Passkey name" hint="Optional" class="flex-1"><UInput v-model="passkeyName" class="w-full" placeholder="MacBook Touch ID" /></UFormField>
+              <UButton type="submit" icon="i-tabler-fingerprint" :loading="passkeySaving">Add passkey</UButton>
+            </form>
+            <UAlert v-if="passkeyError" class="mt-4" color="error" variant="subtle" :description="passkeyError" />
           </div>
-        </UCard>
+          <div class="overflow-x-auto">
+            <AppTable :data="user?.passkeys || []" :columns="passkeyColumns" empty="No passkeys registered." class="min-w-[560px]">
+              <template #name-cell="{ row }"><span class="font-medium">{{ row.original.name || 'Unnamed passkey' }}</span></template>
+              <template #created_at-cell="{ row }">{{ formatDate(row.original.created_at) }}</template>
+              <template #updated_at-cell="{ row }">{{ formatDate(row.original.updated_at) }}</template>
+              <template #actions-cell="{ row }">
+                <div class="flex justify-end"><UButton icon="i-tabler-trash" color="error" variant="ghost" size="sm" :aria-label="`Delete ${row.original.name || 'passkey'}`" @click="confirmPasskeyDelete(row.original)" /></div>
+              </template>
+            </AppTable>
+          </div>
+        </AppCard>
       </div>
     </section>
 
@@ -342,6 +333,20 @@ const passkeySaving = ref(false)
 const passkeyDeleteOpen = ref(false)
 const passkeyDeleteTarget = ref<UserPasskey | null>(null)
 const passkeyDeleting = ref(false)
+
+const keyColumns = [
+  { accessorKey: 'display_name', header: 'Name' },
+  { accessorKey: 'api_key', header: 'Key' },
+  { accessorKey: 'updated_at', header: 'Updated' },
+  { accessorKey: 'created_at', header: 'Created' },
+  { id: 'actions', header: 'Actions', meta: { class: { th: 'text-right', td: 'text-right' } } }
+]
+const passkeyColumns = [
+  { accessorKey: 'name', header: 'Name' },
+  { accessorKey: 'created_at', header: 'Created' },
+  { accessorKey: 'updated_at', header: 'Updated' },
+  { id: 'actions', header: 'Actions', meta: { class: { th: 'text-right', td: 'text-right' } } }
+]
 
 const chargeColumns = [
   { accessorKey: 'created_at', header: 'Time' },

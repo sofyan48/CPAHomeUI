@@ -42,8 +42,8 @@ export default defineNuxtConfig({
     },
   },
 
-  // Workaround for Nuxt 4.4.4 ssr:false regression where vite-node IPC
-  // socketPath is captured before the parent process sets it.
+  // Nuxt 4.4.4 ssr:false requires the Vite environment API so the
+  // vite-node IPC socket is configured before Nitro starts rendering.
   experimental: {
     viteEnvironmentApi: true,
     viewTransition: false,

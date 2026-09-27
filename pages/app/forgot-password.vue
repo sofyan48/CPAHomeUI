@@ -1,6 +1,6 @@
 <template>
   <div class="mx-auto max-w-md py-12">
-    <UCard>
+    <AppCard>
       <template #header>
         <h1 class="text-2xl font-bold">Reset your password</h1>
         <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Enter your verified email address to receive recovery instructions.</p>
@@ -40,7 +40,7 @@
         <UButton type="submit" color="primary" block :loading="loading">Send reset instructions</UButton>
         <UButton to="/app/login" color="neutral" variant="ghost" block>Back to sign in</UButton>
       </form>
-    </UCard>
+    </AppCard>
   </div>
 </template>
 

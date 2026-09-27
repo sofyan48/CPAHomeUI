@@ -13,16 +13,16 @@
     <UAlert v-if="errorMessage" color="error" variant="subtle" icon="i-tabler-alert-circle" title="System data could not be loaded" :description="errorMessage" />
 
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <UCard v-for="stat in stats" :key="stat.label">
+      <AppCard v-for="stat in stats" :key="stat.label">
         <p class="text-sm text-[var(--ui-text-muted)]">{{ stat.label }}</p>
         <div class="mt-2 flex items-end justify-between gap-3">
           <p class="text-3xl font-bold text-[var(--ui-text-highlighted)]">{{ stat.value }}</p>
           <UIcon :name="stat.icon" class="size-6" :class="stat.color" />
         </div>
-      </UCard>
+      </AppCard>
     </section>
 
-    <UCard v-if="topologyAvailable">
+    <AppCard v-if="topologyAvailable">
       <template #header>
         <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -65,9 +65,9 @@
         </div>
         <p v-if="!homes.length" class="py-8 text-center text-sm text-[var(--ui-text-muted)] lg:col-span-2">No Home instances reported.</p>
       </div>
-    </UCard>
+    </AppCard>
 
-    <UCard>
+    <AppCard>
       <template #header>
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -97,21 +97,28 @@
         </div>
       </div>
 
-      <div class="overflow-x-auto">
-        <table class="w-full min-w-[860px] text-left text-sm">
-          <thead class="border-b border-[var(--ui-border)] text-xs uppercase tracking-wide text-[var(--ui-text-dimmed)]">
+      <AppCard :ui="{ body: 'p-0' }">
+      <AppTable native>
+        <table class="text-left text-sm">
+          <thead>
             <tr>
-              <th class="px-3 py-3 font-medium">Node</th>
-              <th class="px-3 py-3 font-medium">Health</th>
-              <th class="px-3 py-3 font-medium">Serving Home</th>
-              <th class="px-3 py-3 font-medium">Connections</th>
-              <th class="px-3 py-3 font-medium">Last seen</th>
-              <th class="px-3 py-3 text-right font-medium">Actions</th>
+              <th scope="col">Node</th>
+              <th scope="col">Health</th>
+              <th scope="col" class="whitespace-nowrap">Serving Home</th>
+              <th scope="col" class="whitespace-nowrap">Connections</th>
+              <th scope="col" class="whitespace-nowrap">Last seen</th>
+              <th scope="col" class="w-px whitespace-nowrap text-right">Actions</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-[var(--ui-border)]">
-            <tr v-for="node in filteredNodes" :key="node.node_id || node.ip" class="hover:bg-[var(--ui-bg-muted)]/60">
-              <td class="px-3 py-4">
+          <tbody>
+            <tr v-if="!filteredNodes.length">
+              <td colspan="6" class="px-4 py-12 text-center text-sm text-[var(--ui-text-muted)]">
+                <UIcon name="i-tabler-server-2" class="mx-auto mb-3 size-8 text-[var(--ui-text-dimmed)]" />
+                {{ search ? 'No nodes match your search.' : 'No connected CPA nodes.' }}
+              </td>
+            </tr>
+            <tr v-for="node in filteredNodes" :key="node.node_id || node.ip">
+              <td class="min-w-56">
                 <div v-if="editingId === node.node_id" class="flex max-w-sm items-center gap-2">
                   <UInput v-model="renameValue" size="sm" placeholder="Node name (empty clears)" class="flex-1" @keyup.enter="saveRename(node)" @keyup.esc="cancelRename" />
                   <UButton icon="i-tabler-check" size="sm" :loading="renamingId === node.node_id" @click="saveRename(node)" />
@@ -123,7 +130,7 @@
                   <p class="mt-1 text-xs text-[var(--ui-text-dimmed)]">{{ node.ip }}</p>
                 </div>
               </td>
-              <td class="px-3 py-4">
+              <td>
                 <UBadge :color="node.healthy ? 'success' : 'warning'" variant="subtle">{{ node.healthy ? 'healthy' : 'attention' }}</UBadge>
                 <p v-if="node.state" class="mt-1 text-xs text-[var(--ui-text-dimmed)]">{{ node.state }}</p>
                 <div v-if="node.plugin_report_state" class="mt-2">
@@ -139,10 +146,10 @@
                   </div>
                 </div>
               </td>
-              <td class="px-3 py-4 font-mono text-xs">{{ node.home_id || [node.home_ip, node.home_port].filter(Boolean).join(':') || '—' }}</td>
-              <td class="px-3 py-4">{{ node.client_count ?? 0 }}</td>
-              <td class="px-3 py-4 text-xs text-[var(--ui-text-muted)]">{{ formatDate(node.last_seen_at) }}</td>
-              <td class="px-3 py-4 text-right">
+              <td class="font-mono text-xs">{{ node.home_id || [node.home_ip, node.home_port].filter(Boolean).join(':') || '—' }}</td>
+              <td>{{ node.client_count ?? 0 }}</td>
+              <td class="whitespace-nowrap text-xs text-[var(--ui-text-muted)]">{{ formatDate(node.last_seen_at) }}</td>
+              <td class="w-px whitespace-nowrap text-right">
                 <UButton
                   v-if="node.node_id && editingId !== node.node_id"
                   color="neutral"
@@ -155,12 +162,9 @@
             </tr>
           </tbody>
         </table>
-        <div v-if="!filteredNodes.length" class="py-12 text-center">
-          <UIcon name="i-tabler-server-2" class="mx-auto size-8 text-[var(--ui-text-dimmed)]" />
-          <p class="mt-3 text-sm text-[var(--ui-text-muted)]">{{ search ? 'No nodes match your search.' : 'No connected CPA nodes.' }}</p>
-        </div>
-      </div>
-    </UCard>
+      </AppTable>
+      </AppCard>
+    </AppCard>
   </div>
 </template>
 

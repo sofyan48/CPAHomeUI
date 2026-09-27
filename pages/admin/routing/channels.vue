@@ -18,14 +18,14 @@
     </div>
 
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.6fr)]">
-      <UCard :ui="{ body: { padding: '' } }">
+      <AppCard :ui="{ body: 'p-0' }">
         <template #header>
           <div>
             <p class="font-semibold">Groups</p>
             <p class="text-xs text-[var(--ui-text-muted)]">Select a group to manage its credentials.</p>
           </div>
         </template>
-        <UTable :columns="groupColumns" :data="filteredGroups" :loading="pending" @select="selectGroup">
+        <AppTable :columns="groupColumns" :data="filteredGroups" :loading="pending" @select="selectGroup">
           <template #identity-cell="{ row }">
             <button type="button" class="w-full text-left" @click.stop="selectGroup(rowValue(row))">
               <p class="font-medium text-[var(--ui-text-highlighted)]">{{ rowValue(row).channel_name }}</p>
@@ -44,10 +44,10 @@
           <template #empty>
             <div class="px-6 py-12 text-center text-sm text-[var(--ui-text-muted)]">{{ search ? 'No matching channel groups.' : 'No channel groups yet.' }}</div>
           </template>
-        </UTable>
-      </UCard>
+        </AppTable>
+      </AppCard>
 
-      <UCard v-if="selectedGroup" :ui="{ body: { padding: '' } }">
+      <AppCard v-if="selectedGroup" :ui="{ body: 'p-0' }">
         <template #header>
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -60,7 +60,7 @@
             <UButton color="primary" variant="soft" icon="i-tabler-plus" @click="openCreateDetail">Add credential</UButton>
           </div>
         </template>
-        <UTable :columns="detailColumns" :data="details" :loading="detailsPending">
+        <AppTable :columns="detailColumns" :data="details" :loading="detailsPending">
           <template #credential-cell="{ row }">
             <div class="min-w-0">
               <p class="truncate font-medium">{{ credentialLabel(rowValue(row).auth_id) }}</p>
@@ -83,8 +83,8 @@
               <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Add an auth ID from the available credentials or enter one manually.</p>
             </div>
           </template>
-        </UTable>
-      </UCard>
+        </AppTable>
+      </AppCard>
 
       <div v-else class="flex min-h-64 flex-col items-center justify-center rounded-xl border border-dashed border-[var(--ui-border)] bg-[var(--ui-bg-muted)] p-8 text-center">
         <UIcon name="i-tabler-arrows-exchange" class="mb-3 size-8 text-[var(--ui-text-muted)]" />

@@ -1,5 +1,5 @@
 <template>
-  <UCard>
+  <AppCard>
     <template #header><div><h3 class="font-semibold">Import model prices from models.dev</h3><p class="text-xs text-[var(--ui-text-muted)]">Preview is fetched and pinned by Home. Review the exact rules before applying.</p></div></template>
     <div class="space-y-4">
       <UAlert v-if="error" color="error" variant="subtle" :description="error" />
@@ -73,7 +73,7 @@
       <UAlert v-if="operation" color="success" variant="subtle" :title="`Import ${operation.status}`" :description="`Operation ${operation.operation_id} · ${operation.rows?.length || 0} row(s) processed atomically`" />
       <div v-if="operation?.rows?.length" class="max-h-56 space-y-2 overflow-y-auto"><div v-for="result in operation.rows" :key="result.key" class="rounded-lg border border-[var(--ui-border)] p-3 text-xs"><strong>{{ result.key }}</strong><span> · {{ result.status || result.action }}</span><span v-if="result.resource_id" class="block font-mono text-[var(--ui-text-muted)]">{{ result.resource_id }}</span></div></div>
     </div>
-  </UCard>
+  </AppCard>
 </template>
 
 <script setup lang="ts">

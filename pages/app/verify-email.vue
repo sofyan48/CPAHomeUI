@@ -1,6 +1,6 @@
 <template>
   <div class="mx-auto max-w-md py-16 text-center">
-    <UCard>
+    <AppCard>
       <UIcon v-if="verifying" name="i-tabler-refresh" class="mx-auto size-14 animate-spin text-primary-500" />
       <UIcon v-else-if="verified" name="i-tabler-circle-check" class="mx-auto size-14 text-emerald-500" />
       <UIcon v-else-if="invalidToken" name="i-tabler-clock-x" class="mx-auto size-14 text-amber-500" />
@@ -21,7 +21,7 @@
         <UButton :to="returnRoute" color="primary" block>{{ authenticated ? 'Open workspace' : 'Go to sign in' }}</UButton>
       </div>
       <UButton v-else-if="!verifying" :to="returnRoute" color="primary" block class="mt-6">{{ authenticated ? 'Open workspace' : 'Go to sign in' }}</UButton>
-    </UCard>
+    </AppCard>
   </div>
 </template>
 

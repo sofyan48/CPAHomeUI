@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6">
-    <div class="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] px-4 py-3">
+    <div class="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] app-surface px-4 py-3">
       <div><p class="text-sm font-semibold">Request records</p><p class="text-xs text-[var(--ui-text-muted)]">Search persisted requests and inspect redacted routing, billing, and log details.</p></div>
       <div class="flex flex-wrap items-center gap-2"><div class="flex items-center gap-2 rounded-md border border-[var(--ui-border)] px-2.5 py-1.5"><USwitch v-model="liveRefresh" size="sm" /><span class="text-xs">Live refresh</span><USelect v-if="liveRefresh" v-model="refreshSeconds" :items="refreshOptions" value-key="value" label-key="label" size="sm" class="w-24" /></div><UButton color="neutral" variant="outline" size="sm" icon="i-tabler-download" @click="exportOpen = true">Export CSV</UButton></div>
     </div>
@@ -14,7 +14,7 @@
       :description="pageError || liveError"
     />
 
-    <section class="rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] px-4 py-3">
+    <section class="rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] app-surface px-4 py-3">
       <form class="space-y-3" @submit.prevent="applyFilters">
         <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(18rem,1.5fr)_repeat(4,minmax(0,1fr))]">
           <UFormField label="Search"><div class="flex"><USelect v-model="searchField" :items="searchFieldOptions" value-key="value" label-key="label" class="w-36 shrink-0 [&_button]:rounded-r-none" /><UInput v-model="filters.search" icon="i-tabler-search" placeholder="Search requests..." class="min-w-0 flex-1 [&_input]:rounded-l-none" /></div></UFormField>
@@ -46,7 +46,7 @@
     </section>
 
 
-    <UCard :ui="{ body: { padding: '' } }">
+    <AppCard :ui="{ body: 'p-0' }">
       <template #header>
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div><h2 class="font-semibold">Events</h2><p class="text-xs text-[var(--ui-text-muted)]">Showing {{ pageStart }}–{{ pageEnd }} of {{ formatNumber(total) }}</p></div>
@@ -58,7 +58,7 @@
           </div>
         </div>
       </template>
-      <UTable :columns="columns" :data="events" :loading="loading" class="min-w-[1320px]">
+      <AppTable :columns="columns" :data="events" :loading="loading" class="min-w-[1320px]">
         <template #timestamp-cell="{ row }"><div class="min-w-36"><p class="text-sm font-medium">{{ formatDateTime(rowValue(row).timestamp) }}</p></div></template>
         <template #event-cell="{ row }"><div><p class="text-sm">{{ rowValue(row).event_type || 'completion' }}</p><p class="text-xs text-[var(--ui-text-muted)]">{{ rowValue(row).executor_type || 'default executor' }}</p></div></template>
         <template #status-cell="{ row }"><div class="space-y-1"><UBadge :color="rowValue(row).failed ? 'error' : 'success'" variant="subtle">{{ rowValue(row).failed ? 'Failed' : 'Success' }}</UBadge><p class="text-xs text-[var(--ui-text-muted)]">HTTP {{ rowValue(row).status_code || '—' }}</p></div></template>
@@ -71,12 +71,12 @@
         <template #request-cell="{ row }"><div class="min-w-40"><p class="truncate font-mono text-xs">{{ rowValue(row).request_id || rowValue(row).id }}</p><p class="truncate font-mono text-xs text-[var(--ui-text-muted)]">{{ rowValue(row).upstream_request_id || 'No upstream ID' }}</p></div></template>
         <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><AdminTableAction v-if="rowValue(row).related?.request_log?.download_url" action="download" label="Download request log" :loading="downloadingId === rowValue(row).request_id" @click="downloadRequestLog(rowValue(row).related.request_log.download_url, rowValue(row).request_id)" /><AdminTableAction action="view" label="View request event" @click="openDetail(rowValue(row))" /></div></template>
         <template #empty><div class="flex flex-col items-center justify-center py-14 text-center"><UIcon name="i-tabler-list" class="mb-3 size-8 text-[var(--ui-text-muted)]" /><p class="font-medium">No request events found</p><p class="mt-1 text-sm text-[var(--ui-text-muted)]">Try a broader time range or fewer filters.</p></div></template>
-      </UTable>
+      </AppTable>
       <div class="flex flex-col gap-3 border-t border-[var(--ui-border)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <p class="text-xs text-[var(--ui-text-muted)]">Page {{ page }} of {{ totalPages }}</p>
         <div class="flex items-center gap-2"><UButton size="sm" color="neutral" variant="outline" :disabled="page <= 1 || loading" @click="changePage(-1)">Previous</UButton><UButton size="sm" color="neutral" variant="outline" :disabled="page >= totalPages || loading" @click="changePage(1)">Next</UButton></div>
       </div>
-    </UCard>
+    </AppCard>
 
     <UModal v-model:open="detailOpen" title="Request event details" description="Redacted request, routing, token, performance, billing, and log metadata.">
       <template #body>

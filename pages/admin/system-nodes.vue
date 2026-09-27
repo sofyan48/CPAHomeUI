@@ -11,7 +11,7 @@
     <UAlert v-if="errorMessage" color="error" variant="subtle" icon="i-tabler-alert-circle" title="Enrollment failed" :description="errorMessage" />
 
     <div class="grid gap-6 xl:grid-cols-2">
-      <UCard>
+      <AppCard>
         <template #header>
           <div>
             <h2 class="font-semibold">Generate client enrollment</h2>
@@ -26,9 +26,9 @@
             <UButton type="submit" icon="i-tabler-key" :loading="generating">Generate enrollment JWT</UButton>
           </div>
         </form>
-      </UCard>
+      </AppCard>
 
-      <UCard>
+      <AppCard>
         <template #header><h2 class="font-semibold">Enrollment result</h2></template>
         <div v-if="enrollment" class="space-y-4">
           <UFormField label="Certificate ID"><UInput :model-value="enrollment.id" readonly class="w-full font-mono" /></UFormField>
@@ -45,12 +45,12 @@
           <UIcon name="i-tabler-id" class="size-10" />
           <p class="mt-3 text-sm">No enrollment has been generated in this session.</p>
         </div>
-      </UCard>
+      </AppCard>
     </div>
 
     <SystemTopology />
 
-    <UCard>
+    <AppCard>
       <template #header><div><h2 class="font-semibold">Node network diagnostics</h2><p class="text-xs text-[var(--ui-text-muted)]">Send a controlled request from Home to verify provider or node-reachable endpoints.</p></div></template>
       <UAlert color="warning" variant="subtle" icon="i-tabler-shield-exclamation" title="Administrative network access" description="The request originates from Home and can reach services available to that server. Use only trusted URLs; responses may contain sensitive upstream data." class="mb-5" />
       <div class="grid gap-6 xl:grid-cols-2">
@@ -65,7 +65,7 @@
         <div v-if="diagnosticResult" class="space-y-4"><div class="flex items-center justify-between"><h3 class="font-semibold">Response</h3><UBadge :color="statusColor(diagnosticResult.status_code)" variant="subtle">HTTP {{ diagnosticResult.status_code }}</UBadge></div><div><p class="mb-2 text-xs font-semibold uppercase text-[var(--ui-text-muted)]">Headers</p><pre class="max-h-48 overflow-auto rounded-lg bg-[var(--ui-bg-muted)] p-4 text-xs">{{ JSON.stringify(diagnosticResult.header || {}, null, 2) }}</pre></div><div><div class="mb-2 flex items-center justify-between"><p class="text-xs font-semibold uppercase text-[var(--ui-text-muted)]">Body</p><UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-clipboard" @click="copyDiagnosticBody">Copy</UButton></div><pre class="max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-[var(--ui-bg-muted)] p-4 text-xs">{{ diagnosticBody }}</pre></div></div>
         <div v-else class="flex min-h-72 flex-col items-center justify-center text-center text-[var(--ui-text-muted)]"><UIcon name="i-tabler-terminal-2" class="size-9" /><p class="mt-3 text-sm">Run a request to inspect status, headers, and body.</p></div>
       </div>
-    </UCard>
+    </AppCard>
   </div>
 </template>
 
