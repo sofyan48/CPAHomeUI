@@ -11,7 +11,7 @@
         <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" @click="syncData">
           {{ loading ? 'Syncing' : 'Sync data' }}
         </UButton>
-        <UButton icon="i-tabler-plus" @click="openCreate">New access key</UButton>
+
       </div>
     </header>
 
@@ -32,18 +32,17 @@
       </div>
     </AppCard>
 
-    <AdminDataPanel
+    <AdminTablePanel
       v-else
       title="Access keys"
-      description="These keys grant clients access to the CPAHome server; they are not model provider keys."
-      class="min-w-0"
+      :description="`${filteredResources.length} of ${resources.length} keys`"
     >
-      <template #toolbar>
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <UInput v-model="search" icon="i-tabler-search" placeholder="Filter keys" class="w-full sm:max-w-80" />
-          <span class="text-xs tabular-nums text-[var(--ui-text-muted)]">{{ filteredResources.length }} of {{ resources.length }} results</span>
+      <template #filters>
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <UFormField label="Search"><UInput v-model="search" icon="i-tabler-search" placeholder="Filter name, key, owner, or scope" class="w-full" /></UFormField>
         </div>
       </template>
+      <template #actions><UButton icon="i-tabler-plus" @click="openCreate">New access key</UButton></template>
 
       <template v-if="selectedIDs.size" #bulk>
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -138,7 +137,7 @@
               <div class="px-6 py-12 text-center text-sm text-[var(--ui-text-muted)]">No access keys match the current filter.</div>
             </template>
           </AppTable>
-    </AdminDataPanel>
+    </AdminTablePanel>
 
     <USlideover v-model:open="detailOpen" :title="detailTitle" :description="detailDescription" :ui="{ content: 'sm:max-w-xl' }" @update:open="handleDetailOpen">
       <template #body>

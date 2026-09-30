@@ -202,17 +202,16 @@
     <template v-else-if="activeSection === 'prices'">
       <section class="overflow-hidden rounded-lg border border-blue-500/30 bg-blue-500/5" aria-labelledby="tier-policy-title"><div class="flex flex-wrap items-center justify-between gap-4 p-4"><div class="flex items-start gap-3"><span class="flex size-9 items-center justify-center rounded-md bg-blue-500/10 text-blue-500"><UIcon name="i-tabler-arrows-exchange" class="size-5" /></span><div><div class="flex flex-wrap items-center gap-2"><h2 id="tier-policy-title" class="font-semibold">Runtime billing context</h2><UBadge color="info" variant="subtle">Global</UBadge><UBadge v-if="priceSchemaVersion >= 2" color="success" variant="subtle">Tier and context pricing supported</UBadge></div><p class="mt-1 text-sm text-[var(--ui-text-muted)]">{{ settingsForm.service_tier_source === 'response' ? 'Rules match the provider response tier, falling back to the requested tier when absent.' : 'Rules match the service tier requested by the client.' }}</p><p v-if="priceSchemaVersion < 2" class="mt-1 text-xs text-[var(--ui-text-muted)]">This Home instance supports flat-price compatibility rules only.</p></div></div><UButton v-if="priceSchemaVersion >= 2" color="neutral" variant="outline" icon="i-tabler-settings" @click="openMatchingSettings">Configure matching</UButton></div></section>
       <BillingPriceImport :providers="providerSearchOptions" :models="modelSearchOptions" @applied="loadPrices" />
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div class="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <UFormField label="Search"><UInput v-model="priceFilters.search" icon="i-tabler-search" placeholder="Search model ID or provider" class="w-full" /></UFormField>
-          <UFormField label="Status"><USelect :model-value="priceFilters.enabled || allOptionValue" @update:model-value="priceFilters.enabled = $event === allOptionValue ? '' : $event" :items="enabledOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
-                    <UFormField label="Service tier"><UInputMenu v-model="priceFilters.service_tier" :items="priceTierOptions" create-item @create="priceFilters.service_tier = $event.trim()" placeholder="All tiers" class="w-full" /></UFormField>
-                    <UFormField label="Source"><USelect :model-value="priceFilters.source || allOptionValue" @update:model-value="priceFilters.source = $event === allOptionValue ? '' : $event" :items="priceSourceOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
-        </div>
-        <div class="flex gap-2"><UButton v-if="hasPriceFilters" color="neutral" variant="ghost" @click="clearPriceFilters">Clear filters</UButton><UButton color="primary" icon="i-tabler-plus" @click="openPriceForm()">New price</UButton></div>
-      </div>
-
-      <AdminDataPanel title="Model prices" :description="`${filteredPriceRules.length} rules`">
+      <AdminTablePanel title="Model prices" :description="`${filteredPriceRules.length} rules`">
+        <template #filters>
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <UFormField label="Search"><UInput v-model="priceFilters.search" icon="i-tabler-search" placeholder="Search model ID or provider" class="w-full" /></UFormField>
+            <UFormField label="Status"><USelect :model-value="priceFilters.enabled || allOptionValue" @update:model-value="priceFilters.enabled = $event === allOptionValue ? '' : $event" :items="enabledOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
+            <UFormField label="Service tier"><UInputMenu v-model="priceFilters.service_tier" :items="priceTierOptions" create-item @create="priceFilters.service_tier = $event.trim()" placeholder="All tiers" class="w-full" /></UFormField>
+            <UFormField label="Source"><USelect :model-value="priceFilters.source || allOptionValue" @update:model-value="priceFilters.source = $event === allOptionValue ? '' : $event" :items="priceSourceOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
+          </div>
+        </template>
+        <template #actions><UButton v-if="hasPriceFilters" color="neutral" variant="ghost" @click="clearPriceFilters">Clear filters</UButton><UButton color="primary" icon="i-tabler-plus" @click="openPriceForm()">New price</UButton></template>
         <AppTable :columns="priceColumns" :data="filteredPriceRules" :loading="pricesLoading" class="min-w-[1260px]">
           <template #provider-cell="{ row }"><span class="font-medium">{{ rowValue(row).provider }}</span></template>
           <template #model-cell="{ row }"><div class="flex min-w-52 items-center gap-1"><span class="truncate font-mono">{{ rowValue(row).model }}</span><UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-clipboard" aria-label="Copy model ID" @click="copyText(rowValue(row).model)" /></div></template>
@@ -228,7 +227,7 @@
           <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><AdminTableAction action="edit" label="Edit model price" @click="openPriceForm(rowValue(row))" /><AdminTableAction action="delete" label="Delete model price" destructive @click="confirmDeletePrice(rowValue(row))" /></div></template>
           <template #empty><div class="py-12 text-center text-sm text-[var(--ui-text-muted)]">No model price rules match these filters.</div></template>
         </AppTable>
-      </AdminDataPanel>
+      </AdminTablePanel>
     </template>
 
 

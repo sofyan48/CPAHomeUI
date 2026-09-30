@@ -10,9 +10,10 @@
     />
 
     <section class="grid gap-4 xl:grid-cols-[240px_minmax(0,1fr)]">
-      <aside class="self-start rounded-lg border border-white/40 bg-white/40 app-surface p-3 dark:border-white/10 dark:bg-neutral-900/40 max-xl:hidden" aria-label="Provider categories">
-        <p class="px-2 pb-2 text-xs font-medium uppercase text-[var(--ui-text-muted)]">Provider categories</p>
-        <nav class="grid gap-1" aria-label="Provider categories">
+      <aside class="self-start max-xl:hidden" aria-label="Provider categories">
+        <AppCard :ui="{ header: 'px-4 py-3', body: 'p-2' }">
+          <template #header><h2 class="font-semibold">Provider categories</h2></template>
+          <nav class="grid gap-1" aria-label="Provider categories">
           <button
             v-for="category in providerCategories"
             :key="category.value"
@@ -20,11 +21,11 @@
             :disabled="providerEditorOpen || deleteOpen"
             :aria-current="selectedProviderRoute === category.value ? 'page' : undefined"
             class="flex w-full min-w-0 items-center justify-between gap-3 rounded-md border px-3 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-            :class="selectedProviderRoute === category.value ? 'border-[var(--ui-primary)] bg-[var(--ui-primary)]/10 text-[var(--ui-primary)]' : 'border-transparent hover:border-[var(--ui-border)] hover:bg-white/60 dark:hover:bg-neutral-800/50'"
+            :class="selectedProviderRoute === category.value ? 'border-[var(--ui-primary)] bg-[var(--ui-primary)]/10 text-[var(--ui-primary)]' : 'border-transparent hover:border-[var(--ui-border)] hover:bg-[var(--ui-bg-elevated)]'"
             @click="selectedProviderRoute = category.value"
           >
             <span class="flex min-w-0 items-center gap-2.5">
-              <span class="flex size-6 shrink-0 items-center justify-center rounded-md border border-white/40 bg-white/40 app-surface text-[10px] font-semibold dark:border-white/10 dark:bg-neutral-900/40" aria-hidden="true">{{ category.mark }}</span>
+              <span class="flex size-6 shrink-0 items-center justify-center rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] text-[10px] font-semibold" aria-hidden="true">{{ category.mark }}</span>
               <span class="min-w-0">
               <span class="block truncate text-sm font-medium">{{ category.label }}</span>
               <span class="mt-0.5 block text-xs text-[var(--ui-text-muted)]">
@@ -35,8 +36,8 @@
             <UIcon v-if="categoryStats[category.value]?.disabled" name="i-tabler-alert-triangle" class="size-4 shrink-0 text-[var(--ui-warning)]" :aria-label="`${categoryStats[category.value].disabled} disabled entries`" />
             <span v-else class="shrink-0 rounded-md border border-[var(--ui-border)] px-2 py-1 text-xs" :aria-label="categoryStats[category.value] ? `${categoryStats[category.value].total} entries` : 'Counts unavailable'">{{ categoryStats[category.value]?.total ?? '—' }}</span>
           </button>
-        </nav>
-
+          </nav>
+        </AppCard>
       </aside>
 
       <div class="min-w-0">

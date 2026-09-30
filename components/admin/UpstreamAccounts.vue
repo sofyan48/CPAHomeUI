@@ -122,7 +122,7 @@
               <div class="flex flex-wrap items-center gap-2"><UBadge color="neutral" variant="subtle">{{ accountQuotaDetail.credential?.provider || detailsTarget?.provider || 'Unknown provider' }}</UBadge><UBadge :color="quotaColor(accountQuotaDetail.credential?.quota_status)" variant="subtle">{{ accountQuotaDetail.credential?.quota_status || 'unknown' }}</UBadge><UBadge color="neutral" variant="subtle">{{ accountQuotaDetail.collection?.freshness || 'never' }}</UBadge><UBadge v-if="accountQuotaDetail.collection?.status" color="neutral" variant="subtle">{{ accountQuotaDetail.collection.status }}</UBadge></div>
               <div v-for="window in accountQuotaDetail.windows || []" :key="window.id" class="rounded-md border border-[var(--ui-border)] p-3"><div class="flex items-start justify-between gap-3"><p class="font-medium">{{ window.label || window.id }}</p><UBadge :color="quotaColor(window.status)" variant="subtle">{{ window.status }}</UBadge></div><p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ quotaWindowRemaining(window) }} · Used: {{ window.used ?? '—' }} · Reset: {{ window.reset_at ? new Date(window.reset_at).toLocaleString() : '—' }}</p><div v-if="quotaWindowRatio(window) !== null" class="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--ui-bg-muted)]"><div class="h-full bg-[var(--ui-primary)]" :style="{ width: `${Math.round(quotaWindowRatio(window) * 100)}%` }" /></div></div>
               <p v-if="accountQuotaDetail.collection?.error?.message" class="text-xs text-red-500">{{ accountQuotaDetail.collection.error.message }}</p><p v-if="!accountQuotaDetail.windows?.length" class="text-[var(--ui-text-muted)]">No quota windows recorded.</p>
-              <div v-if="accountQuotaDetail.reset_credits" class="rounded-md border border-[var(--ui-border)] p-3"><p class="font-medium">Reset credits: {{ accountQuotaDetail.reset_credits.available_count ?? '—' }} available</p><p v-if="accountQuotaDetail.reset_credits.observed_at" class="text-xs text-[var(--ui-text-muted)]">Observed {{ new Date(accountQuotaDetail.reset_credits.observed_at).toLocaleString() }}</p><p v-for="(credit, index) in accountQuotaDetail.reset_credits.credits || []" :key="index" class="mt-1 text-xs">{{ credit.status }} · Expires {{ credit.expires_at ? new Date(credit.expires_at).toLocaleString() : '—' }}</p><UButton v-if="canResetCredit && !resetCreditAttempts[detailsTarget?.id]" size="sm" color="neutral" variant="outline" class="mt-3" :disabled="resetCreditSubmitting" @click="openResetCredit">Reset Codex quota with one credit</UButton></div>
+              <div v-if="accountQuotaDetail.reset_credits || resetCreditSupported" class="rounded-md border border-[var(--ui-border)] p-3"><p class="font-medium">Reset credits: {{ accountQuotaDetail.reset_credits?.available_count ?? '—' }} available</p><p v-if="accountQuotaDetail.reset_credits?.observed_at" class="text-xs text-[var(--ui-text-muted)]">Observed {{ new Date(accountQuotaDetail.reset_credits.observed_at).toLocaleString() }}</p><p v-for="(credit, index) in accountQuotaDetail.reset_credits?.credits || []" :key="index" class="mt-1 text-xs">{{ credit.status }} · Expires {{ credit.expires_at ? new Date(credit.expires_at).toLocaleString() : '—' }}</p><UButton v-if="resetCreditSupported" size="sm" color="neutral" variant="outline" class="mt-3" :disabled="!canResetCredit || resetCreditSubmitting || Boolean(resetCreditAttempts[detailsTarget?.id])" @click="openResetCredit">Reset Codex quota with one credit</UButton><p v-if="resetCreditDisabledReason" class="mt-2 text-xs text-[var(--ui-text-muted)]">{{ resetCreditDisabledReason }}</p></div>
             </template>
             <UAlert v-if="resetCreditNotice && resetCreditNoticeCredential === detailsTarget?.id" :color="resetCreditNoticeColor" variant="subtle" :description="resetCreditNotice" />
             <p class="text-xs text-[var(--ui-text-muted)]">Collection runs in the background. Refresh after it finishes to see updated snapshots.</p>
@@ -245,13 +245,17 @@ const resetCreditError = ref('')
 const resetCreditNotice = ref('')
 const resetCreditNoticeColor = ref('success')
 const resetCreditNoticeCredential = ref('')
-const canResetCredit = computed(() => {
+const resetCreditSupported = computed(() => supports('codex_reset_credit_consume', false) &&
+  String(accountQuotaDetail.value?.credential?.provider || detailsTarget.value?.provider || '').toLowerCase() === 'codex')
+const canResetCredit = computed(() => resetCreditSupported.value &&
+  Number(accountQuotaDetail.value?.reset_credits?.available_count) > 0)
+const resetCreditDisabledReason = computed(() => {
+  if (!resetCreditSupported.value) return ''
   const detail = accountQuotaDetail.value
-  return supports('codex_reset_credit_consume', false) &&
-    String(detail?.credential?.provider || detailsTarget.value?.provider || '').toLowerCase() === 'codex' &&
-    detail?.collection?.status === 'success' && detail.collection.freshness === 'fresh' &&
-    Number(detail.reset_credits?.available_count) > 0 &&
-    Array.isArray(detail.reset_credits?.credits) && detail.reset_credits.credits.length > 0
+  if (resetCreditAttempts.value[detailsTarget.value?.id]) return 'A previous reset request may already have consumed a credit. Refresh quota before trying again.'
+  if (!detail?.reset_credits || detail.reset_credits.available_count == null) return 'Reset-credit availability has not been reported yet.'
+  if (Number(detail.reset_credits.available_count) <= 0) return 'No reset credits are currently available.'
+  return ''
 })
 const canConfirmResetCredit = computed(() => !resetCreditSubmitting.value && !accountQuotaLoading.value &&
   !resetCreditAttempts.value[resetCreditTarget.value?.id] && resetCreditTarget.value?.id === detailsTarget.value?.id && canResetCredit.value)
