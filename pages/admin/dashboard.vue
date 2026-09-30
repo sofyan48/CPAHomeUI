@@ -56,7 +56,13 @@
       </section>
 
       <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <NuxtLink v-for="card in inventoryCards" :key="card.label" :to="card.to" class="rounded-lg border border-white/40 bg-white/40 app-surface p-4 transition-colors hover:bg-white/60 dark:border-white/10 dark:bg-neutral-900/40 dark:hover:bg-neutral-800/50"><p class="text-sm text-[var(--ui-text-muted)]">{{ card.label }}</p><p class="mt-2 text-2xl font-semibold">{{ formatNumber(card.value) }}</p><p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ card.detail }}</p></NuxtLink>
+        <NuxtLink v-for="card in inventoryCards" :key="card.label" :to="card.to" class="group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+          <AppCard class="h-full border-white/40 bg-white/40 transition-shadow group-hover:shadow-lg dark:border-white/10 dark:bg-neutral-900/40">
+            <template #header><h2 class="font-semibold">{{ card.label }}</h2></template>
+            <p class="text-2xl font-semibold tabular-nums">{{ formatNumber(card.value) }}</p>
+            <p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ card.detail }}</p>
+          </AppCard>
+        </NuxtLink>
       </section>
 
       <section class="grid gap-4 lg:grid-cols-2">

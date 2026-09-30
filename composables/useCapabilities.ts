@@ -21,6 +21,8 @@ export interface CapabilitiesResponse {
   server_info?: ManagementServerInfo
 }
 
+let capabilitiesRequest: Promise<void> | null = null
+
 export const useCapabilities = () => {
   const { fetchAPI } = useApi()
   const capabilities = useState<ManagementCapabilities>('management-capabilities', () => ({}))
@@ -30,23 +32,28 @@ export const useCapabilities = () => {
   const error = useState<string | null>('management-capabilities-error', () => null)
 
   const refreshCapabilities = async (force = false) => {
-    if (loading.value) return
+    if (capabilitiesRequest) return capabilitiesRequest
     if (loaded.value && !force) return
 
-    loading.value = true
-    error.value = null
-    try {
-      const response = await fetchAPI<CapabilitiesResponse>('/capabilities')
-      capabilities.value = response?.capabilities || {}
-      serverInfo.value = response?.server_info || {}
-      loaded.value = true
-    } catch (cause: any) {
-      loaded.value = false
-      error.value = cause?.message || 'Unable to load server capabilities'
-      throw cause
-    } finally {
-      loading.value = false
-    }
+    capabilitiesRequest = (async () => {
+      loading.value = true
+      error.value = null
+      try {
+        const response = await fetchAPI<CapabilitiesResponse>('/capabilities')
+        capabilities.value = response?.capabilities || {}
+        serverInfo.value = response?.server_info || {}
+        loaded.value = true
+      } catch (cause: any) {
+        loaded.value = false
+        error.value = cause?.message || 'Unable to load server capabilities'
+        throw cause
+      } finally {
+        loading.value = false
+        capabilitiesRequest = null
+      }
+    })()
+
+    return capabilitiesRequest
   }
 
   const supports = (name: string, fallback = true) => {

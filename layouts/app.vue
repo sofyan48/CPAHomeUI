@@ -11,10 +11,10 @@
       >
         <div class="flex h-16 shrink-0 items-center justify-between gap-1 border-b border-slate-200 px-3 dark:border-white/10" :class="sidebarHidden ? 'lg:flex-col lg:justify-center lg:gap-0 lg:px-1' : ''">
           <NuxtLink to="/app" class="flex min-w-0 items-center gap-2" :class="sidebarHidden ? 'lg:hidden' : ''" @click="closeMobile">
-            <span class="flex size-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-neutral-800"><img src="/favicon.png" alt="" class="size-full object-contain" /></span>
+            <span class="flex size-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-[var(--ui-primary)] shadow-sm dark:border-white/10 dark:bg-neutral-900"><UIcon name="i-tabler-terminal-2" class="size-5" /></span>
             <span class="min-w-0 leading-tight"><span class="block truncate text-sm font-bold text-[var(--ui-text-highlighted)]">CPAHome</span><span class="block truncate text-xs text-[var(--ui-text-muted)]">User workspace</span></span>
           </NuxtLink>
-          <NuxtLink v-if="sidebarHidden" to="/app" class="hidden size-7 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white p-1 dark:border-white/10 dark:bg-neutral-800 lg:flex" aria-label="CPAHome dashboard"><img src="/favicon.png" alt="" class="size-full object-contain" /></NuxtLink>
+          <NuxtLink v-if="sidebarHidden" to="/app" class="hidden size-7 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-[var(--ui-primary)] dark:border-white/10 dark:bg-neutral-900 lg:flex" aria-label="CPAHome dashboard"><UIcon name="i-tabler-terminal-2" class="size-4" /></NuxtLink>
           <UButton class="lg:hidden" icon="i-tabler-x" color="neutral" variant="ghost" aria-label="Close navigation" @click="closeMobile" />
           <UButton class="hidden lg:inline-flex" :icon="sidebarHidden ? 'i-tabler-layout-sidebar-left-expand' : 'i-tabler-layout-sidebar-left-collapse'" color="neutral" variant="ghost" size="xs" :aria-label="sidebarHidden ? 'Expand sidebar' : 'Collapse sidebar'" :aria-expanded="!sidebarHidden" aria-controls="workspace-sidebar" @click="sidebarHidden = !sidebarHidden" />
         </div>
@@ -47,7 +47,7 @@
     <template v-else>
       <header class="user-shell__header sticky top-0 z-30 border-b border-[var(--ui-border)] bg-[var(--glass-soft)] backdrop-blur">
         <div class="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-          <NuxtLink :to="homeTarget" class="flex min-w-0 items-center gap-3" aria-label="Back to home"><img src="/favicon.png" alt="" class="size-9 shrink-0 rounded-md" /><span class="min-w-0"><span class="block truncate text-sm font-semibold text-[var(--ui-text-highlighted)]">CPAHome</span><span class="block truncate text-xs text-[var(--ui-text-muted)]">{{ pageSubtitle }}</span></span></NuxtLink>
+          <NuxtLink :to="homeTarget" class="flex min-w-0 items-center gap-3" aria-label="Back to home"><span class="flex size-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-[var(--ui-primary)] shadow-sm dark:border-white/10 dark:bg-neutral-900"><UIcon name="i-tabler-terminal-2" class="size-5" /></span><span class="min-w-0"><span class="block truncate text-sm font-semibold text-[var(--ui-text-highlighted)]">CPAHome</span><span class="block truncate text-xs text-[var(--ui-text-muted)]">{{ pageSubtitle }}</span></span></NuxtLink>
           <div class="flex shrink-0 items-center gap-2"><ThemeSwitcher /><template v-if="route.path === '/app/models'"><UButton :to="homeTarget" color="neutral" variant="ghost" size="sm" icon="i-tabler-home">Home</UButton><UButton v-if="!token" to="/app/login" color="neutral" variant="ghost" size="sm">Sign in</UButton></template></div>
         </div>
       </header>
