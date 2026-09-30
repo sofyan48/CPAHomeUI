@@ -12,7 +12,7 @@
     <div class="flex flex-col gap-2 rounded-md border border-[var(--ui-border)] px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
       <div v-if="kind === 'model'" class="flex flex-wrap items-center gap-1.5">
         <span class="mr-1 text-xs text-[var(--ui-text-muted)]">Source</span>
-        <UButton
+        <AppButton
           v-for="filter in [{ label: 'All', value: 'all' }, { label: 'Runtime', value: 'available' }, { label: 'Static', value: 'static' }]"
           :key="filter.value"
           type="button"
@@ -23,7 +23,7 @@
           @click="$emit('update:source-filter', filter.value)"
         >
           {{ filter.label }}
-        </UButton>
+        </AppButton>
       </div>
       <span v-else class="text-xs text-[var(--ui-text-muted)]">{{ visible.length }} current results</span>
       <span class="text-xs text-[var(--ui-text-muted)]">{{ selected.length }} {{ kind === 'credential' ? 'credentials' : 'models' }} selected</span>
@@ -33,7 +33,7 @@
     </div>
     <div v-else-if="errorMessage" class="rounded-md border border-red-300 bg-red-50 px-3 py-3 dark:border-red-900 dark:bg-red-950">
       <p class="text-sm text-red-700 dark:text-red-300">{{ errorMessage }}</p>
-      <UButton type="button" size="sm" color="neutral" variant="outline" icon="i-tabler-refresh" class="mt-3" @click="$emit('retry')">Retry</UButton>
+      <AppButton type="button" size="sm" color="neutral" variant="outline" icon="i-tabler-refresh" class="mt-3" @click="$emit('retry')">Retry</AppButton>
     </div>
     <div v-else-if="!visible.length" class="rounded-md border border-[var(--ui-border)] px-3 py-6 text-center text-sm text-[var(--ui-text-muted)]">
       {{ search.trim() ? (kind === 'credential' ? 'No account credentials match your search.' : 'No models match your search.') : (kind === 'credential' ? 'No account credentials are available for selection.' : 'No models are available for selection.') }}
@@ -42,9 +42,9 @@
       <div v-if="issueMessage" class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">{{ issueMessage }}</div>
       <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex flex-wrap items-center gap-1.5">
-          <UButton type="button" size="xs" color="neutral" variant="outline" :disabled="mutating || !enabledVisible.length || allEnabledVisibleSelected" @click="selectResults">Select results</UButton>
-          <UButton type="button" size="xs" color="neutral" variant="outline" :disabled="mutating || !enabledVisible.length" @click="invert">Invert results</UButton>
-          <UButton type="button" size="xs" color="neutral" variant="ghost" :disabled="mutating || !selected.length" @click="$emit('update:selected', []); $emit('clear-error')">Clear selection</UButton>
+          <AppButton type="button" size="xs" color="neutral" variant="outline" :disabled="mutating || !enabledVisible.length || allEnabledVisibleSelected" @click="selectResults">Select results</AppButton>
+          <AppButton type="button" size="xs" color="neutral" variant="outline" :disabled="mutating || !enabledVisible.length" @click="invert">Invert results</AppButton>
+          <AppButton type="button" size="xs" color="neutral" variant="ghost" :disabled="mutating || !selected.length" @click="$emit('update:selected', []); $emit('clear-error')">Clear selection</AppButton>
         </div>
         <span class="text-xs text-[var(--ui-text-muted)]">{{ visible.length }} current results</span>
       </div>

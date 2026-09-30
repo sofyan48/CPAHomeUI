@@ -21,7 +21,7 @@
             <p class="truncate text-[11px] text-[var(--ui-text-muted)]">AI Gateway Management Console</p>
           </div>
         </NuxtLink>
-        <UButton
+        <AppButton
           class="hidden lg:inline-flex"
           :icon="sidebarCollapsed ? 'i-tabler-layout-sidebar-left-expand' : 'i-tabler-layout-sidebar-left-collapse'"
           color="neutral"
@@ -31,7 +31,7 @@
           aria-controls="management-sidebar"
           @click="toggleSidebar"
         />
-        <UButton class="lg:hidden" icon="i-tabler-x" color="neutral" variant="ghost" aria-label="Close navigation" @click="closeMobile" />
+        <AppButton class="lg:hidden" icon="i-tabler-x" color="neutral" variant="ghost" aria-label="Close navigation" @click="closeMobile" />
       </div>
 
       <nav aria-label="Management" class="min-h-0 flex-1 overflow-y-auto px-3 py-4" :class="sidebarCollapsed ? 'lg:px-2' : ''">
@@ -40,7 +40,7 @@
             {{ section.label }}
           </p>
           <div class="space-y-1" :class="sidebarCollapsed && section.label !== 'Operate' ? 'lg:border-t lg:border-slate-200 lg:pt-2 dark:lg:border-white/10' : ''">
-            <UButton
+            <AppButton
               v-for="item in section.items"
               :key="item.to"
               :to="item.to"
@@ -55,7 +55,7 @@
               @click="closeMobile"
             >
               <span :class="sidebarCollapsed ? 'lg:hidden' : ''">{{ item.label }}</span>
-            </UButton>
+            </AppButton>
           </div>
         </div>
       </nav>
@@ -82,7 +82,7 @@
       <div class="flex min-h-0 min-w-0 flex-1 flex-col border-l border-slate-200 bg-white/50 backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/50">
         <header class="z-30 flex h-14 shrink-0 items-center justify-between gap-2 border-b border-slate-200 bg-white/30 px-3 backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/30 sm:px-5">
           <div class="flex min-w-0 items-center gap-2">
-            <UButton class="lg:hidden" icon="i-tabler-menu-2" color="neutral" variant="ghost" aria-label="Open navigation" aria-controls="management-sidebar" :aria-expanded="mobileOpen" @click="openMobile" />
+            <AppButton class="lg:hidden" icon="i-tabler-menu-2" color="neutral" variant="ghost" aria-label="Open navigation" aria-controls="management-sidebar" :aria-expanded="mobileOpen" @click="openMobile" />
             <div class="min-w-0">
               <p class="truncate text-sm font-semibold text-[var(--ui-text-highlighted)]">{{ pageTitle }}</p>
               <p class="hidden truncate text-xs text-[var(--ui-text-muted)] sm:block">{{ pageSubtitle }}</p>
@@ -90,7 +90,7 @@
           </div>
 
           <div class="flex shrink-0 items-center gap-2">
-            <UButton
+            <AppButton
               icon="i-tabler-refresh"
               color="neutral"
               variant="ghost"
@@ -98,9 +98,9 @@
               aria-label="Refresh capabilities"
               @click="refreshCapabilities(true)"
             />
-            <UButton icon="i-tabler-logout" color="neutral" variant="soft" aria-label="Logout" @click="handleLogout">
+            <AppButton icon="i-tabler-logout" color="neutral" variant="soft" aria-label="Logout" @click="handleLogout">
               <span class="hidden sm:inline">Logout</span>
-            </UButton>
+            </AppButton>
           </div>
         </header>
 

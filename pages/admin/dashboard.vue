@@ -8,12 +8,12 @@
       :description="loadError"
     >
       <template #actions
-        ><UButton
+        ><AppButton
           color="neutral"
           variant="outline"
           size="sm"
           @click="refreshDashboard"
-          >Retry</UButton
+          >Retry</AppButton
         ></template
       >
     </UAlert>
@@ -35,14 +35,14 @@
                 {{ health.description }}
               </p>
             </div>
-            <UButton
+            <AppButton
               icon="i-tabler-refresh"
               color="neutral"
               variant="ghost"
               size="sm"
               :loading="loading"
               @click="refreshDashboard"
-              >{{ loading ? "Syncing" : "Sync data" }}</UButton
+              >{{ loading ? "Syncing" : "Sync data" }}</AppButton
             >
           </div>
         </template>
@@ -77,14 +77,14 @@
           class="mt-4 flex flex-wrap items-center gap-2"
         >
           <span class="text-xs font-medium">Suggested actions</span
-          ><UButton
+          ><AppButton
             v-for="action in suggestedActions"
             :key="action.label"
             :to="action.to"
             size="sm"
             color="neutral"
             variant="outline"
-            >{{ action.label }}</UButton
+            >{{ action.label }}</AppButton
           >
         </div>
       </AppCard>
@@ -142,12 +142,12 @@
                   {{ formatNumber(clientKeys.length) }} configured
                 </p>
               </div>
-              <UButton
+              <AppButton
                 to="/admin/usage"
                 color="neutral"
                 variant="ghost"
                 size="sm"
-                >Usage details</UButton
+                >Usage details</AppButton
               >
             </div></template
           >
@@ -205,12 +205,12 @@
                   models used
                 </p>
               </div>
-              <UButton
+              <AppButton
                 to="/admin/usage"
                 color="neutral"
                 variant="ghost"
                 size="sm"
-                >Usage details</UButton
+                >Usage details</AppButton
               >
             </div></template
           >
@@ -285,12 +285,12 @@
           ><template #header
             ><div class="flex items-center justify-between">
               <h2 class="font-semibold">Model service access</h2>
-              <UButton
+              <AppButton
                 to="/admin/providers"
                 color="neutral"
                 variant="ghost"
                 size="sm"
-                >Manage</UButton
+                >Manage</AppButton
               >
             </div></template
           >
@@ -312,14 +312,14 @@
               </p>
             </div>
           </div>
-          <UButton
+          <AppButton
             v-if="providerRows.every((item) => item.total === 0)"
             to="/admin/providers"
             color="neutral"
             variant="outline"
             size="sm"
             class="mt-4"
-            >Configure model service</UButton
+            >Configure model service</AppButton
           >
         </AppCard>
         <AppCard
@@ -359,8 +359,8 @@
               class="flex items-center justify-between gap-2 text-sm"
             >
               <span>{{ item.label }} · {{ item.detail }}</span
-              ><UButton :to="item.to" size="xs" color="neutral" variant="ghost"
-                >Review</UButton
+              ><AppButton :to="item.to" size="xs" color="neutral" variant="ghost"
+                >Review</AppButton
               >
             </div>
           </div>

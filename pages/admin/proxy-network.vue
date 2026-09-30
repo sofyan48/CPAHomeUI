@@ -5,7 +5,7 @@
         <h1 class="text-2xl font-bold">Upstream proxies</h1>
         <p class="mt-1 max-w-3xl text-sm text-[var(--ui-text-muted)]">Set the active global upstream proxy and maintain testable proxy-pool records.</p>
       </div>
-      <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" @click="loadAll">Refresh</UButton>
+      <AppButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" @click="loadAll">Refresh</AppButton>
     </div>
 
     <UAlert v-if="errorMessage" color="error" variant="subtle" icon="i-tabler-alert-circle" title="Proxy request failed" :description="errorMessage" />
@@ -21,8 +21,8 @@
         <UFormField label="Proxy URL" class="flex-1">
           <UInput v-model="globalProxy" placeholder="http://127.0.0.1:7890" class="w-full" />
         </UFormField>
-        <UButton type="submit" icon="i-tabler-check" :loading="savingGlobal">Save</UButton>
-        <UButton color="neutral" variant="outline" icon="i-tabler-x" :loading="savingGlobal" @click="clearGlobalProxy">Clear</UButton>
+        <AppButton type="submit" icon="i-tabler-check" :loading="savingGlobal">Save</AppButton>
+        <AppButton color="neutral" variant="outline" icon="i-tabler-x" :loading="savingGlobal" @click="clearGlobalProxy">Clear</AppButton>
       </form>
     </AppCard>
 
@@ -35,7 +35,7 @@
             <h2 class="font-semibold">Proxy pool</h2>
             <p class="text-xs text-[var(--ui-text-muted)]">{{ pools.length }} stored proxy records</p>
           </div>
-          <UButton icon="i-tabler-plus" @click="openCreate">Add proxy</UButton>
+          <AppButton icon="i-tabler-plus" @click="openCreate">Add proxy</AppButton>
         </div>
       </template>
       <AppTable :columns="columns" :data="pools" :loading="loading">
@@ -56,16 +56,16 @@
         <template #note-cell="{ row }"><span class="text-sm text-[var(--ui-text-muted)]">{{ value(row).note || '—' }}</span></template>
         <template #actions-cell="{ row }">
           <div class="flex justify-end gap-1">
-            <UButton size="sm" color="neutral" variant="ghost" icon="i-tabler-antenna-bars-5" :loading="testingId === value(row).id" @click="testPool(value(row))">Test</UButton>
-            <UButton size="sm" color="neutral" variant="ghost" icon="i-tabler-pencil" @click="openEdit(value(row))">Edit</UButton>
-            <UButton size="sm" color="error" variant="ghost" icon="i-tabler-trash" @click="removePool(value(row))" />
+            <AppButton size="sm" color="neutral" variant="ghost" icon="i-tabler-antenna-bars-5" :loading="testingId === value(row).id" @click="testPool(value(row))">Test</AppButton>
+            <AppButton size="sm" color="neutral" variant="ghost" icon="i-tabler-pencil" @click="openEdit(value(row))">Edit</AppButton>
+            <AppButton size="sm" color="error" variant="ghost" icon="i-tabler-trash" @click="removePool(value(row))" />
           </div>
         </template>
         <template #empty><div class="py-12 text-center text-sm text-[var(--ui-text-muted)]">No proxy-pool records.</div></template>
       </AppTable>
     </AppCard>
 
-    <UModal v-model:open="formOpen" :title="editing ? 'Edit proxy record' : 'Add proxy record'" description="Store a globally scoped proxy endpoint for operator testing.">
+    <AppModal v-model:open="formOpen" :title="editing ? 'Edit proxy record' : 'Add proxy record'" description="Store a globally scoped proxy endpoint for operator testing.">
       <template #body>
         <form class="space-y-4" @submit.prevent="savePool">
           <UFormField label="Name" required><UInput v-model="form.name" class="w-full" /></UFormField>
@@ -80,12 +80,12 @@
           </label>
           <p v-if="formError" class="text-sm text-red-600 dark:text-red-400">{{ formError }}</p>
           <div class="flex justify-end gap-2">
-            <UButton color="neutral" variant="ghost" @click="formOpen = false">Cancel</UButton>
-            <UButton type="submit" :loading="savingPool">{{ editing ? 'Save changes' : 'Create proxy' }}</UButton>
+            <AppButton color="neutral" variant="ghost" @click="formOpen = false">Cancel</AppButton>
+            <AppButton type="submit" :loading="savingPool">{{ editing ? 'Save changes' : 'Create proxy' }}</AppButton>
           </div>
         </form>
       </template>
-    </UModal>
+    </AppModal>
   </div>
 </template>
 

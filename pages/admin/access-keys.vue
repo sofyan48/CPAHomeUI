@@ -14,7 +14,7 @@
         </div>
       </div>
       <div class="flex flex-wrap gap-2">
-        <UButton
+        <AppButton
           color="neutral"
           variant="outline"
           icon="i-tabler-refresh"
@@ -22,7 +22,7 @@
           @click="syncData"
         >
           {{ loading ? "Syncing" : "Sync data" }}
-        </UButton>
+        </AppButton>
       </div>
     </header>
 
@@ -38,13 +38,13 @@
             Check the management endpoint, key, and /access/api-keys route.
           </p>
         </div>
-        <UButton
+        <AppButton
           color="neutral"
           variant="outline"
           icon="i-tabler-refresh"
           :loading="loading"
           @click="syncData"
-          >Retry</UButton
+          >Retry</AppButton
         >
       </div>
     </AppCard>
@@ -78,8 +78,8 @@
         </div>
       </template>
       <template #actions
-        ><UButton icon="i-tabler-plus" @click="openCreate"
-          >New access key</UButton
+        ><AppButton icon="i-tabler-plus" @click="openCreate"
+          >New access key</AppButton
         ></template
       >
 
@@ -91,22 +91,22 @@
             >{{ selectedIDs.size }} keys selected</span
           >
           <div class="flex flex-wrap gap-2">
-            <UButton
+            <AppButton
               color="neutral"
               variant="ghost"
               size="sm"
               :disabled="bulkDeleting"
               @click="clearSelection"
-              >Clear selection</UButton
+              >Clear selection</AppButton
             >
-            <UButton
+            <AppButton
               color="error"
               variant="ghost"
               size="sm"
               icon="i-tabler-trash"
               :disabled="bulkDeleting"
               @click="openBulkDelete"
-              >Delete selected</UButton
+              >Delete selected</AppButton
             >
           </div>
         </div>
@@ -184,7 +184,7 @@
               >
                 {{ rowValue(row).maskedValue }}
               </p>
-              <UButton
+              <AppButton
                 color="neutral"
                 variant="ghost"
                 size="xs"
@@ -308,7 +308,7 @@
                 :disabled="submitting"
                 @input="keyValueError = ''"
               />
-              <UButton
+              <AppButton
                 type="button"
                 color="neutral"
                 variant="outline"
@@ -319,7 +319,7 @@
             </div>
           </UFormField>
 
-          <UButton
+          <AppButton
             type="button"
             color="neutral"
             variant="outline"
@@ -328,20 +328,20 @@
             @click="generateKey"
           >
             Generate key
-          </UButton>
+          </AppButton>
 
           <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <UButton
+            <AppButton
               type="button"
               color="neutral"
               variant="outline"
               :disabled="submitting"
               @click="cancelForm"
-              >Cancel</UButton
+              >Cancel</AppButton
             >
-            <UButton type="submit" :loading="submitting">{{
+            <AppButton type="submit" :loading="submitting">{{
               sheetMode === "edit" ? "Save key" : "Create key"
-            }}</UButton>
+            }}</AppButton>
           </div>
         </form>
 
@@ -356,7 +356,7 @@
               }}
             </p>
             <div class="mt-3 flex gap-2">
-              <UButton
+              <AppButton
                 color="neutral"
                 variant="outline"
                 size="sm"
@@ -366,14 +366,14 @@
                 @click="detailSecretVisible = !detailSecretVisible"
               >
                 {{ detailSecretVisible ? "Hide" : "Reveal" }}
-              </UButton>
-              <UButton
+              </AppButton>
+              <AppButton
                 color="neutral"
                 variant="outline"
                 size="sm"
                 icon="i-tabler-clipboard"
                 @click="copyText(selectedResource.value, 'Access key copied.')"
-                >Copy</UButton
+                >Copy</AppButton
               >
             </div>
           </div>
@@ -441,44 +441,44 @@
           </dl>
 
           <div class="grid gap-2">
-            <UButton icon="i-tabler-pencil" @click="openEdit(selectedResource)"
-              >Edit</UButton
+            <AppButton icon="i-tabler-pencil" @click="openEdit(selectedResource)"
+              >Edit</AppButton
             >
-            <UButton
+            <AppButton
               color="error"
               variant="outline"
               icon="i-tabler-trash"
               @click="openDelete(selectedResource)"
-              >Delete</UButton
+              >Delete</AppButton
             >
           </div>
         </div>
       </template>
     </USlideover>
 
-    <UModal
+    <AppModal
       v-model:open="confirmationOpen"
       :title="confirmationTitle"
       :description="confirmationDescription"
     >
       <template #body>
         <div class="flex justify-end gap-2">
-          <UButton
+          <AppButton
             color="neutral"
             variant="outline"
             :disabled="confirmationBusy"
             @click="closeConfirmation"
-            >Cancel</UButton
+            >Cancel</AppButton
           >
-          <UButton
+          <AppButton
             color="error"
             :loading="confirmationBusy"
             @click="confirmDestructiveAction"
-            >{{ confirmationActionLabel }}</UButton
+            >{{ confirmationActionLabel }}</AppButton
           >
         </div>
       </template>
-    </UModal>
+    </AppModal>
   </section>
 </template>
 

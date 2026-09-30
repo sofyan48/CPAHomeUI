@@ -6,13 +6,13 @@
           Upstream
         </h1>
       </div>
-      <UButton
+      <AppButton
         color="neutral"
         variant="outline"
         icon="i-tabler-refresh"
         :loading="syncing"
         @click="syncData"
-        >Sync data</UButton
+        >Sync data</AppButton
       >
     </div>
 

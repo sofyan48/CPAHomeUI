@@ -17,7 +17,7 @@
             <h2 class="font-semibold text-[var(--ui-text-highlighted)]">{{ section.title }}</h2>
             <p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ section.description }}</p>
           </div>
-          <UButton
+          <AppButton
             v-if="section.navigateTo"
             type="button"
             color="neutral"
@@ -27,7 +27,7 @@
             @click="emit('navigate', section.navigateTo)"
           >
             Manage
-          </UButton>
+          </AppButton>
         </div>
       </template>
 
@@ -88,7 +88,7 @@
                 class="min-w-0 flex-1"
                 @update:model-value="updateField(field.key, $event)"
               />
-              <UButton
+              <AppButton
                 type="button"
                 color="neutral"
                 variant="outline"

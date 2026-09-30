@@ -1,5 +1,5 @@
 <template>
-  <UModal
+  <AppModal
     :open="open"
     :title="title"
     :description="description"
@@ -10,7 +10,7 @@
     <template #body>
       <slot />
     </template>
-  </UModal>
+  </AppModal>
 </template>
 
 <script setup lang="ts">

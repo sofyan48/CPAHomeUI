@@ -5,7 +5,7 @@
         <h1 class="text-2xl font-bold text-[var(--ui-text-highlighted)]">Models</h1>
 
       </div>
-      <UButton color="primary" icon="i-tabler-refresh" :loading="pending" @click="refresh">Refresh</UButton>
+      <AppButton color="primary" icon="i-tabler-refresh" :loading="pending" @click="refresh">Refresh</AppButton>
     </div>
 
     <UAlert
@@ -65,7 +65,7 @@
         </div>
         <div class="mt-4 flex items-center justify-between gap-2 border-t border-[var(--ui-border)] pt-3">
           <span class="truncate text-xs text-[var(--ui-text-muted)]">{{ model.type || model.owned_by || '—' }}</span>
-          <UButton color="neutral" variant="outline" size="xs" :aria-label="`View details for ${model.id}`" @click="showDetails(model)">Details</UButton>
+          <AppButton color="neutral" variant="outline" size="xs" :aria-label="`View details for ${model.id}`" @click="showDetails(model)">Details</AppButton>
         </div>
       </AppCard>
     </div>
@@ -118,7 +118,7 @@
             <pre class="mt-3 max-h-72 overflow-auto whitespace-pre-wrap break-words text-xs text-[var(--ui-text-muted)]">{{ capabilityMetadata }}</pre>
           </details>
           <div class="flex justify-end border-t border-[var(--ui-border)] pt-4">
-            <UButton color="neutral" variant="ghost" @click="detailsOpen = false">Close</UButton>
+            <AppButton color="neutral" variant="ghost" @click="detailsOpen = false">Close</AppButton>
           </div>
         </div>
       </template>

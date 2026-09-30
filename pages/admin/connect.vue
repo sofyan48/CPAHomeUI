@@ -69,9 +69,9 @@
 
           <UCheckbox v-model="remember" label="Keep this management connection for 30 days" />
 
-          <UButton type="submit" color="primary" size="lg" block :loading="loading" :disabled="!token.trim()">
+          <AppButton type="submit" color="primary" size="lg" block :loading="loading" :disabled="!token.trim()">
             Connect to Home
-          </UButton>
+          </AppButton>
 
           <p class="text-center text-xs leading-5 text-[var(--ui-text-dimmed)]">
             Without persistence, the same-site cookie ends with this browser session. The key is sent only to the configured Management API path.

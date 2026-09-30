@@ -56,7 +56,7 @@
           class="sticky top-24 z-20 mb-4 xl:hidden"
           :ui="{ body: 'flex gap-1 overflow-x-auto p-2' }"
         >
-          <UButton
+          <AppButton
             v-for="section in outline"
             :key="section.id"
             size="sm"
@@ -64,7 +64,7 @@
             variant="ghost"
             class="shrink-0"
             @click="scrollToSection(section.id)"
-            >{{ section.short }}</UButton
+            >{{ section.short }}</AppButton
           >
         </AppCard>
 
@@ -103,12 +103,12 @@
                       icon="i-tabler-search"
                       placeholder="Search model ID, name, or owner"
                       class="flex-1"
-                    /><UButton
+                    /><AppButton
                       color="neutral"
                       variant="outline"
                       :loading="modelsLoading"
                       @click="loadChannelModels"
-                      >Reload models</UButton
+                      >Reload models</AppButton
                     >
                   </div>
                   <div
@@ -141,13 +141,13 @@
                   <div class="flex items-center justify-between">
                     <UBadge color="neutral" variant="subtle"
                       >{{ excludedForChannel.length }} disabled</UBadge
-                    ><UButton
+                    ><AppButton
                       color="neutral"
                       variant="ghost"
                       size="sm"
                       :disabled="!excludedForChannel.length"
                       @click="clearExcludedChannel"
-                      >Clear channel</UButton
+                      >Clear channel</AppButton
                     >
                   </div>
                 </section>
@@ -162,12 +162,12 @@
                         Map upstream model names to client-visible aliases.
                       </p>
                     </div>
-                    <UButton
+                    <AppButton
                       size="sm"
                       color="neutral"
                       variant="outline"
                       @click="addAlias"
-                      >Add alias</UButton
+                      >Add alias</AppButton
                     >
                   </div>
                   <AppCard
@@ -184,7 +184,7 @@
                       ><UInput v-model="row.alias" /></UFormField
                     ><UCheckbox v-model="row.fork" label="Fork" /><UCheckbox
                       v-model="row.forceMapping"
-                      label="Force mapping" /><UButton
+                      label="Force mapping" /><AppButton
                       color="error"
                       variant="ghost"
                       icon="i-tabler-trash"
@@ -240,12 +240,12 @@
                 >
                   <div class="flex items-center justify-between">
                     <h3 class="font-semibold">{{ mode.label }}</h3>
-                    <UButton
+                    <AppButton
                       size="sm"
                       color="neutral"
                       variant="outline"
                       @click="addPayloadRule(mode.value)"
-                      >Add rule</UButton
+                      >Add rule</AppButton
                     >
                   </div>
                   <AppCard
@@ -262,24 +262,24 @@
                         </p>
                       </div>
                       <div class="flex gap-1">
-                        <UButton
+                        <AppButton
                           size="sm"
                           color="neutral"
                           variant="ghost"
                           @click="editPayload(mode.value, index)"
-                          >Edit</UButton
-                        ><UButton
+                          >Edit</AppButton
+                        ><AppButton
                           size="sm"
                           color="neutral"
                           variant="ghost"
                           @click="duplicatePayload(mode.value, index)"
-                          >Duplicate</UButton
-                        ><UButton
+                          >Duplicate</AppButton
+                        ><AppButton
                           size="sm"
                           color="error"
                           variant="ghost"
                           @click="removePayload(mode.value, index)"
-                          >Remove</UButton
+                          >Remove</AppButton
                         >
                       </div>
                     </div></AppCard
@@ -322,28 +322,28 @@
         >
       </div>
       <div class="flex flex-wrap gap-2">
-        <UButton
+        <AppButton
           color="neutral"
           variant="outline"
           :disabled="!dirtyCount"
           @click="changesOpen = true"
-          >View changes</UButton
+          >View changes</AppButton
         >
-        <UButton
+        <AppButton
           color="neutral"
           variant="outline"
           icon="i-tabler-refresh"
           :loading="loading"
           :disabled="saving"
           @click="reloadWorkspace"
-          >Reload</UButton
+          >Reload</AppButton
         >
-        <UButton
+        <AppButton
           icon="i-tabler-check"
           :loading="saving"
           :disabled="!dirtyCount || validationCount > 0 || loading"
           @click="saveWorkspace"
-          >Save</UButton
+          >Save</AppButton
         >
       </div>
     </AppCard>
@@ -377,30 +377,30 @@
       ></USlideover
     >
 
-    <UModal
+    <AppModal
       v-model:open="reloadConfirmOpen"
       title="Reload config?"
       description="Discard unsaved local changes and reload?"
       ><template #body
         ><div class="flex justify-end gap-2">
-          <UButton
+          <AppButton
             color="neutral"
             variant="ghost"
             @click="reloadConfirmOpen = false"
-            >Cancel</UButton
-          ><UButton
+            >Cancel</AppButton
+          ><AppButton
             color="error"
             @click="
               reloadConfirmOpen = false;
               loadWorkspace();
             "
-            >Discard and reload</UButton
+            >Discard and reload</AppButton
           >
         </div></template
-      ></UModal
+      ></AppModal
     >
 
-    <UModal
+    <AppModal
       v-model:open="payloadEditorOpen"
       :title="payloadEditIndex < 0 ? 'Add payload rule' : 'Edit payload rule'"
       :ui="{ content: 'sm:max-w-3xl' }"
@@ -429,16 +429,16 @@
             :description="payloadEditorError"
           />
           <div class="flex justify-end gap-2">
-            <UButton
+            <AppButton
               type="button"
               color="neutral"
               variant="ghost"
               @click="payloadEditorOpen = false"
-              >Cancel</UButton
-            ><UButton type="submit">Save rule</UButton>
+              >Cancel</AppButton
+            ><AppButton type="submit">Save rule</AppButton>
           </div>
         </form></template
-      ></UModal
+      ></AppModal
     >
   </section>
 </template>

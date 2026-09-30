@@ -13,14 +13,14 @@
       <div v-if="ready" class="mt-6 space-y-3">
         <UAlert color="info" variant="subtle" title="Confirmation required" description="This action verifies the email address associated with this one-time link. The link is not consumed until you confirm." />
         <UCheckbox v-model="confirmed" label="I want to verify the email address associated with this link" />
-        <UButton color="primary" block :disabled="!confirmed" :loading="verifying" @click="verifyEmail">Confirm email address</UButton>
-        <UButton :to="returnRoute" color="neutral" variant="ghost" block>Cancel</UButton>
+        <AppButton color="primary" block :disabled="!confirmed" :loading="verifying" @click="verifyEmail">Confirm email address</AppButton>
+        <AppButton :to="returnRoute" color="neutral" variant="ghost" block>Cancel</AppButton>
       </div>
       <div v-else-if="invalidToken" class="mt-6 space-y-3">
         <UAlert color="warning" variant="subtle" title="Verification link is invalid or expired" description="Request a new verification email from your account settings, then open the latest link." />
-        <UButton :to="returnRoute" color="primary" block>{{ authenticated ? 'Open workspace' : 'Go to sign in' }}</UButton>
+        <AppButton :to="returnRoute" color="primary" block>{{ authenticated ? 'Open workspace' : 'Go to sign in' }}</AppButton>
       </div>
-      <UButton v-else-if="!verifying" :to="returnRoute" color="primary" block class="mt-6">{{ authenticated ? 'Open workspace' : 'Go to sign in' }}</UButton>
+      <AppButton v-else-if="!verifying" :to="returnRoute" color="primary" block class="mt-6">{{ authenticated ? 'Open workspace' : 'Go to sign in' }}</AppButton>
     </AppCard>
   </div>
 </template>

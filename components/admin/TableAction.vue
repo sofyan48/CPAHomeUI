@@ -1,7 +1,7 @@
 <template>
   <UTooltip :text="label" :delay-duration="250">
     <span class="inline-flex" :tabindex="disabled ? 0 : undefined">
-      <UButton
+      <AppButton
         size="xs"
         :color="destructive ? 'error' : 'neutral'"
         variant="ghost"

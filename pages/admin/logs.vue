@@ -9,10 +9,10 @@
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <USelect v-model="pageSize" :items="pageSizeOptions" value-key="value" label-key="label" class="w-32" aria-label="Page size" @update:model-value="resetPages" />
-        <UButton :color="liveRefresh ? 'primary' : 'neutral'" variant="outline" icon="i-tabler-refresh" @click="liveRefresh = !liveRefresh">
+        <AppButton :color="liveRefresh ? 'primary' : 'neutral'" variant="outline" icon="i-tabler-refresh" @click="liveRefresh = !liveRefresh">
           Live refresh {{ liveRefresh ? 'on' : 'off' }}
-        </UButton>
-        <UButton
+        </AppButton>
+        <AppButton
           v-if="activeView === 'application'"
           color="error"
           variant="outline"
@@ -21,10 +21,10 @@
           @click="clearConfirmOpen = true"
         >
           Clear application logs
-        </UButton>
-        <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" @click="refreshActive">
+        </AppButton>
+        <AppButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" @click="refreshActive">
           Refresh
-        </UButton>
+        </AppButton>
       </div>
     </div>
 
@@ -92,8 +92,8 @@
         </template>
 
         <div class="flex flex-wrap items-end gap-2 md:col-span-2 xl:col-span-6">
-          <UButton type="submit" color="primary" :loading="loading">Apply filters</UButton>
-          <UButton color="neutral" variant="ghost" @click="resetFilters">Reset</UButton>
+          <AppButton type="submit" color="primary" :loading="loading">Apply filters</AppButton>
+          <AppButton color="neutral" variant="ghost" @click="resetFilters">Reset</AppButton>
           <span class="ml-auto text-xs text-[var(--ui-text-muted)]">{{ activeDescription }}</span>
         </div>
       </form>
@@ -148,7 +148,7 @@
         </template>
         <template #actions-cell="{ row }">
           <div class="flex justify-end gap-1">
-            <UButton
+            <AppButton
               v-if="rowValue(row).related?.request_log?.download_url"
               size="sm"
               color="neutral"
@@ -158,9 +158,9 @@
               :loading="downloadingId === rowValue(row).request_id"
               @click="downloadRequestLog(rowValue(row).related.request_log.download_url, rowValue(row).request_id)"
             />
-            <UButton size="sm" color="neutral" variant="ghost" icon="i-tabler-eye" @click="openEventDetail(rowValue(row))">
+            <AppButton size="sm" color="neutral" variant="ghost" icon="i-tabler-eye" @click="openEventDetail(rowValue(row))">
               Details
-            </UButton>
+            </AppButton>
           </div>
         </template>
       </AppTable>
@@ -208,7 +208,7 @@
         </template>
         <template #actions-cell="{ row }">
           <div class="flex justify-end">
-            <UButton
+            <AppButton
               size="sm"
               color="neutral"
               variant="outline"
@@ -218,7 +218,7 @@
               @click="downloadRequestLog(rowValue(row).download_url, rowValue(row).request_id)"
             >
               Download
-            </UButton>
+            </AppButton>
           </div>
         </template>
       </AppTable>
@@ -238,9 +238,9 @@
         <template #modified-cell="{ row }">{{ formatDateTime(Number(rowValue(row).modified) * 1000) }}</template>
         <template #size-cell="{ row }">{{ formatBytes(rowValue(row).size) }}</template>
         <template #actions-cell="{ row }">
-          <UButton size="sm" color="neutral" variant="outline" icon="i-tabler-download"
+          <AppButton size="sm" color="neutral" variant="outline" icon="i-tabler-download"
             :disabled="!validErrorLogName(rowValue(row).name)" :loading="downloadingId === rowValue(row).name"
-            @click="downloadErrorLog(rowValue(row).name)">Download</UButton>
+            @click="downloadErrorLog(rowValue(row).name)">Download</AppButton>
         </template>
       </AppTable>
       <TablePager :page="errorLogsPage" :total="filteredErrorLogs.length" :page-size="errorLogPageSize" :loading="errorLogsLoading" @previous="changeErrorLogsPage(-1)" @next="changeErrorLogsPage(1)" />
@@ -282,14 +282,14 @@
           <span class="font-mono text-xs">{{ rowValue(row).request_id || '—' }}</span>
         </template>
         <template #actions-cell="{ row }">
-          <UButton size="sm" color="neutral" variant="ghost" icon="i-tabler-eye" @click="selectedApplicationLog = rowValue(row)">Details</UButton>
+          <AppButton size="sm" color="neutral" variant="ghost" icon="i-tabler-eye" @click="selectedApplicationLog = rowValue(row)">Details</AppButton>
         </template>
       </AppTable>
 
       <TablePager :page="applicationPage" :total="applicationTotal" :page-size="applicationPageSize" :loading="applicationLoading" @previous="changeApplicationPage(-1)" @next="changeApplicationPage(1)" />
     </AppCard>
 
-    <UModal v-model:open="eventDetailOpen" title="Request event details" description="Redacted event, routing, token, performance, and billing metadata.">
+    <AppModal v-model:open="eventDetailOpen" title="Request event details" description="Redacted event, routing, token, performance, and billing metadata.">
       <template #body>
         <div v-if="eventDetailLoading" class="py-12 text-center text-sm text-[var(--ui-text-muted)]">Loading event details…</div>
         <div v-else-if="selectedEvent" class="space-y-5">
@@ -329,7 +329,7 @@
           </div>
 
           <div v-if="selectedEvent.event?.related?.request_log?.download_url" class="flex justify-end">
-            <UButton
+            <AppButton
               color="neutral"
               variant="outline"
               icon="i-tabler-download"
@@ -337,13 +337,13 @@
               @click="downloadRequestLog(selectedEvent.event.related.request_log.download_url, selectedEvent.event.request_id)"
             >
               Download request log
-            </UButton>
+            </AppButton>
           </div>
         </div>
       </template>
-    </UModal>
+    </AppModal>
 
-    <UModal :open="!!selectedApplicationLog" title="Application log details" description="Full stored log line; may contain sensitive data." @update:open="closeApplicationDetail">
+    <AppModal :open="!!selectedApplicationLog" title="Application log details" description="Full stored log line; may contain sensitive data." @update:open="closeApplicationDetail">
       <template #body>
         <div v-if="selectedApplicationLog" class="space-y-4">
           <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -357,23 +357,23 @@
           <pre class="max-h-96 overflow-auto whitespace-pre-wrap break-all rounded-lg bg-[var(--ui-bg-muted)] p-4 text-xs">{{ selectedApplicationLog.line }}</pre>
         </div>
       </template>
-    </UModal>
+    </AppModal>
 
-    <UModal v-model:open="clearConfirmOpen" title="Clear all application logs?" description="This removes every application log row from the shared database across Home and CPA nodes. Local log files are not deleted.">
+    <AppModal v-model:open="clearConfirmOpen" title="Clear all application logs?" description="This removes every application log row from the shared database across Home and CPA nodes. Local log files are not deleted.">
       <template #body>
         <div class="space-y-5">
           <div class="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm">
             This action cannot be undone through the management API. {{ formatNumber(applicationTotal) }} currently matching rows are visible, but the clear operation removes all stored application log rows, including rows outside the active filters.
           </div>
           <div class="flex justify-end gap-3">
-            <UButton color="neutral" variant="ghost" @click="clearConfirmOpen = false">Cancel</UButton>
-            <UButton color="error" icon="i-tabler-trash" :loading="clearingLogs" @click="clearApplicationLogs">
+            <AppButton color="neutral" variant="ghost" @click="clearConfirmOpen = false">Cancel</AppButton>
+            <AppButton color="error" icon="i-tabler-trash" :loading="clearingLogs" @click="clearApplicationLogs">
               Clear all logs
-            </UButton>
+            </AppButton>
           </div>
         </div>
       </template>
-    </UModal>
+    </AppModal>
   </div>
 </template>
 
@@ -862,9 +862,9 @@ export default {
         <div class="flex flex-col gap-3 border-t border-[var(--ui-border)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <p class="text-xs text-[var(--ui-text-muted)]">Showing {{ start }}–{{ end }} of {{ formatted(total) }}</p>
           <div class="flex items-center gap-2">
-            <UButton size="sm" color="neutral" variant="outline" :disabled="page <= 1 || loading" @click="$emit('previous')">Previous</UButton>
+            <AppButton size="sm" color="neutral" variant="outline" :disabled="page <= 1 || loading" @click="$emit('previous')">Previous</AppButton>
             <span class="min-w-20 text-center text-sm">Page {{ page }} of {{ pages }}</span>
-            <UButton size="sm" color="neutral" variant="outline" :disabled="page >= pages || loading" @click="$emit('next')">Next</UButton>
+            <AppButton size="sm" color="neutral" variant="outline" :disabled="page >= pages || loading" @click="$emit('next')">Next</AppButton>
           </div>
         </div>
       `,

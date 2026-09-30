@@ -58,7 +58,7 @@
           </div>
           <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
             <UInput v-model="providerSearch" icon="i-tabler-search" placeholder="Filter entries..." class="w-full sm:w-72" />
-            <UButton color="primary" icon="i-tabler-plus" :disabled="pending || !!pageError" @click="openProviderCreate">New provider</UButton>
+            <AppButton color="primary" icon="i-tabler-plus" :disabled="pending || !!pageError" @click="openProviderCreate">New provider</AppButton>
           </div>
         </div>
 
@@ -110,7 +110,7 @@
           <details class="rounded-md border border-[var(--ui-border)] px-3 py-2.5 text-sm"><summary class="cursor-pointer font-medium">Additional metadata</summary>
             <dl class="mt-3 grid gap-x-4 gap-y-3 sm:grid-cols-2"><div v-for="field in providerMetadataFields" :key="field.label"><dt class="text-xs text-[var(--ui-text-muted)]">{{ field.label }}</dt><dd class="mt-1 break-words font-mono text-xs">{{ field.value }}</dd></div></dl>
           </details>
-          <div class="flex justify-end gap-2 border-t border-[var(--ui-border)] pt-4"><UButton color="neutral" variant="ghost" @click="providerEditorOpen = false">Close</UButton><UButton color="primary" icon="i-tabler-pencil" @click="openProviderEdit(editingProviderEntry)">Edit</UButton></div>
+          <div class="flex justify-end gap-2 border-t border-[var(--ui-border)] pt-4"><AppButton color="neutral" variant="ghost" @click="providerEditorOpen = false">Close</AppButton><AppButton color="primary" icon="i-tabler-pencil" @click="openProviderEdit(editingProviderEntry)">Edit</AppButton></div>
         </div>
         <form v-else novalidate class="max-h-[75vh] space-y-4 overflow-y-auto pr-1" @submit.prevent="saveProviderEntry">
           <UAlert
@@ -148,13 +148,13 @@
 
             <AdminModalCard as="details" class="space-y-3">
               <summary class="cursor-pointer font-medium">Custom models</summary>
-              <div class="mt-3 flex justify-end"><UButton type="button" size="sm" color="neutral" variant="outline" icon="i-tabler-plus" @click="addProviderModel">Add model</UButton></div>
+              <div class="mt-3 flex justify-end"><AppButton type="button" size="sm" color="neutral" variant="outline" icon="i-tabler-plus" @click="addProviderModel">Add model</AppButton></div>
 
               <AdminModalCard v-if="supportsDiscovery" nested class="space-y-3">
                 <p class="text-sm font-medium">Discover models</p>
                 <p class="text-xs text-[var(--ui-text-muted)]">Fetch available models from the upstream provider.</p>
                 <div class="flex flex-wrap items-center gap-2">
-                  <UButton type="button" color="neutral" variant="outline" icon="i-tabler-search" :loading="discovering" :disabled="!discoveryReady" @click="discoverModels">{{ discoveryLoaded ? 'Reload' : 'Discover models' }}</UButton>
+                  <AppButton type="button" color="neutral" variant="outline" icon="i-tabler-search" :loading="discovering" :disabled="!discoveryReady" @click="discoverModels">{{ discoveryLoaded ? 'Reload' : 'Discover models' }}</AppButton>
                   <span class="text-xs text-[var(--ui-text-muted)]">{{ discoveryAuthLabel }} · {{ requiresBaseURL ? providerForm['base-url']?.trim() ? 'Base URL set' : 'Base URL required' : 'Default Base URL available' }}</span>
                 </div>
                 <UAlert v-if="discoveryError" color="error" variant="subtle" title="Discovery failed" :description="discoveryError" />
@@ -163,47 +163,47 @@
                   <p v-if="discoveryLoaded && !discoveredModels.length" class="text-xs text-[var(--ui-text-muted)]">No models found.</p>
                   <div class="flex flex-wrap items-center justify-between gap-2">
                     <p class="text-sm">{{ selectedDiscovered.length }} of {{ discoveredModels.length }} selected</p>
-                    <div class="flex gap-2"><UButton type="button" size="sm" color="neutral" variant="ghost" @click="selectAllDiscoveredModels">Select all</UButton><UButton type="button" size="sm" color="neutral" variant="ghost" @click="selectedDiscovered = []">Clear</UButton></div>
+                    <div class="flex gap-2"><AppButton type="button" size="sm" color="neutral" variant="ghost" @click="selectAllDiscoveredModels">Select all</AppButton><AppButton type="button" size="sm" color="neutral" variant="ghost" @click="selectedDiscovered = []">Clear</AppButton></div>
                   </div>
                   <div class="max-h-40 space-y-1 overflow-y-auto">
                     <UCheckbox v-for="model in filteredDiscoveredModels" :key="model.name" :model-value="existingModelNames.has(model.name.toLowerCase()) || selectedDiscovered.includes(model.name)" :disabled="existingModelNames.has(model.name.toLowerCase())" :label="existingModelNames.has(model.name.toLowerCase()) ? `${model.name} · Already added` : model.alias ? `${model.name} · ${model.alias}` : model.name" @update:model-value="toggleDiscoveredModel(model.name, $event)" />
                   </div>
-                  <div class="flex justify-end gap-2"><UButton type="button" size="sm" color="neutral" variant="ghost" @click="discoveryVisible = false">Close</UButton><UButton type="button" size="sm" color="primary" :disabled="!selectedDiscovered.length" @click="applyDiscoveredModels">Apply</UButton></div>
+                  <div class="flex justify-end gap-2"><AppButton type="button" size="sm" color="neutral" variant="ghost" @click="discoveryVisible = false">Close</AppButton><AppButton type="button" size="sm" color="primary" :disabled="!selectedDiscovered.length" @click="applyDiscoveredModels">Apply</AppButton></div>
                 </div>
               </AdminModalCard>
               <AdminModalCard v-for="(model, index) in providerForm.models" :key="index" nested class="space-y-2">
-                <div class="grid gap-2 sm:grid-cols-2"><UFormField label="Model ID"><UInputMenu v-model="model.name" :items="modelSuggestions" create-item class="w-full" placeholder="Search catalog or enter model" @create="model.name = $event.trim()" /></UFormField><UFormField label="Alias"><UInput v-model="model.alias" class="w-full" /></UFormField><UFormField v-if="supportsModelMapping" label="Display name"><UInput v-model="model['display-name']" class="w-full" /></UFormField><div class="flex items-end justify-between gap-2"><UCheckbox v-if="supportsModelMapping" v-model="model['force-mapping']" label="Force response model mapping" /><UButton type="button" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove model" :disabled="providerForm.models.length <= 1" @click="removeProviderModel(index)" /></div></div>
+                <div class="grid gap-2 sm:grid-cols-2"><UFormField label="Model ID"><UInputMenu v-model="model.name" :items="modelSuggestions" create-item class="w-full" placeholder="Search catalog or enter model" @create="model.name = $event.trim()" /></UFormField><UFormField label="Alias"><UInput v-model="model.alias" class="w-full" /></UFormField><UFormField v-if="supportsModelMapping" label="Display name"><UInput v-model="model['display-name']" class="w-full" /></UFormField><div class="flex items-end justify-between gap-2"><UCheckbox v-if="supportsModelMapping" v-model="model['force-mapping']" label="Force response model mapping" /><AppButton type="button" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove model" :disabled="providerForm.models.length <= 1" @click="removeProviderModel(index)" /></div></div>
               </AdminModalCard>
             </AdminModalCard>
             <AdminModalCard v-if="!isCompat" as="details"><summary class="cursor-pointer font-medium">Excluded models</summary><UTextarea v-model="excludedModelsText" :rows="3" class="mt-3 w-full" placeholder="Separate model IDs with commas or new lines" /></AdminModalCard>
             <AdminModalCard as="details" class="space-y-3">
               <summary class="cursor-pointer font-medium">Request headers</summary>
               <div class="mt-3 space-y-3">
-                <div class="flex justify-end"><UButton type="button" size="sm" color="neutral" variant="outline" icon="i-tabler-plus" @click="headerRows.push({ name: '', value: '' })">Add header</UButton></div>
+                <div class="flex justify-end"><AppButton type="button" size="sm" color="neutral" variant="outline" icon="i-tabler-plus" @click="headerRows.push({ name: '', value: '' })">Add header</AppButton></div>
                 <div v-for="(header, index) in headerRows" :key="index" class="flex items-end gap-2">
                 <UFormField label="Header name" class="flex-1"><UInput v-model="header.name" class="w-full" /></UFormField>
                 <UFormField label="Header value" class="flex-1"><UInput v-model="header.value" class="w-full" /></UFormField>
-                <UButton type="button" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove header" :disabled="headerRows.length <= 1" @click="headerRows.splice(index, 1)" />
+                <AppButton type="button" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove header" :disabled="headerRows.length <= 1" @click="headerRows.splice(index, 1)" />
               </div>
               </div>
             </AdminModalCard>
             <AdminModalCard v-if="supportsTest" class="space-y-3">
               <UFormField label="Test model"><USelect v-model="testModel" :items="testModelOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
-              <UButton type="button" color="neutral" variant="outline" :loading="testingConnection" @click="testProviderConnection">Test connectivity</UButton>
+              <AppButton type="button" color="neutral" variant="outline" :loading="testingConnection" @click="testProviderConnection">Test connectivity</AppButton>
               <UAlert v-if="testError" color="error" variant="subtle" title="Connectivity test failed" :description="testError" />
               <UAlert v-if="testSuccess" color="success" variant="subtle" title="Connectivity test succeeded" />
             </AdminModalCard>
           <div class="flex items-center justify-between border-t border-[var(--ui-border)] pt-4">
             <span class="text-xs text-[var(--ui-text-muted)]">Leave the key blank when editing to keep it.</span>
             <div class="flex gap-3">
-              <UButton color="neutral" variant="ghost" type="button" @click="providerEditorOpen = false">Cancel</UButton>
-              <UButton color="primary" type="submit" :loading="savingProvider">Save entry</UButton>
+              <AppButton color="neutral" variant="ghost" type="button" @click="providerEditorOpen = false">Cancel</AppButton>
+              <AppButton color="primary" type="submit" :loading="savingProvider">Save entry</AppButton>
             </div>
           </div>
         </form>
     </AdminModalForm>
 
-    <UModal v-model:open="deleteOpen" title="Delete provider entry">
+    <AppModal v-model:open="deleteOpen" title="Delete provider entry">
       <template #body>
         <div class="space-y-5">
           <UAlert
@@ -214,12 +214,12 @@
             :description="deleteDescription"
           />
           <div class="flex justify-end gap-3">
-            <UButton color="neutral" variant="ghost" @click="deleteOpen = false">Cancel</UButton>
-            <UButton color="error" :loading="deleting" @click="performDelete">Delete</UButton>
+            <AppButton color="neutral" variant="ghost" @click="deleteOpen = false">Cancel</AppButton>
+            <AppButton color="error" :loading="deleting" @click="performDelete">Delete</AppButton>
           </div>
         </div>
       </template>
-    </UModal>
+    </AppModal>
   </div>
 </template>
 

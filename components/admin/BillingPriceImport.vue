@@ -9,66 +9,66 @@
         <div class="flex items-end"><UCheckbox v-model="includeZeroCost" label="Include zero-cost catalog rows" /></div>
       </div>
       <fieldset class="space-y-3 rounded-lg border border-[var(--ui-border)] p-4">
-        <div class="flex items-center justify-between gap-3"><legend class="font-medium">Import targets</legend><UButton size="sm" color="neutral" variant="outline" icon="i-tabler-plus" @click="addTarget">Add target</UButton></div>
+        <div class="flex items-center justify-between gap-3"><legend class="font-medium">Import targets</legend><AppButton size="sm" color="neutral" variant="outline" icon="i-tabler-plus" @click="addTarget">Add target</AppButton></div>
         <p class="text-xs text-[var(--ui-text-muted)]">Each target creates wildcard-tier rules at the catalog context bands supported by Home.</p>
         <div v-for="(target, index) in targets" :key="index" class="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
           <UFormField :label="`Provider #${index + 1}`"><UInputMenu v-model="target.provider" :items="providers" create-item placeholder="Search or enter provider" class="w-full" @create="target.provider = $event.trim()" /></UFormField>
           <UFormField :label="`Model #${index + 1}`"><UInputMenu v-model="target.model" :items="models" create-item placeholder="Search or enter model ID" class="w-full" @create="target.model = $event.trim()" /></UFormField>
-          <UButton v-if="targets.length > 1" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove target" class="self-end" @click="removeTarget(index)" />
+          <AppButton v-if="targets.length > 1" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove target" class="self-end" @click="removeTarget(index)" />
         </div>
       </fieldset>
       <fieldset class="space-y-3 rounded-lg border border-[var(--ui-border)] p-4">
-        <div class="flex items-center justify-between gap-3"><legend class="font-medium">Model aliases</legend><UButton size="sm" color="neutral" variant="outline" @click="() => { aliases.push({ target_model: '', source_models: '' }) }">Add alias</UButton></div>
+        <div class="flex items-center justify-between gap-3"><legend class="font-medium">Model aliases</legend><AppButton size="sm" color="neutral" variant="outline" @click="() => { aliases.push({ target_model: '', source_models: '' }) }">Add alias</AppButton></div>
         <p class="text-xs text-[var(--ui-text-muted)]">Try these catalog model IDs when matching a target model. Separate multiple IDs with commas; order matters.</p>
         <div v-for="(alias, index) in aliases" :key="index" class="grid gap-3 sm:grid-cols-[1fr_2fr_auto]">
           <UFormField label="Target model"><UInput v-model="alias.target_model" placeholder="Target model ID" class="w-full" /></UFormField>
           <UFormField label="Catalog model IDs (comma-separated)"><UInput v-model="alias.source_models" placeholder="catalog-model-a, catalog-model-b" class="w-full" /></UFormField>
-          <UButton color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove alias" class="self-end" @click="() => { aliases.splice(index, 1) }" />
+          <AppButton color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove alias" class="self-end" @click="() => { aliases.splice(index, 1) }" />
         </div>
       </fieldset>
       <fieldset class="space-y-3 rounded-lg border border-[var(--ui-border)] p-4">
-        <div class="flex items-center justify-between gap-3"><legend class="font-medium">Multiplier rules</legend><UButton size="sm" color="neutral" variant="outline" @click="() => { multiplierRules.push({ id: '', label: '', match_mode: 'prefix', pattern: '', multiplier: 1 }) }">Add rule</UButton></div>
+        <div class="flex items-center justify-between gap-3"><legend class="font-medium">Multiplier rules</legend><AppButton size="sm" color="neutral" variant="outline" @click="() => { multiplierRules.push({ id: '', label: '', match_mode: 'prefix', pattern: '', multiplier: 1 }) }">Add rule</AppButton></div>
         <p class="text-xs text-[var(--ui-text-muted)]">First matching rule wins against the target model ID (case-insensitive). Exact row multipliers take precedence.</p>
         <div v-for="(rule, index) in multiplierRules" :key="index" class="grid gap-3 sm:grid-cols-[1fr_1fr_1fr_1fr_auto]">
           <UFormField label="Label (optional)"><UInput v-model="rule.label" class="w-full" /></UFormField>
           <UFormField label="Match"><USelect v-model="rule.match_mode" :items="['prefix', 'regex']" class="w-full" /></UFormField>
           <UFormField label="Pattern"><UInput v-model="rule.pattern" :placeholder="rule.match_mode === 'regex' ? 'Go-compatible regex' : 'Model prefix'" class="w-full" /></UFormField>
           <UFormField label="Multiplier"><UInput v-model.number="rule.multiplier" type="number" min="0.000001" step="0.01" class="w-full" /></UFormField>
-          <UButton color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove multiplier rule" class="self-end" @click="() => { multiplierRules.splice(index, 1) }" />
+          <AppButton color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove multiplier rule" class="self-end" @click="() => { multiplierRules.splice(index, 1) }" />
         </div>
       </fieldset>
       <fieldset class="space-y-3 rounded-lg border border-[var(--ui-border)] p-4">
-        <div class="flex items-center justify-between gap-3"><legend class="font-medium">Exact row multipliers</legend><UButton size="sm" color="neutral" variant="outline" @click="() => { rowMultipliers.push({ row_key: '', multiplier: 1 }) }">Add row</UButton></div>
+        <div class="flex items-center justify-between gap-3"><legend class="font-medium">Exact row multipliers</legend><AppButton size="sm" color="neutral" variant="outline" @click="() => { rowMultipliers.push({ row_key: '', multiplier: 1 }) }">Add row</AppButton></div>
         <p class="text-xs text-[var(--ui-text-muted)]">Use the exact preview row key, including ::*::token-boundary for context bands. Preview again after editing.</p>
         <div v-for="(row, index) in rowMultipliers" :key="index" class="grid gap-3 sm:grid-cols-[2fr_1fr_auto]">
           <UFormField label="Row key"><UInput v-model="row.row_key" placeholder="provider::model or provider::model::*::200000" class="w-full" /></UFormField>
           <UFormField label="Multiplier"><UInput v-model.number="row.multiplier" type="number" min="0.000001" step="0.01" class="w-full" /></UFormField>
-          <UButton color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove row multiplier" class="self-end" @click="() => { rowMultipliers.splice(index, 1) }" />
+          <AppButton color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove row multiplier" class="self-end" @click="() => { rowMultipliers.splice(index, 1) }" />
         </div>
       </fieldset>
       <fieldset class="space-y-3 rounded-lg border border-[var(--ui-border)] p-4">
-        <div class="flex items-center justify-between gap-3"><legend class="font-medium">Source match overrides</legend><UButton size="sm" color="neutral" variant="outline" @click="() => { matchOverrides.push({ target_provider: '', target_model: '', source_provider: '', source_model: '' }) }">Add override</UButton></div>
+        <div class="flex items-center justify-between gap-3"><legend class="font-medium">Source match overrides</legend><AppButton size="sm" color="neutral" variant="outline" @click="() => { matchOverrides.push({ target_provider: '', target_model: '', source_provider: '', source_model: '' }) }">Add override</AppButton></div>
         <p class="text-xs text-[var(--ui-text-muted)]">Force one requested target to an exact models.dev provider and model. A missing catalog match stays unmatched.</p>
         <div v-for="(override, index) in matchOverrides" :key="index" class="grid gap-3 sm:grid-cols-[1fr_1fr_1fr_1fr_auto]">
           <UFormField label="Target provider"><UInput v-model="override.target_provider" class="w-full" /></UFormField>
           <UFormField label="Target model"><UInput v-model="override.target_model" class="w-full" /></UFormField>
           <UFormField label="Catalog provider"><UInput v-model="override.source_provider" class="w-full" /></UFormField>
           <UFormField label="Catalog model"><UInput v-model="override.source_model" class="w-full" /></UFormField>
-          <UButton color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove match override" class="self-end" @click="() => { matchOverrides.splice(index, 1) }" />
+          <AppButton color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove match override" class="self-end" @click="() => { matchOverrides.splice(index, 1) }" />
         </div>
       </fieldset>
       <UAlert v-if="validationError" color="warning" variant="subtle" :description="validationError" />
-      <UButton :loading="loading" :disabled="loading || applying || !!validationError" @click="previewPrices">Preview {{ targets.length }} target(s)</UButton>
+      <AppButton :loading="loading" :disabled="loading || applying || !!validationError" @click="previewPrices">Preview {{ targets.length }} target(s)</AppButton>
       <template v-if="preview">
         <div class="text-sm text-[var(--ui-text-muted)]">{{ preview.rows?.length || 0 }} rows · Expires {{ preview.expires_at ? new Date(preview.expires_at).toLocaleString() : 'unknown' }}</div>
         <div class="max-h-72 space-y-2 overflow-y-auto">
           <label v-for="row in preview.rows || []" :key="row.row_key" class="flex gap-3 rounded-lg border border-[var(--ui-border)] p-3 text-sm">
             <input v-model="selected" type="checkbox" :value="row.row_key" :disabled="!row.write_rule || row.action === 'skip'" />
-            <span class="min-w-0"><strong>{{ row.model || row.row_key }}</strong> · {{ row.action }} · {{ row.row_key }}<span v-if="row.matched_model" class="block text-xs">Matched {{ row.matched_provider }}/{{ row.matched_model }} · x{{ row.multiplier }}</span><pre class="mt-1 max-w-full overflow-auto text-xs">{{ JSON.stringify({ official: row.official, final: row.final, write_rule: row.write_rule, existing_rule: row.existing_rule, reasons: row.reasons }, null, 2) }}</pre><UButton v-if="row.official && !rowMultipliers.some((entry) => entry.row_key === row.row_key)" size="xs" color="neutral" variant="outline" @click.stop.prevent="() => { rowMultipliers.push({ row_key: row.row_key, multiplier: row.multiplier }) }">Set row multiplier (requires new preview)</UButton></span>
+            <span class="min-w-0"><strong>{{ row.model || row.row_key }}</strong> · {{ row.action }} · {{ row.row_key }}<span v-if="row.matched_model" class="block text-xs">Matched {{ row.matched_provider }}/{{ row.matched_model }} · x{{ row.multiplier }}</span><pre class="mt-1 max-w-full overflow-auto text-xs">{{ JSON.stringify({ official: row.official, final: row.final, write_rule: row.write_rule, existing_rule: row.existing_rule, reasons: row.reasons }, null, 2) }}</pre><AppButton v-if="row.official && !rowMultipliers.some((entry) => entry.row_key === row.row_key)" size="xs" color="neutral" variant="outline" @click.stop.prevent="() => { rowMultipliers.push({ row_key: row.row_key, multiplier: row.multiplier }) }">Set row multiplier (requires new preview)</AppButton></span>
           </label>
         </div>
         <UCheckbox v-if="requiresOverwrite" v-model="confirmOverwrite" label="I confirm replacing existing model-price rules" />
-        <UButton :loading="applying" :disabled="applying || !selected.length || (requiresOverwrite && !confirmOverwrite)" @click="applyPrices">Apply {{ selected.length }} selected rules</UButton>
+        <AppButton :loading="applying" :disabled="applying || !selected.length || (requiresOverwrite && !confirmOverwrite)" @click="applyPrices">Apply {{ selected.length }} selected rules</AppButton>
       </template>
       <UAlert v-if="operation" color="success" variant="subtle" :title="`Import ${operation.status}`" :description="`Operation ${operation.operation_id} · ${operation.rows?.length || 0} row(s) processed atomically`" />
       <div v-if="operation?.rows?.length" class="max-h-56 space-y-2 overflow-y-auto"><div v-for="result in operation.rows" :key="result.key" class="rounded-lg border border-[var(--ui-border)] p-3 text-xs"><strong>{{ result.key }}</strong><span> · {{ result.status || result.action }}</span><span v-if="result.resource_id" class="block font-mono text-[var(--ui-text-muted)]">{{ result.resource_id }}</span></div></div>

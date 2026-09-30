@@ -1,6 +1,6 @@
 <template>
   <AdminDataPanel title="Proxy pool" description="Globally scoped proxy records. Changes are applied immediately.">
-    <template #actions><UButton color="neutral" variant="ghost" icon="i-tabler-refresh" :loading="loading" @click="loadPools" /><UButton size="sm" icon="i-tabler-plus" :disabled="unsupported" @click="openCreate">New proxy</UButton></template>
+    <template #actions><AppButton color="neutral" variant="ghost" icon="i-tabler-refresh" :loading="loading" @click="loadPools" /><AppButton size="sm" icon="i-tabler-plus" :disabled="unsupported" @click="openCreate">New proxy</AppButton></template>
 
     <div v-if="unsupported || loadError" class="p-4">
     <UAlert
@@ -73,7 +73,7 @@
           </template>
         </AppTable>
 
-    <UModal v-model:open="formOpen" :title="editingId ? 'Edit proxy' : 'New proxy'" description="Proxy-pool changes take effect immediately.">
+    <AppModal v-model:open="formOpen" :title="editingId ? 'Edit proxy' : 'New proxy'" description="Proxy-pool changes take effect immediately.">
       <template #body>
         <form class="space-y-4" @submit.prevent="savePool">
           <UFormField label="Name" required :error="formErrors.name">
@@ -108,25 +108,25 @@
           <UAlert v-if="formError" color="error" variant="subtle" icon="i-tabler-alert-circle" title="Proxy could not be saved" :description="formError" />
 
           <div class="flex justify-end gap-2">
-            <UButton type="button" color="neutral" variant="ghost" :disabled="saving" @click="closeForm">Cancel</UButton>
-            <UButton type="submit" :loading="saving">{{ editingId ? 'Save changes' : 'Create proxy' }}</UButton>
+            <AppButton type="button" color="neutral" variant="ghost" :disabled="saving" @click="closeForm">Cancel</AppButton>
+            <AppButton type="submit" :loading="saving">{{ editingId ? 'Save changes' : 'Create proxy' }}</AppButton>
           </div>
         </form>
       </template>
-    </UModal>
+    </AppModal>
 
-    <UModal v-model:open="deleteOpen" title="Delete proxy">
+    <AppModal v-model:open="deleteOpen" title="Delete proxy">
       <template #body>
         <div class="space-y-5">
           <UAlert color="warning" variant="subtle" icon="i-tabler-alert-triangle" title="This proxy record will be deleted" :description="deleteTarget?.name || deleteTarget?.proxy_url" />
           <p class="text-sm text-[var(--ui-text-muted)]">This action cannot be undone.</p>
           <div class="flex justify-end gap-2">
-            <UButton color="neutral" variant="ghost" :disabled="deleting" @click="closeDelete">Cancel</UButton>
-            <UButton color="error" :loading="deleting" @click="deletePool">Delete</UButton>
+            <AppButton color="neutral" variant="ghost" :disabled="deleting" @click="closeDelete">Cancel</AppButton>
+            <AppButton color="error" :loading="deleting" @click="deletePool">Delete</AppButton>
           </div>
         </div>
       </template>
-    </UModal>
+    </AppModal>
   </AdminDataPanel>
 </template>
 

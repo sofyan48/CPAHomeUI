@@ -15,28 +15,28 @@
             <span class="min-w-0 leading-tight"><span class="block truncate text-sm font-bold text-[var(--ui-text-highlighted)]">CPAHome</span><span class="block truncate text-xs text-[var(--ui-text-muted)]">User workspace</span></span>
           </NuxtLink>
           <NuxtLink v-if="sidebarHidden" to="/app" class="hidden size-7 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-[var(--ui-primary)] dark:border-white/10 dark:bg-neutral-900 lg:flex" aria-label="CPAHome dashboard"><UIcon name="i-tabler-terminal-2" class="size-4" /></NuxtLink>
-          <UButton class="lg:hidden" icon="i-tabler-x" color="neutral" variant="ghost" aria-label="Close navigation" @click="closeMobile" />
-          <UButton class="hidden lg:inline-flex" :icon="sidebarHidden ? 'i-tabler-layout-sidebar-left-expand' : 'i-tabler-layout-sidebar-left-collapse'" color="neutral" variant="ghost" size="xs" :aria-label="sidebarHidden ? 'Expand sidebar' : 'Collapse sidebar'" :aria-expanded="!sidebarHidden" aria-controls="workspace-sidebar" @click="sidebarHidden = !sidebarHidden" />
+          <AppButton class="lg:hidden" icon="i-tabler-x" color="neutral" variant="ghost" aria-label="Close navigation" @click="closeMobile" />
+          <AppButton class="hidden lg:inline-flex" :icon="sidebarHidden ? 'i-tabler-layout-sidebar-left-expand' : 'i-tabler-layout-sidebar-left-collapse'" color="neutral" variant="ghost" size="xs" :aria-label="sidebarHidden ? 'Expand sidebar' : 'Collapse sidebar'" :aria-expanded="!sidebarHidden" aria-controls="workspace-sidebar" @click="sidebarHidden = !sidebarHidden" />
         </div>
         <nav class="min-h-0 flex-1 space-y-1 overflow-y-auto overflow-x-hidden p-2" aria-label="User workspace">
-          <UButton
+          <AppButton
             v-for="item in workspaceNavigation" :key="item.to" :to="item.to" :icon="item.icon"
             :color="isActive(item.to) ? 'primary' : 'neutral'" :variant="isActive(item.to) ? 'soft' : 'ghost'" class="w-full rounded-lg"
             :class="sidebarHidden ? 'lg:justify-center' : 'justify-start'"
             :aria-label="item.label" :title="sidebarHidden ? item.label : undefined"
             :aria-current="isActive(item.to) ? 'page' : undefined" @click="closeMobile"
-          ><span :class="sidebarHidden ? 'lg:hidden' : ''">{{ item.label }}</span></UButton>
+          ><span :class="sidebarHidden ? 'lg:hidden' : ''">{{ item.label }}</span></AppButton>
         </nav>
         <div class="flex shrink-0 items-center gap-1 border-t border-slate-200 p-2 dark:border-white/10" :class="sidebarHidden ? 'lg:flex-col' : ''">
-          <UButton to="/app/profile" icon="i-tabler-user-circle" color="neutral" variant="ghost" class="min-w-0 flex-1 rounded-lg" :class="sidebarHidden ? 'lg:w-full lg:justify-center' : 'justify-start'" aria-label="Profile" :title="sidebarHidden ? 'Profile' : undefined" :aria-current="route.path === '/app/profile' ? 'page' : undefined" @click="closeMobile"><span :class="sidebarHidden ? 'lg:hidden' : ''">Profile</span></UButton>
-          <UButton icon="i-tabler-logout" color="neutral" variant="ghost" aria-label="Log out" title="Log out" @click="logout" />
+          <AppButton to="/app/profile" icon="i-tabler-user-circle" color="neutral" variant="ghost" class="min-w-0 flex-1 rounded-lg" :class="sidebarHidden ? 'lg:w-full lg:justify-center' : 'justify-start'" aria-label="Profile" :title="sidebarHidden ? 'Profile' : undefined" :aria-current="route.path === '/app/profile' ? 'page' : undefined" @click="closeMobile"><span :class="sidebarHidden ? 'lg:hidden' : ''">Profile</span></AppButton>
+          <AppButton icon="i-tabler-logout" color="neutral" variant="ghost" aria-label="Log out" title="Log out" @click="logout" />
           <ThemeSwitcher />
         </div>
       </aside>
       <div class="relative flex h-full min-w-0 flex-col transition-[padding] duration-200" :class="sidebarHidden ? 'lg:pl-16' : 'lg:pl-64'">
         <header class="user-shell__header z-30 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white/50 px-4 backdrop-blur-xl sm:px-5 lg:px-6 dark:border-white/10 dark:bg-neutral-900/50">
           <div class="flex min-w-0 items-center gap-3">
-            <UButton class="lg:hidden" icon="i-tabler-menu-2" color="neutral" variant="ghost" aria-label="Open navigation" aria-controls="workspace-sidebar" :aria-expanded="mobileOpen" @click="openMobile" />
+            <AppButton class="lg:hidden" icon="i-tabler-menu-2" color="neutral" variant="ghost" aria-label="Open navigation" aria-controls="workspace-sidebar" :aria-expanded="mobileOpen" @click="openMobile" />
             <div class="min-w-0"><p class="truncate text-sm font-semibold text-[var(--ui-text-highlighted)]">{{ pageTitle }}</p><p class="truncate text-xs text-[var(--ui-text-muted)]">{{ pageSubtitle }}</p></div>
           </div>
         </header>
@@ -48,7 +48,7 @@
       <header class="user-shell__header sticky top-0 z-30 border-b border-[var(--ui-border)] bg-[var(--glass-soft)] backdrop-blur">
         <div class="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <NuxtLink :to="homeTarget" class="flex min-w-0 items-center gap-3" aria-label="Back to home"><span class="flex size-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-[var(--ui-primary)] shadow-sm dark:border-white/10 dark:bg-neutral-900"><UIcon name="i-tabler-terminal-2" class="size-5" /></span><span class="min-w-0"><span class="block truncate text-sm font-semibold text-[var(--ui-text-highlighted)]">CPAHome</span><span class="block truncate text-xs text-[var(--ui-text-muted)]">{{ pageSubtitle }}</span></span></NuxtLink>
-          <div class="flex shrink-0 items-center gap-2"><ThemeSwitcher /><template v-if="route.path === '/app/models'"><UButton :to="homeTarget" color="neutral" variant="ghost" size="sm" icon="i-tabler-home">Home</UButton><UButton v-if="!token" to="/app/login" color="neutral" variant="ghost" size="sm">Sign in</UButton></template></div>
+          <div class="flex shrink-0 items-center gap-2"><ThemeSwitcher /><template v-if="route.path === '/app/models'"><AppButton :to="homeTarget" color="neutral" variant="ghost" size="sm" icon="i-tabler-home">Home</AppButton><AppButton v-if="!token" to="/app/login" color="neutral" variant="ghost" size="sm">Sign in</AppButton></template></div>
         </div>
       </header>
       <main class="mx-auto w-full max-w-6xl px-4 pb-16 pt-6 sm:px-6"><slot /></main>

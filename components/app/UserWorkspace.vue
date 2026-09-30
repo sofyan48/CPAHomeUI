@@ -27,7 +27,7 @@
           <h2 id="billing-title" class="text-xl font-semibold text-[var(--ui-text-highlighted)]">Billing & usage report</h2>
           <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Credit usage is reported as generic credits. Date-only ranges use UTC and include the full end date.</p>
         </div>
-        <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="billingLoading" @click="loadBilling">Refresh report</UButton>
+        <AppButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="billingLoading" @click="loadBilling">Refresh report</AppButton>
       </div>
 
       <AppCard class="workbench-filter-panel">
@@ -38,7 +38,7 @@
           <template v-if="rangePreset === 'custom'">
             <UFormField label="From (UTC)"><UInput v-model="rangeFrom" type="date" /></UFormField>
             <UFormField label="To (UTC)"><UInput v-model="rangeTo" type="date" /></UFormField>
-            <UButton type="submit" :loading="billingLoading">Apply range</UButton>
+            <AppButton type="submit" :loading="billingLoading">Apply range</AppButton>
           </template>
         </form>
         <UAlert v-if="billingError" class="mt-4" color="error" variant="subtle" title="Billing request failed" :description="billingError" />
@@ -98,9 +98,9 @@
           <div class="flex flex-col gap-3 border-t border-[var(--ui-border)] px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
             <span class="text-[var(--ui-text-muted)]">Showing {{ chargeRangeStart }}–{{ chargeRangeEnd }} of {{ formatNumber(chargesTotal) }}</span>
             <div class="flex items-center gap-2">
-              <UButton size="sm" color="neutral" variant="outline" :disabled="chargePage <= 1 || billingLoading" @click="changeChargePage(-1)">Previous</UButton>
+              <AppButton size="sm" color="neutral" variant="outline" :disabled="chargePage <= 1 || billingLoading" @click="changeChargePage(-1)">Previous</AppButton>
               <span>Page {{ chargePage }} of {{ chargePages }}</span>
-              <UButton size="sm" color="neutral" variant="outline" :disabled="chargePage >= chargePages || billingLoading" @click="changeChargePage(1)">Next</UButton>
+              <AppButton size="sm" color="neutral" variant="outline" :disabled="chargePage >= chargePages || billingLoading" @click="changeChargePage(1)">Next</AppButton>
             </div>
           </div>
         </AppCard>
@@ -113,7 +113,7 @@
           <h2 id="keys-title" class="text-xl font-semibold text-[var(--ui-text-highlighted)]">Client access keys</h2>
           <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Credentials owned by your account. Scopes are assigned by Home and shown read-only here.</p>
         </div>
-        <UButton icon="i-tabler-plus" @click="openKeyForm()">Create key</UButton>
+        <AppButton icon="i-tabler-plus" @click="openKeyForm()">Create key</AppButton>
       </div>
       <AppCard :ui="{ body: 'p-0' }">
         <div class="overflow-x-auto">
@@ -147,7 +147,7 @@
             <UAlert v-if="passwordError" color="error" variant="subtle" :description="passwordError" />
             <UFormField label="New password" required><UInput v-model="passwordForm.password" type="password" autocomplete="new-password" class="w-full" /></UFormField>
             <UFormField label="Confirm password" required><UInput v-model="passwordForm.confirm" type="password" autocomplete="new-password" class="w-full" /></UFormField>
-            <div class="flex justify-end"><UButton type="submit" :loading="passwordSaving">Change password</UButton></div>
+            <div class="flex justify-end"><AppButton type="submit" :loading="passwordSaving">Change password</AppButton></div>
           </form>
         </AppCard>
 
@@ -157,9 +157,9 @@
             <UAlert v-if="emailError" color="error" variant="subtle" :description="emailError" />
             <UFormField label="Email address" required><UInput v-model="email" type="email" autocomplete="email" class="w-full" :disabled="capabilities.email_verification === false" /></UFormField>
             <div class="flex flex-wrap justify-end gap-2">
-              <UButton v-if="user?.email_status.configured" type="button" color="error" variant="soft" :loading="emailSaving" @click="clearEmail">Remove email</UButton>
-              <UButton v-if="user?.email_status.configured && !user?.email_status.verified" type="button" color="neutral" variant="outline" :loading="emailSaving" @click="requestVerification">Resend verification</UButton>
-              <UButton type="submit" :loading="emailSaving" :disabled="capabilities.email_verification === false">Save and verify</UButton>
+              <AppButton v-if="user?.email_status.configured" type="button" color="error" variant="soft" :loading="emailSaving" @click="clearEmail">Remove email</AppButton>
+              <AppButton v-if="user?.email_status.configured && !user?.email_status.verified" type="button" color="neutral" variant="outline" :loading="emailSaving" @click="requestVerification">Resend verification</AppButton>
+              <AppButton type="submit" :loading="emailSaving" :disabled="capabilities.email_verification === false">Save and verify</AppButton>
             </div>
           </form>
         </AppCard>
@@ -174,15 +174,15 @@
           <div class="space-y-4">
             <UAlert v-if="totpError" color="error" variant="subtle" :description="totpError" />
             <div class="flex flex-wrap gap-2">
-              <UButton color="neutral" variant="outline" :loading="totpLoading" @click="showTOTP(false)">Show setup</UButton>
-              <UButton color="neutral" variant="outline" :loading="totpLoading" @click="showTOTP(true)">Regenerate setup</UButton>
-              <UButton v-if="user?.totp_enabled" color="error" variant="soft" @click="openTOTPDelete">Disable TOTP</UButton>
+              <AppButton color="neutral" variant="outline" :loading="totpLoading" @click="showTOTP(false)">Show setup</AppButton>
+              <AppButton color="neutral" variant="outline" :loading="totpLoading" @click="showTOTP(true)">Regenerate setup</AppButton>
+              <AppButton v-if="user?.totp_enabled" color="error" variant="soft" @click="openTOTPDelete">Disable TOTP</AppButton>
             </div>
             <form v-if="totpSetup" class="space-y-4 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] app-surface p-4" @submit.prevent="bindTOTP">
               <p class="text-sm text-[var(--ui-text-muted)]">Open the setup link in a compatible authenticator or enter the raw secret manually, then confirm a current code.</p>
               <div>
                 <p class="text-xs font-medium text-[var(--ui-text-dimmed)]">Raw secret</p>
-                <div class="mt-1 flex items-start gap-2"><code class="min-w-0 flex-1 break-all text-sm font-semibold">{{ totpSetup.secret }}</code><UButton type="button" icon="i-tabler-clipboard" color="neutral" variant="ghost" size="xs" aria-label="Copy TOTP secret" @click="copyText(totpSetup.secret, 'TOTP secret copied')" /></div>
+                <div class="mt-1 flex items-start gap-2"><code class="min-w-0 flex-1 break-all text-sm font-semibold">{{ totpSetup.secret }}</code><AppButton type="button" icon="i-tabler-clipboard" color="neutral" variant="ghost" size="xs" aria-label="Copy TOTP secret" @click="copyText(totpSetup.secret, 'TOTP secret copied')" /></div>
               </div>
               <div v-if="totpSetup.otp_auth_url">
                 <p class="text-xs font-medium text-[var(--ui-text-dimmed)]">Authenticator setup link</p>
@@ -190,7 +190,7 @@
                 <p class="mt-1 text-xs text-[var(--ui-text-dimmed)]">No QR encoder is bundled, so the standard otpauth link is provided directly.</p>
               </div>
               <UFormField label="Verification code" required><UInput v-model="totpCode" class="w-full font-mono tracking-[0.3em]" inputmode="numeric" autocomplete="one-time-code" /></UFormField>
-              <div class="flex justify-end"><UButton type="submit" :loading="totpSaving">{{ user?.totp_enabled ? 'Confirm regenerated setup' : 'Enable TOTP' }}</UButton></div>
+              <div class="flex justify-end"><AppButton type="submit" :loading="totpSaving">{{ user?.totp_enabled ? 'Confirm regenerated setup' : 'Enable TOTP' }}</AppButton></div>
             </form>
           </div>
         </AppCard>
@@ -200,7 +200,7 @@
           <div class="p-4 sm:p-6">
             <form class="flex flex-col gap-3 sm:flex-row sm:items-end" @submit.prevent="addPasskey">
               <UFormField label="Passkey name" hint="Optional" class="flex-1"><UInput v-model="passkeyName" class="w-full" placeholder="MacBook Touch ID" /></UFormField>
-              <UButton type="submit" icon="i-tabler-fingerprint" :loading="passkeySaving">Add passkey</UButton>
+              <AppButton type="submit" icon="i-tabler-fingerprint" :loading="passkeySaving">Add passkey</AppButton>
             </form>
             <UAlert v-if="passkeyError" class="mt-4" color="error" variant="subtle" :description="passkeyError" />
           </div>
@@ -210,7 +210,7 @@
               <template #created_at-cell="{ row }">{{ formatDate(row.original.created_at) }}</template>
               <template #updated_at-cell="{ row }">{{ formatDate(row.original.updated_at) }}</template>
               <template #actions-cell="{ row }">
-                <div class="flex justify-end"><UButton icon="i-tabler-trash" color="error" variant="ghost" size="sm" :aria-label="`Delete ${row.original.name || 'passkey'}`" @click="confirmPasskeyDelete(row.original)" /></div>
+                <div class="flex justify-end"><AppButton icon="i-tabler-trash" color="error" variant="ghost" size="sm" :aria-label="`Delete ${row.original.name || 'passkey'}`" @click="confirmPasskeyDelete(row.original)" /></div>
               </template>
             </AppTable>
           </div>
@@ -218,7 +218,7 @@
       </div>
     </section>
 
-    <UModal v-model:open="keyFormOpen" :title="editingKey ? 'Edit client access key' : 'Create client access key'" :description="editingKey ? 'Rename the key or change its value. Existing scopes remain unchanged.' : 'Give the key a name; leave its value blank to generate a secure one.'">
+    <AppModal v-model:open="keyFormOpen" :title="editingKey ? 'Edit client access key' : 'Create client access key'" :description="editingKey ? 'Rename the key or change its value. Existing scopes remain unchanged.' : 'Give the key a name; leave its value blank to generate a secure one.'">
       <template #body>
         <form class="space-y-5" @submit.prevent="saveKey">
           <UAlert v-if="keyFormError" color="error" variant="subtle" :description="keyFormError" />
@@ -227,22 +227,22 @@
             <UInput v-model="keyValue" class="w-full font-mono" autocomplete="off" />
           </UFormField>
 
-          <div class="flex justify-end gap-2"><UButton type="button" color="neutral" variant="ghost" @click="closeKeyForm">Cancel</UButton><UButton type="submit" :loading="keySaving">{{ editingKey ? 'Save key' : 'Create key' }}</UButton></div>
+          <div class="flex justify-end gap-2"><AppButton type="button" color="neutral" variant="ghost" @click="closeKeyForm">Cancel</AppButton><AppButton type="submit" :loading="keySaving">{{ editingKey ? 'Save key' : 'Create key' }}</AppButton></div>
         </form>
       </template>
-    </UModal>
+    </AppModal>
 
-    <UModal v-model:open="keyDeleteOpen" title="Delete client access key?" description="Clients using this key will immediately lose access.">
-      <template #body><div class="space-y-5"><p class="break-all text-sm">Delete <code>{{ keyDeleteTarget ? maskKey(keyDeleteTarget.api_key) : '' }}</code>?</p><div class="flex justify-end gap-2"><UButton color="neutral" variant="ghost" :disabled="keyDeleting" @click="closeKeyDelete">Cancel</UButton><UButton color="error" icon="i-tabler-trash" :loading="keyDeleting" @click="deleteKey">Delete key</UButton></div></div></template>
-    </UModal>
+    <AppModal v-model:open="keyDeleteOpen" title="Delete client access key?" description="Clients using this key will immediately lose access.">
+      <template #body><div class="space-y-5"><p class="break-all text-sm">Delete <code>{{ keyDeleteTarget ? maskKey(keyDeleteTarget.api_key) : '' }}</code>?</p><div class="flex justify-end gap-2"><AppButton color="neutral" variant="ghost" :disabled="keyDeleting" @click="closeKeyDelete">Cancel</AppButton><AppButton color="error" icon="i-tabler-trash" :loading="keyDeleting" @click="deleteKey">Delete key</AppButton></div></div></template>
+    </AppModal>
 
-    <UModal v-model:open="totpDeleteOpen" title="Disable authenticator app?" description="Your account will no longer require authenticator codes after this change.">
-      <template #body><div class="flex justify-end gap-2"><UButton color="neutral" variant="ghost" :disabled="totpDeleting" @click="closeTOTPDelete">Cancel</UButton><UButton color="error" :loading="totpDeleting" @click="deleteTOTP">Disable TOTP</UButton></div></template>
-    </UModal>
+    <AppModal v-model:open="totpDeleteOpen" title="Disable authenticator app?" description="Your account will no longer require authenticator codes after this change.">
+      <template #body><div class="flex justify-end gap-2"><AppButton color="neutral" variant="ghost" :disabled="totpDeleting" @click="closeTOTPDelete">Cancel</AppButton><AppButton color="error" :loading="totpDeleting" @click="deleteTOTP">Disable TOTP</AppButton></div></template>
+    </AppModal>
 
-    <UModal v-model:open="passkeyDeleteOpen" title="Delete passkey?" description="The selected authenticator will no longer be accepted for this account.">
-      <template #body><div class="space-y-5"><p class="text-sm">Delete {{ passkeyDeleteTarget?.name || 'this passkey' }}?</p><div class="flex justify-end gap-2"><UButton color="neutral" variant="ghost" :disabled="passkeyDeleting" @click="closePasskeyDelete">Cancel</UButton><UButton color="error" :loading="passkeyDeleting" @click="deletePasskey">Delete passkey</UButton></div></div></template>
-    </UModal>
+    <AppModal v-model:open="passkeyDeleteOpen" title="Delete passkey?" description="The selected authenticator will no longer be accepted for this account.">
+      <template #body><div class="space-y-5"><p class="text-sm">Delete {{ passkeyDeleteTarget?.name || 'this passkey' }}?</p><div class="flex justify-end gap-2"><AppButton color="neutral" variant="ghost" :disabled="passkeyDeleting" @click="closePasskeyDelete">Cancel</AppButton><AppButton color="error" :loading="passkeyDeleting" @click="deletePasskey">Delete passkey</AppButton></div></div></template>
+    </AppModal>
   </div>
 </template>
 

@@ -16,13 +16,13 @@
           >
         </div>
       </div>
-      <UButton
+      <AppButton
         color="neutral"
         variant="outline"
         icon="i-tabler-refresh"
         :loading="loading"
         @click="syncAll(true)"
-        >{{ loading ? "Syncing" : "Sync data" }}</UButton
+        >{{ loading ? "Syncing" : "Sync data" }}</AppButton
       >
     </header>
 
@@ -69,8 +69,8 @@
           </div>
         </template>
         <template #actions
-          ><UButton icon="i-tabler-plus" @click="openUserCreate"
-            >New user</UButton
+          ><AppButton icon="i-tabler-plus" @click="openUserCreate"
+            >New user</AppButton
           ></template
         >
 
@@ -87,19 +87,19 @@
               </p>
             </div>
             <div class="flex flex-wrap gap-2">
-              <UButton
+              <AppButton
                 size="sm"
                 color="neutral"
                 variant="ghost"
                 @click="selectedUserIds = new Set()"
-                >Clear selection</UButton
-              ><UButton
+                >Clear selection</AppButton
+              ><AppButton
                 size="sm"
                 color="neutral"
                 variant="ghost"
                 icon="i-tabler-cash-banknote"
                 @click="openBalance(selectedUsers)"
-                >Balance operation</UButton
+                >Balance operation</AppButton
               >
             </div>
           </div>
@@ -224,8 +224,8 @@
           </div>
         </template>
         <template #actions
-          ><UButton icon="i-tabler-plus" @click="openKeyCreate"
-            >New key</UButton
+          ><AppButton icon="i-tabler-plus" @click="openKeyCreate"
+            >New key</AppButton
           ></template
         >
         <AppTable
@@ -291,12 +291,12 @@
         content-class="p-4"
       >
         <template #actions
-          ><UButton
+          ><AppButton
             v-if="accessGroupsSupported"
             size="sm"
             icon="i-tabler-plus"
             @click="openGroupForm('channel')"
-            >New credential scope</UButton
+            >New credential scope</AppButton
           ></template
         >
         <UnsupportedScopes v-if="!accessGroupsSupported" />
@@ -333,7 +333,7 @@
               >
                 Model scopes
               </p>
-              <UButton
+              <AppButton
                 size="xs"
                 color="neutral"
                 variant="ghost"
@@ -415,7 +415,7 @@
                   :search-input="{ placeholder: 'Search model scopes...' }"
                   class="w-56 xl:hidden"
                 />
-                <UButton
+                <AppButton
                   v-if="selectedModelGroup"
                   size="sm"
                   color="neutral"
@@ -424,7 +424,7 @@
                   aria-label="Edit model scope"
                   @click="openGroupForm('model', selectedModelGroup)"
                 />
-                <UButton
+                <AppButton
                   v-if="selectedModelGroup"
                   size="sm"
                   color="error"
@@ -433,7 +433,7 @@
                   aria-label="Delete model scope"
                   @click="confirmGroupDelete('model', selectedModelGroup)"
                 />
-                <UButton
+                <AppButton
                   size="sm"
                   icon="i-tabler-plus"
                   @click="
@@ -443,7 +443,7 @@
                   "
                   >{{
                     selectedModelGroup ? "Add models" : "New scope"
-                  }}</UButton
+                  }}</AppButton
                 >
               </template>
               <div class="min-w-0">
@@ -681,15 +681,15 @@
           <div
             class="flex justify-end gap-2 border-t border-[var(--ui-border)] pt-4"
           >
-            <UButton
+            <AppButton
               type="button"
               color="neutral"
               variant="outline"
               @click="userFormOpen = false"
-              >Cancel</UButton
-            ><UButton type="submit" :loading="saving">{{
+              >Cancel</AppButton
+            ><AppButton type="submit" :loading="saving">{{
               editingUser ? "Save changes" : "Create user"
-            }}</UButton>
+            }}</AppButton>
           </div>
         </form></template
       >
@@ -725,7 +725,7 @@
           <section class="grid gap-3">
             <div class="flex items-center justify-between gap-3">
               <h3 class="text-sm font-semibold">Period limits</h3>
-              <UButton
+              <AppButton
                 v-if="periodLimitsSupported"
                 size="sm"
                 color="neutral"
@@ -733,7 +733,7 @@
                 icon="i-tabler-refresh"
                 :disabled="saving || !detailPeriods || !!detailPeriodError"
                 @click="openPeriodReset(userDetail)"
-                >Reset…</UButton
+                >Reset…</AppButton
               >
             </div>
             <div
@@ -757,12 +757,12 @@
                 {{ detailPeriodError }}
               </p>
               <div>
-                <UButton
+                <AppButton
                   size="sm"
                   color="neutral"
                   variant="outline"
                   @click="loadUserPeriods(userDetail)"
-                  >Retry</UButton
+                  >Retry</AppButton
                 >
               </div>
             </div>
@@ -859,16 +859,16 @@
           <div
             class="flex justify-end gap-2 border-t border-[var(--ui-border)] pt-4"
           >
-            <UButton
+            <AppButton
               type="button"
               color="neutral"
               variant="outline"
               :disabled="saving"
               @click="keyFormOpen = false"
-              >Cancel</UButton
-            ><UButton type="submit" :loading="saving">{{
+              >Cancel</AppButton
+            ><AppButton type="submit" :loading="saving">{{
               editingKey ? "Save changes" : "Create key"
-            }}</UButton>
+            }}</AppButton>
           </div>
         </form></template
       >
@@ -955,18 +955,18 @@
           <div
             class="flex justify-end gap-2 border-t border-[var(--ui-border)] pt-4"
           >
-            <UButton
+            <AppButton
               type="button"
               color="neutral"
               variant="outline"
               :disabled="saving"
               @click="bindingOpen = false"
-              >Cancel</UButton
-            ><UButton
+              >Cancel</AppButton
+            ><AppButton
               type="submit"
               :loading="saving"
               :disabled="bindingSubmitDisabled"
-              >Add binding</UButton
+              >Add binding</AppButton
             >
           </div>
         </form></template
@@ -1026,20 +1026,20 @@
           </div>
           <UFormField label="Operation type"
             ><div class="grid grid-cols-2 gap-2">
-              <UButton
+              <AppButton
                 type="button"
                 :color="balanceForm.type === 'recharge' ? 'primary' : 'neutral'"
                 :variant="balanceForm.type === 'recharge' ? 'solid' : 'outline'"
                 icon="i-tabler-plus"
                 @click="balanceForm.type = 'recharge'"
-                >Recharge</UButton
-              ><UButton
+                >Recharge</AppButton
+              ><AppButton
                 type="button"
                 :color="balanceForm.type === 'deduct' ? 'warning' : 'neutral'"
                 :variant="balanceForm.type === 'deduct' ? 'solid' : 'outline'"
                 icon="i-tabler-minus"
                 @click="balanceForm.type = 'deduct'"
-                >Deduct</UButton
+                >Deduct</AppButton
               >
             </div></UFormField
           ><UAlert
@@ -1069,25 +1069,25 @@
           <div
             class="flex justify-end gap-2 border-t border-[var(--ui-border)] pt-4"
           >
-            <UButton
+            <AppButton
               type="button"
               color="neutral"
               variant="outline"
               @click="balanceOpen = false"
-              >Cancel</UButton
-            ><UButton
+              >Cancel</AppButton
+            ><AppButton
               type="submit"
               :color="balanceForm.type === 'deduct' ? 'warning' : 'primary'"
               >{{
                 balanceForm.type === "deduct" ? "Deduct" : "Recharge"
-              }}</UButton
+              }}</AppButton
             >
           </div>
         </form></template
       >
     </USlideover>
 
-    <UModal
+    <AppModal
       v-model:open="balanceConfirmOpen"
       :title="balanceConfirmTitle"
       :description="
@@ -1134,23 +1134,23 @@
             />
           </div>
           <div class="flex justify-end gap-2">
-            <UButton
+            <AppButton
               color="neutral"
               variant="outline"
               @click="balanceConfirmOpen = false"
-              >Cancel</UButton
-            ><UButton
+              >Cancel</AppButton
+            ><AppButton
               :color="balanceForm.type === 'deduct' ? 'warning' : 'primary'"
               :loading="saving"
               @click="applyBalance"
-              >Confirm</UButton
+              >Confirm</AppButton
             >
           </div>
         </div></template
-      ></UModal
+      ></AppModal
     >
 
-    <UModal
+    <AppModal
       v-model:open="groupFormOpen"
       :title="groupFormTitle"
       :description="groupFormDescription"
@@ -1183,25 +1183,25 @@
             ></label
           >
           <div class="flex justify-end gap-2">
-            <UButton
+            <AppButton
               type="button"
               color="neutral"
               variant="outline"
               @click="groupFormOpen = false"
-              >Cancel</UButton
-            ><UButton type="submit" :loading="saving">{{
+              >Cancel</AppButton
+            ><AppButton type="submit" :loading="saving">{{
               editingGroup
                 ? "Save changes"
                 : groupFormKind === "channel"
                   ? "Create credential scope"
                   : "Create model scope"
-            }}</UButton>
+            }}</AppButton>
           </div>
         </form></template
-      ></UModal
+      ></AppModal
     >
 
-    <UModal
+    <AppModal
       v-model:open="periodResetOpen"
       title="Reset period counters"
       :description="`Soft-reset period counters for ${periodResetUser?.username || ''}. Billing history is preserved, and enabled limits keep enforcing new requests.`"
@@ -1255,35 +1255,35 @@
             </div>
           </div>
           <div class="flex justify-end gap-2">
-            <UButton
+            <AppButton
               color="neutral"
               variant="outline"
               @click="periodResetOpen = false"
-              >Cancel</UButton
-            ><UButton :loading="saving" @click="resetPeriods"
-              >Reset counters</UButton
+              >Cancel</AppButton
+            ><AppButton :loading="saving" @click="resetPeriods"
+              >Reset counters</AppButton
             >
           </div>
         </div></template
-      ></UModal
+      ></AppModal
     >
 
-    <UModal v-model:open="deleteOpen" title="Confirm deletion"
+    <AppModal v-model:open="deleteOpen" title="Confirm deletion"
       ><template #body
         ><div class="space-y-4">
           <p class="text-sm">{{ deleteDescription }}</p>
           <div class="flex justify-end gap-2">
-            <UButton
+            <AppButton
               color="neutral"
               variant="outline"
               @click="deleteOpen = false"
-              >Cancel</UButton
-            ><UButton color="error" :loading="saving" @click="performDelete"
-              >Delete</UButton
+              >Cancel</AppButton
+            ><AppButton color="error" :loading="saving" @click="performDelete"
+              >Delete</AppButton
             >
           </div>
         </div></template
-      ></UModal
+      ></AppModal
     >
   </section>
 </template>

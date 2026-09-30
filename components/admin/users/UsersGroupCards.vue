@@ -11,9 +11,9 @@
           <p class="mt-1 text-xs text-[var(--ui-text-muted)]">Scope ID: {{ group.id }}</p>
         </div>
         <div class="flex gap-1">
-          <UButton color="neutral" variant="ghost" size="sm" icon="i-tabler-plus" aria-label="Add binding" @click="$emit('add', group)" />
-          <UButton color="neutral" variant="ghost" size="sm" icon="i-tabler-pencil" aria-label="Edit" @click="$emit('edit', group)" />
-          <UButton color="error" variant="ghost" size="sm" icon="i-tabler-trash" aria-label="Delete" @click="$emit('delete', group)" />
+          <AppButton color="neutral" variant="ghost" size="sm" icon="i-tabler-plus" aria-label="Add binding" @click="$emit('add', group)" />
+          <AppButton color="neutral" variant="ghost" size="sm" icon="i-tabler-pencil" aria-label="Edit" @click="$emit('edit', group)" />
+          <AppButton color="error" variant="ghost" size="sm" icon="i-tabler-trash" aria-label="Delete" @click="$emit('delete', group)" />
         </div>
       </div>
       <AppCard :ui="{ body: 'p-0' }">
@@ -36,7 +36,7 @@
               <td v-if="kind === 'model' && channelBindingsSupported" class="min-w-32 max-w-64 truncate text-muted" :title="channels(detail)">{{ channels(detail) }}</td>
               <td class="whitespace-nowrap text-muted">{{ updated(detail) }}</td>
               <td class="w-px whitespace-nowrap text-right">
-                <UButton color="error" variant="ghost" size="sm" icon="i-tabler-trash" aria-label="Remove binding" title="Remove binding" @click="$emit('delete-detail', detail)" />
+                <AppButton color="error" variant="ghost" size="sm" icon="i-tabler-trash" aria-label="Remove binding" title="Remove binding" @click="$emit('delete-detail', detail)" />
               </td>
             </tr>
           </tbody>

@@ -16,13 +16,13 @@
         <UIcon name="i-tabler-circle-check" class="mx-auto size-14 text-emerald-500" />
         <p>Your password has been reset. Your previous sessions have been signed out, so you can now sign in with the new password.</p>
         <UAlert color="info" variant="subtle" title="Your other security methods are unchanged" description="TOTP and registered passkeys remain enabled and will still apply when you sign in." />
-        <UButton to="/app/login" color="primary" block>Sign in</UButton>
+        <AppButton to="/app/login" color="primary" block>Sign in</AppButton>
       </div>
 
       <div v-else-if="invalidToken" class="space-y-5">
         <UAlert color="warning" variant="subtle" title="Reset link is invalid or expired" :description="invalidTokenMessage" />
-        <UButton to="/app/forgot-password" color="primary" block>Request a new reset link</UButton>
-        <UButton to="/app/login" color="neutral" variant="ghost" block>Back to sign in</UButton>
+        <AppButton to="/app/forgot-password" color="primary" block>Request a new reset link</AppButton>
+        <AppButton to="/app/login" color="neutral" variant="ghost" block>Back to sign in</AppButton>
       </div>
 
       <form v-else class="space-y-5" @submit.prevent="submit">
@@ -30,7 +30,7 @@
         <UAlert color="info" variant="subtle" title="TOTP and passkeys remain enabled" description="Changing your password does not remove your authenticator app or registered passkeys." />
         <UFormField label="New password" required><UInput v-model="password" class="w-full" type="password" autocomplete="new-password" /></UFormField>
         <UFormField label="Confirm password" required><UInput v-model="confirmPassword" class="w-full" type="password" autocomplete="new-password" /></UFormField>
-        <UButton type="submit" color="primary" block :loading="loading">Reset password</UButton>
+        <AppButton type="submit" color="primary" block :loading="loading">Reset password</AppButton>
       </form>
     </AppCard>
   </div>
