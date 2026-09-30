@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "build": "nuxt build",
+    "build:embedded": "NUXT_PUBLIC_API_URL= nuxt generate && node scripts/build-embedded.mjs",
     "dev": "TMPDIR=/tmp nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",

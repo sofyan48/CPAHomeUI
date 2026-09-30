@@ -1,6 +1,6 @@
 # CLIProxyHomeUI
 
-The native Nuxt management UI runs separately from CLIProxyAPIHome. Open `http://localhost:3000/admin/upstream` for the new Upstream screen (Accounts and Providers tabs), or `/app/login` for the user workspace. Opening Home's `http://127.0.0.1:8327/management.html` still displays the legacy embedded UI; building this repository does **not** replace Home's embedded panel.
+The Nuxt UI can run separately during development or be embedded into CLIProxyAPIHome. Open `http://localhost:3000/admin/upstream` for the admin workspace, or `/app/login` for the user workspace.
 
 Configure `NUXT_PUBLIC_API_URL` to reach Home from the browser (for example `http://127.0.0.1:8327`); `NUXT_PUBLIC_API_BASE` defaults to `/v0/management`. The management secret is entered at `/admin/connect`. Home must allow requests from the UI origin. Never put the management secret in a public runtime environment variable.
 
@@ -73,5 +73,23 @@ yarn preview
 # bun
 bun run preview
 ```
+
+## Embedded Home build
+
+Generate the static bundle expected by `CLIProxyAPIHome/internal/managementasset`:
+
+```bash
+bun run build:embedded
+```
+
+This writes `dist/index.html`, `dist/management.html`, `dist/user.html`, and hashed files under `dist/assets/`.
+
+With both repositories next to each other, build and copy the UI into Home with:
+
+```bash
+make -C ../CLIProxyAPIHome panel-assets-local PANEL_SOURCE_DIR=../CPAHomeUI
+```
+
+The next Home build embeds those files through Go's `embed` package. Home serves the admin SPA under `/management.html` and `/admin/*`, and the user SPA under `/user.html` and `/app/*`.
 
 Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.

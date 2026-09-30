@@ -295,8 +295,13 @@ button[aria-expanded="true"] > svg {
 }
 
 ::selection {
-  background: var(--ui-selected);
-  color: var(--ui-text-highlighted);
+  background: color-mix(in oklch, var(--ui-primary) 78%, black);
+  color: white;
+}
+
+::-moz-selection {
+  background: color-mix(in oklch, var(--ui-primary) 78%, black);
+  color: white;
 }
 
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
