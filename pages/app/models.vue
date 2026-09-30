@@ -368,9 +368,14 @@ function capabilityText(status?: string) { return status === 'supported' ? 'Supp
 function budgetText(budget: Record<string, unknown>) { return Object.entries(budget).map(([key, value]) => `${key.replaceAll('_', ' ')}: ${value}`).join(' · ') }
 function duration(ms?: number) { return ms == null ? 'Not published' : `${ms.toLocaleString()} ms` }
 function dateText(value?: string) { return value ? new Date(value).toLocaleString() : 'Not published' }
+function modelLimit(model: UserModel, field: 'context_length' | 'max_output_tokens') {
+  if (model[field]) return formatTokens(model[field])
+  const published = (model.provider_limits || []).map(limit => limit[field]).filter((value): value is number => Boolean(value))
+  return published.length ? 'Varies by provider' : 'Not published'
+}
 function modelFacts(model: UserModel) { return [
-  { label: 'Model ID', value: model.id }, { label: 'Context', value: formatTokens(model.context_length) },
-  { label: 'Maximum output', value: formatTokens(model.max_output_tokens) }, { label: 'Version', value: model.version || 'Not published' },
+  { label: 'Model ID', value: model.id }, { label: 'Context', value: modelLimit(model, 'context_length') },
+  { label: 'Maximum output', value: modelLimit(model, 'max_output_tokens') }, { label: 'Version', value: model.version || 'Not published' },
   { label: 'Owner', value: model.owned_by || 'Not published' }, { label: 'Type', value: model.type || 'Not published' }
 ] }
 

@@ -31,7 +31,7 @@
 definePageMeta({ layout: 'app' })
 const route = useRoute()
 const router = useRouter()
-const { token, login, loginWithPasskey, hydrateSession, loadCurrentUser } = useUserApi()
+const { token, login, loginWithPasskey, hydrateSession, loadCurrentUser, clearSession } = useUserApi()
 const form = reactive({ username: '', password: '', totp: '' })
 const needsTOTP = ref(false)
 const passkeyRequired = ref(false)
@@ -74,8 +74,8 @@ onMounted(async () => {
   try {
     await loadCurrentUser()
     await router.replace(destination.value)
-  } catch {
-    // Invalid or expired sessions are cleared by the API composable.
+  } catch (cause: any) {
+    if (cause?.statusCode === 401) clearSession()
   }
 })
 </script>

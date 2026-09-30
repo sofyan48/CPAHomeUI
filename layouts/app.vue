@@ -6,7 +6,7 @@
       <div v-if="mobileOpen" class="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-sm lg:hidden" @click="closeMobile" />
       <aside
         id="workspace-sidebar"
-        class="user-sidebar fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-slate-200 bg-white/30 shadow-[4px_0_24px_rgba(14,165,233,0.05)] backdrop-blur-xl transition-[width,transform] duration-200 dark:border-white/10 dark:bg-neutral-900/30"
+        class="user-sidebar fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-slate-200 bg-white/95 shadow-[4px_0_24px_rgba(14,165,233,0.08)] backdrop-blur-xl transition-[width,transform] duration-200 dark:border-white/10 dark:bg-neutral-950/95 lg:bg-white/30 lg:dark:bg-neutral-900/30"
         :class="[mobileOpen ? 'translate-x-0' : '-translate-x-full', sidebarHidden ? 'lg:w-16' : 'lg:w-64', 'lg:translate-x-0']"
       >
         <div class="flex h-16 shrink-0 items-center justify-between gap-1 border-b border-slate-200 px-3 dark:border-white/10" :class="sidebarHidden ? 'lg:flex-col lg:justify-center lg:gap-0 lg:px-1' : ''">
@@ -94,7 +94,11 @@ const ensureSession = async () => {
   if (publicPaths.has(route.path)) return
   if (!token.value) { await router.replace({ path: '/app/login', query: { redirect: route.fullPath } }); return }
   try { await loadCurrentUser() }
-  catch { clearSession(); await router.replace({ path: '/app/login', query: { redirect: route.fullPath } }) }
+  catch (cause: any) {
+    if (cause?.statusCode !== 401 && token.value) return
+    clearSession()
+    await router.replace({ path: '/app/login', query: { redirect: route.fullPath } })
+  }
 }
 const logout = async () => { clearSession(); await router.replace('/app/login') }
 watch(() => route.fullPath, () => { closeMobile(); void ensureSession() })

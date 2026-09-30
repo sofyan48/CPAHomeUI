@@ -8,7 +8,7 @@
 
     <aside
       id="management-sidebar"
-      class="fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-slate-200 bg-white/30 shadow-[4px_0_24px_0_rgba(14,165,233,0.05)] backdrop-blur-xl transition-[transform,width] duration-200 dark:border-white/10 dark:bg-neutral-900/30 lg:translate-x-0"
+      class="fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-slate-200 bg-white/95 shadow-[4px_0_24px_0_rgba(14,165,233,0.08)] backdrop-blur-xl transition-[transform,width] duration-200 dark:border-white/10 dark:bg-neutral-950/95 lg:translate-x-0 lg:bg-white/30 lg:dark:bg-neutral-900/30"
       :class="[mobileOpen ? 'translate-x-0' : '-translate-x-full', sidebarCollapsed ? 'lg:w-16' : 'lg:w-64']"
     >
       <div class="flex h-16 shrink-0 items-center gap-2 border-b border-slate-200 px-3 dark:border-white/10" :class="sidebarCollapsed ? 'lg:justify-center lg:px-1' : ''">
@@ -63,7 +63,7 @@
       <div class="flex shrink-0 items-center gap-2 border-t border-slate-200 p-3 dark:border-white/10" :class="sidebarCollapsed ? 'lg:flex-col lg:p-2' : ''">
         <NuxtLink
           to="/admin/connect"
-          class="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white/50 p-2.5 dark:border-white/10 dark:bg-neutral-900/50"
+          class="min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50 p-2.5 dark:border-white/10 dark:bg-neutral-900 lg:bg-white/50 lg:dark:bg-neutral-900/50"
           :class="sidebarCollapsed ? 'lg:flex lg:w-full lg:justify-center lg:p-2' : ''"
           :title="sidebarCollapsed ? `${capabilitiesError ? 'Connection failed' : 'Connected'} · ${versionLabel}` : undefined"
           @click="closeMobile"

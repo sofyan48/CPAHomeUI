@@ -101,6 +101,11 @@ export interface UserModel {
   owned_by?: string
   type?: string
   providers?: string[]
+  provider_limits?: Array<{
+    provider: string
+    context_length?: number
+    max_output_tokens?: number
+  }>
   context_length?: number
   max_output_tokens?: number
   modalities?: {
@@ -352,7 +357,6 @@ export const useUserApi = () => {
     } catch (error: any) {
       const details = apiErrorDetails(error)
       const statusCode = error?.statusCode || error?.status
-      if (requiresAuth && statusCode === 401 && !['totp_required', 'passkey_required', 'invalid_totp'].includes(details.code || '')) clearSession()
       throw new UserApiError(details.message, statusCode, details.code, error?.data)
     }
   }
