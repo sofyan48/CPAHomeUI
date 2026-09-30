@@ -67,7 +67,7 @@ const authForm = reactive(emptyAuth())
 const authTypes = [{ label: 'No authentication', value: 'none' }, { label: 'Bearer token', value: 'bearer' }, { label: 'Basic authentication', value: 'basic' }, { label: 'Custom header', value: 'header' }, { label: 'GitHub token', value: 'github-token' }]
 const authScopes = ['registry', 'metadata', 'artifact']
 const authColumns = [{ accessorKey: 'identity', header: 'Rule' }, { accessorKey: 'type', header: 'Type' }, { accessorKey: 'scope', header: 'Scope' }, { accessorKey: 'status', header: 'Status' }, { accessorKey: 'actions', header: '', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }]
-async function loadAll() { pageError.value = ''; const result = {}; const failures = []; await Promise.all([['plugins', '/plugins'], ['store', '/plugin-store'], ['auth', '/plugin-store-auth']].map(async ([key, path]) => { try { result[key] = await fetchAPI(path) } catch (error) { failures.push(`${key}: ${message(error)}`); result[key] = key === 'auth' ? { items: [] } : { plugins: [] } } })); pageError.value = failures.join(' · '); return result }
+async function loadAll() { pageError.value = ''; const result = {}; const failures = []; await Promise.all([['plugins', '/plugins'], ['store', '/plugins/store'], ['auth', '/plugin-store-auth']].map(async ([key, path]) => { try { result[key] = await fetchAPI(path) } catch (error) { failures.push(`${key}: ${message(error)}`); result[key] = key === 'auth' ? { items: [] } : { plugins: [] } } })); pageError.value = failures.join(' · '); return result }
 const { data, pending, refresh: refreshData } = await useAsyncData('management-plugins', loadAll)
 const nodesResponse = ref(null)
 const nodesError = ref('')
@@ -149,7 +149,7 @@ async function install(plugin) {
   busyPlugin.value = plugin.id
   operation.value = { title: `Installing ${plugin.name || plugin.id}`, detail: 'Waiting for Home…' }
   try {
-    const response = await fetchAPI(`/plugin-store/${encodeURIComponent(plugin.id)}/install`, { method: 'POST', query: { source: plugin.source_id || undefined }, body: plugin.version ? { version: plugin.version } : {} })
+    const response = await fetchAPI(`/plugins/store/${encodeURIComponent(plugin.id)}/install`, { method: 'POST', query: { source: plugin.source_id || undefined }, body: plugin.version ? { version: plugin.version } : {} })
     operation.value = { title: `${plugin.name || plugin.id}: ${response.status}`, response }
     toast.add({ title: `${plugin.name || plugin.id}: ${response.status}`, description: 'Configuration updated; check CPA plugin reports for node observations.', color: 'info' })
     await refreshAll()
@@ -160,7 +160,7 @@ async function uninstall(id) {
   busyPlugin.value = id
   operation.value = { title: `Uninstalling ${id}`, detail: 'Waiting for Home…' }
   try {
-    const response = await fetchAPI(`/plugin-store/${encodeURIComponent(id)}/uninstall`, { method: 'POST' })
+    const response = await fetchAPI(`/plugins/store/${encodeURIComponent(id)}/uninstall`, { method: 'POST' })
     operation.value = { title: `${id}: ${response.status}`, response }
     toast.add({ title: `${id}: ${response.status}`, description: 'Configuration updated; node completion is not confirmed.', color: 'info' })
     await refreshAll()

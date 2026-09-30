@@ -184,7 +184,7 @@ const detailColumns = [
 async function loadWorkspace() {
   pageError.value = ''
   try {
-    const [groupsResponse, authResponse] = await Promise.all([fetchAPI('/channel-groups'), fetchAPI('/auth-files')])
+    const [groupsResponse, authResponse] = await Promise.all([fetchAPI('/channel-groups'), fetchAPI('/credentials')])
     return { groupsResponse, authResponse }
   } catch (error) {
     pageError.value = errorMessage(error)
@@ -193,7 +193,7 @@ async function loadWorkspace() {
 }
 const { data, pending, refresh: refreshWorkspace } = await useAsyncData('routing-channel-groups', loadWorkspace)
 const groups = computed(() => Array.isArray(data.value?.groupsResponse?.channel_groups) ? data.value.groupsResponse.channel_groups : [])
-const credentials = computed(() => Array.isArray(data.value?.authResponse?.files) ? data.value.authResponse.files : [])
+const credentials = computed(() => Array.isArray(data.value?.authResponse) ? data.value.authResponse : Array.isArray(data.value?.authResponse?.credentials) ? data.value.authResponse.credentials : Array.isArray(data.value?.authResponse?.files) ? data.value.authResponse.files : [])
 const selectedGroup = computed(() => groups.value.find(group => group.id === selectedGroupId.value) || null)
 const filteredGroups = computed(() => {
   const query = search.value.trim().toLowerCase()

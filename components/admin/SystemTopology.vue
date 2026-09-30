@@ -367,7 +367,7 @@ async function refreshSystem() {
     await refreshCapabilities(true)
     probedAt.value = new Date()
     const requests: Array<{ scope: string, run: () => Promise<void> }> = [
-      { scope: 'Latest version', run: async () => { const value: any = await fetchAPI('/latest-version'); latestVersion.value = String(value?.['latest-version'] || value?.latest_version || '') } },
+      { scope: 'Latest version', run: async () => { const value: any = await fetchAPI('/server/latest-version'); latestVersion.value = String(value?.['latest-version'] || value?.latest_version || '') } },
       { scope: 'Config summary', run: async () => { configSnapshot.value = await fetchAPI('/config') } }
     ]
     if (supports('nodes', true)) requests.push({ scope: 'Node connections', run: async () => { nodesResponse.value = await fetchAPI('/nodes') } })
@@ -418,7 +418,7 @@ async function runDiagnostic() {
   catch { diagnosticError.value = 'Headers must be a valid JSON object.'; return }
   diagnosticLoading.value = true
   try {
-    diagnosticResult.value = await fetchAPI('/api-call', { method: 'POST', body: { auth_index: diagnostic.authIndex || undefined, method: diagnostic.method, url: diagnostic.url.trim(), header: headers, data: diagnostic.data } })
+    diagnosticResult.value = await fetchAPI('/requests/api-call', { method: 'POST', body: { auth_index: diagnostic.authIndex || undefined, method: diagnostic.method, url: diagnostic.url.trim(), header: headers, data: diagnostic.data } })
     toast.add({ title: 'Diagnostic request completed', color: 'success' })
   } catch (error: any) { diagnosticError.value = errorMessage(error, 'The diagnostic request failed.') }
   finally { diagnosticLoading.value = false }

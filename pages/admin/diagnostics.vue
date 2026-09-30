@@ -240,7 +240,7 @@ const authResponse = ref(null)
 const result = ref(null)
 const methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']
 const form = reactive({ method: 'GET', url: '', auth_index: '', headers: '{\n  "Accept": "application/json"\n}', data: '' })
-const credentials = computed(() => Array.isArray(authResponse.value?.files) ? authResponse.value.files : [])
+const credentials = computed(() => Array.isArray(authResponse.value) ? authResponse.value : Array.isArray(authResponse.value?.credentials) ? authResponse.value.credentials : Array.isArray(authResponse.value?.files) ? authResponse.value.files : [])
 const noCredentialValue = '__no_credential__'
 const credentialOptions = computed(() => [
   { label: 'No credential', value: noCredentialValue },
@@ -254,7 +254,7 @@ const formattedBody = computed(() => {
 const message = (error, fallback) => error?.data?.message || error?.data?.error || error?.message || fallback
 function statusColor(status) { if (status >= 200 && status < 300) return 'success'; if (status >= 400) return 'error'; return 'warning' }
 async function loadCredentials() {
-  try { authResponse.value = await fetchAPI('/auth-files') }
+  try { authResponse.value = await fetchAPI('/credentials') }
   catch { authResponse.value = { files: [] } }
 }
 async function sendRequest() {
@@ -267,7 +267,7 @@ async function sendRequest() {
   } catch { errorMessage.value = 'Headers must be a JSON object with string values.'; return }
   sending.value = true
   try {
-    result.value = await fetchAPI('/api-call', { method: 'POST', body: { auth_index: form.auth_index || undefined, method: form.method, url: form.url.trim(), header: headers, data: form.data } })
+    result.value = await fetchAPI('/requests/api-call', { method: 'POST', body: { auth_index: form.auth_index || undefined, method: form.method, url: form.url.trim(), header: headers, data: form.data } })
   } catch (error) { errorMessage.value = message(error, 'The diagnostic request failed.') }
   finally { sending.value = false }
 }

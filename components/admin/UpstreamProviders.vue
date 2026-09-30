@@ -132,6 +132,7 @@
               <UFormField v-if="!isCompat" label="Proxy URL"><UInput v-model="providerForm['proxy-url']" type="url" class="w-full" placeholder="http://127.0.0.1:7890" /></UFormField>
               <UFormField label="Model prefix"><UInput v-model="providerForm.prefix" class="w-full" /></UFormField>
               <UFormField label="Priority"><UInput v-model="providerForm.priority" type="number" step="1" class="w-full" /></UFormField>
+              <UFormField label="Weight" hint="Used by weighted round-robin routing"><UInput v-model="providerForm.weight" type="number" step="1" class="w-full" /></UFormField>
               <UFormField label="Request retry rounds" hint="Blank inherits global; 0 disables retry rounds"><UInput v-model="requestRetryText" type="number" min="0" step="1" class="w-full" placeholder="Inherit global" /></UFormField>
               <UCheckbox v-model="providerForm['disable-cooling']" label="Disable cooling" />
             </div>
@@ -233,14 +234,14 @@ const toast = useToast()
 const rowValue = (row) => row?.original ?? row
 
 const providerCategories = [
-  { label: 'Gemini API keys', value: 'gemini-api-key', responseKey: 'gemini-api-key', template: { 'api-key': '', 'base-url': '', priority: 0, prefix: '', 'proxy-url': '', models: [], headers: {}, 'excluded-models': [] } },
-  { label: 'Gemini Interactions', value: 'interactions-api-key', responseKey: 'interactions-api-key', template: { 'api-key': '', 'base-url': '', priority: 0, prefix: '', 'proxy-url': '', models: [], headers: {}, 'excluded-models': [] } },
-  { label: 'Claude API keys', value: 'claude-api-key', responseKey: 'claude-api-key', template: { 'api-key': '', 'base-url': '', priority: 0, prefix: '', 'proxy-url': '', models: [], headers: {}, 'excluded-models': [] } },
-  { label: 'Codex API keys', value: 'codex-api-key', responseKey: 'codex-api-key', template: { 'api-key': '', 'base-url': '', priority: 0, prefix: '', 'proxy-url': '', models: [], headers: {}, websockets: false } },
-  { label: 'xAI API keys', value: 'xai-api-key', responseKey: 'xai-api-key', template: { 'api-key': '', 'base-url': 'https://api.x.ai/v1', priority: 0, prefix: '', 'proxy-url': '', models: [], headers: {}, websockets: false } },
-  { label: 'Meta API keys', value: 'meta-api-key', responseKey: 'meta-api-key', template: { 'api-key': '', 'base-url': '', priority: 0, prefix: '', 'proxy-url': '', models: [], headers: {} } },
-  { label: 'Vertex compatibility', value: 'vertex-api-key', responseKey: 'vertex-api-key', template: { 'api-key': '', 'base-url': '', priority: 0, prefix: '', 'proxy-url': '', models: [], headers: {} } },
-  { label: 'OpenAI compatibility', value: 'openai-compatibility', responseKey: 'openai-compatibility', template: { name: '', 'base-url': '', priority: 0, disabled: false, prefix: '', 'api-key-entries': [], models: [], headers: {} } }
+  { label: 'Gemini API keys', value: 'gemini-api-key', path: '/config/api-keys/gemini', template: { 'api-key': '', 'base-url': '', priority: 0, weight: 1, prefix: '', 'proxy-url': '', models: [], headers: {}, 'excluded-models': [] } },
+  { label: 'Gemini Interactions', value: 'interactions-api-key', path: '/config/api-keys/interactions', template: { 'api-key': '', 'base-url': '', priority: 0, weight: 1, prefix: '', 'proxy-url': '', models: [], headers: {}, 'excluded-models': [] } },
+  { label: 'Claude API keys', value: 'claude-api-key', path: '/config/api-keys/claude', template: { 'api-key': '', 'base-url': '', priority: 0, weight: 1, prefix: '', 'proxy-url': '', models: [], headers: {}, 'excluded-models': [] } },
+  { label: 'Codex API keys', value: 'codex-api-key', path: '/config/api-keys/codex', template: { 'api-key': '', 'base-url': '', priority: 0, weight: 1, prefix: '', 'proxy-url': '', models: [], headers: {}, websockets: false } },
+  { label: 'xAI API keys', value: 'xai-api-key', path: '/config/api-keys/xai', template: { 'api-key': '', 'base-url': 'https://api.x.ai/v1', priority: 0, weight: 1, prefix: '', 'proxy-url': '', models: [], headers: {}, websockets: false } },
+  { label: 'Meta API keys', value: 'meta-api-key', path: '/config/api-keys/meta', template: { 'api-key': '', 'base-url': '', priority: 0, weight: 1, prefix: '', 'proxy-url': '', models: [], headers: {} } },
+  { label: 'Vertex compatibility', value: 'vertex-api-key', path: '/config/api-keys/vertex', template: { 'api-key': '', 'base-url': '', priority: 0, weight: 1, prefix: '', 'proxy-url': '', models: [], headers: {} } },
+  { label: 'OpenAI compatibility', value: 'openai-compatibility', path: '/config/api-keys/openai-compatibility', template: { name: '', 'base-url': '', priority: 0, weight: 1, disabled: false, prefix: '', 'api-key-entries': [], models: [], headers: {} } }
 ]
 
 const providerMarks = ['G', 'G', 'C', 'Cx', 'xAI', 'M', 'V', 'AI']
@@ -311,7 +312,7 @@ const editorError = ref('')
 const savingProvider = ref(false)
 const deleteOpen = ref(false)
 const deleteTarget = ref(null)
-const deleteTargetIndex = ref(-1)
+
 const deleting = ref(false)
 
 
@@ -327,18 +328,102 @@ const providerColumns = [
 const selectedProvider = computed(() => providerCategories.find(item => item.value === selectedProviderRoute.value) || providerCategories[0])
 const providerOptions = providerCategories.map(item => ({ label: item.label, value: item.value }))
 
+const v8GroupFields = ['name', 'base-url', 'priority', 'disabled', 'prefix', 'proxy-url', 'headers', 'models', 'excluded-models', 'disable-cooling', 'request-retry', 'request-scoped-errors', 'support-prompt-cache-key']
+const v8NativeKeyFields = ['id', 'uuid', 'api-key', 'weight', 'priority', 'prefix', 'proxy-url', 'headers', 'models', 'excluded-models', 'disable-cooling', 'request-retry', 'request-scoped-errors', 'websockets', 'alpha-search', 'disable-codex-cloaking', 'cloak', 'experimental-cch-signing', 'rebuild-mid-system-message', 'fingerprint-profile']
+
+function cloneValue(value) {
+  return value == null ? value : JSON.parse(JSON.stringify(value))
+}
+
+function providerApiPath(category = selectedProvider.value) {
+  return category.path
+}
+
+function flattenV8Groups(groups, category) {
+  if (!Array.isArray(groups)) return []
+  const compat = category.value === 'openai-compatibility'
+  return groups.flatMap((sourceGroup, groupIndex) => {
+    const group = cloneValue(sourceGroup) || {}
+    const keys = Array.isArray(group.keys) ? group.keys : []
+    delete group.keys
+    const groupEntries = keys.length ? keys : [null]
+    return groupEntries.map((sourceKey, keyIndex) => {
+      const key = cloneValue(sourceKey) || {}
+      const entry = compat
+        ? { ...group, id: key.id || group.id, uuid: key.uuid || group.uuid, weight: key.weight ?? 1, 'api-key-entries': sourceKey ? [key] : [] }
+        : { ...group, ...key, weight: key.weight ?? 1 }
+      entry.__v8Group = group
+      entry.__v8GroupIndex = groupIndex
+      entry.__v8KeyIndex = sourceKey ? keyIndex : -1
+      entry.__v8Key = sourceKey ? key : null
+      return entry
+    })
+  })
+}
+
 function entriesFromResponse(response, category) {
-  const candidate = response?.[category.responseKey] ?? response?.items ?? response?.data
-  if (Array.isArray(candidate)) return candidate
-  if (candidate && typeof candidate === 'object') return [candidate]
-  return []
+  return flattenV8Groups(response, category)
+}
+
+function copyFields(target, source, fields) {
+  for (const field of fields) {
+    if (Object.hasOwn(source, field)) target[field] = cloneValue(source[field])
+    else delete target[field]
+  }
+}
+
+function v8GroupFieldsChanged(entry) {
+  const original = entry.__v8Group || {}
+  return v8GroupFields.some(field => JSON.stringify(entry[field]) !== JSON.stringify(original[field]))
+}
+
+function v8GroupsFromEntries(entries, category = selectedProvider.value) {
+  const compat = category.value === 'openai-compatibility'
+  const buckets = new Map()
+  entries.forEach((entry, index) => {
+    const key = Number.isInteger(entry.__v8GroupIndex) ? `existing:${entry.__v8GroupIndex}` : `new:${index}`
+    if (!buckets.has(key)) buckets.set(key, [])
+    buckets.get(key).push(entry)
+  })
+  return [...buckets.values()].map((groupEntries) => {
+    const editedEntry = groupEntries.find(v8GroupFieldsChanged) || groupEntries[0]
+    const group = cloneValue(editedEntry.__v8Group) || {}
+    copyFields(group, editedEntry, v8GroupFields)
+    if (!compat) {
+      delete group.id
+      delete group.uuid
+      group.keys = groupEntries.map((entry) => {
+        const key = cloneValue(entry.__v8Key) || {}
+        copyFields(key, entry, v8NativeKeyFields)
+        return key
+      })
+      return group
+    }
+    group.keys = groupEntries.flatMap((entry) => {
+      const existingKey = cloneValue(entry.__v8Key)
+      const currentKey = Array.isArray(entry['api-key-entries']) ? entry['api-key-entries'][0] : null
+      if (!existingKey && !currentKey) return []
+      const key = existingKey || {}
+      if (currentKey) Object.assign(key, cloneValue(currentKey))
+      key.weight = entry.weight
+      return [key]
+    })
+    if (group.keys.length) {
+      delete group.id
+      delete group.uuid
+    } else {
+      if (editedEntry.id) group.id = editedEntry.id
+      if (editedEntry.uuid) group.uuid = editedEntry.uuid
+    }
+    return group
+  })
 }
 
 async function loadWorkspace() {
   const providerRoute = selectedProviderRoute.value
   pageError.value = ''
   try {
-    const providerResponse = await fetchAPI(`/${providerRoute}`)
+    const providerResponse = await fetchAPI(providerApiPath(providerCategories.find(category => category.value === providerRoute)))
     return { providerResponse, providerRoute }
   } catch (error) {
     pageError.value = error?.message || 'Could not load provider entries. Check the Management API connection and try again.'
@@ -350,7 +435,7 @@ const { data, pending, refresh: refreshWorkspace } = useAsyncData('management-pr
 async function loadCategoryStats() {
   const results = await Promise.all(providerCategories.map(async category => {
     try {
-      const response = await fetchAPI(`/${category.value}`)
+      const response = await fetchAPI(providerApiPath(category))
       const entries = entriesFromResponse(response, category)
       return [category.value, { total: entries.length, active: entries.filter(entry => !entry.disabled).length, disabled: entries.filter(entry => entry.disabled).length }]
     } catch { return [category.value, null] }
@@ -397,6 +482,7 @@ const providerMetadataFields = computed(() => {
     { label: 'Excluded models', value: String(entry['excluded-models']?.length || 0) },
     { label: 'API key entries', value: String(entry['api-key-entries']?.length || 0) },
     { label: 'Priority', value: entry.priority ?? 'Not set' },
+    { label: 'Weight', value: entry.weight ?? 'Default (1)' },
     { label: 'Request retry', value: entry['request-retry'] ?? 'Inherited' },
     { label: 'Cooling disabled', value: entry['disable-cooling'] ? 'Yes' : 'No' },
     ...(supportsWebsockets.value ? [{ label: 'WebSockets', value: entry.websockets ? 'Enabled' : 'Disabled' }] : [])
@@ -437,9 +523,12 @@ function duplicateProvider(entry) {
   delete copy.uuid
   delete copy.auth_index
   delete copy.disabled
+  delete copy.__v8Group
+  delete copy.__v8GroupIndex
+  delete copy.__v8Key
   if (isCompat.value) {
     copy.name = ''
-    copy['api-key-entries'] = (copy['api-key-entries'] || []).map(key => ({ 'api-key': '', 'proxy-url': key['proxy-url'] || '' }))
+    copy['api-key-entries'] = (copy['api-key-entries'] || []).map(key => ({ 'api-key': '', 'proxy-url': key['proxy-url'] || '', weight: key.weight ?? copy.weight ?? 1 }))
   } else copy['api-key'] = ''
   loadGuidedEntry(copy)
   editorError.value = ''
@@ -479,7 +568,7 @@ async function discoverModels() {
     for (let page = 0; page < (['gemini-api-key', 'interactions-api-key'].includes(route) ? 20 : 1); page++) {
       const pageURL = new URL(url)
       if (pageToken) pageURL.searchParams.set('pageToken', pageToken)
-      const request = (requestHeader, index) => fetchAPI('/api-call', { method: 'POST', body: { auth_index: index || undefined, method: 'GET', url: pageURL.href, header: requestHeader } })
+      const request = (requestHeader, index) => fetchAPI('/requests/api-call', { method: 'POST', body: { auth_index: index || undefined, method: 'GET', url: pageURL.href, header: requestHeader } })
       let response
       try {
         response = await request(header, authIndex)
@@ -541,7 +630,7 @@ async function testProviderConnection() {
   const data = claude ? { model, max_tokens: 8, messages: [{ role: 'user', content: 'Hi' }] } : { model, messages: [{ role: 'user', content: 'Hi' }], stream: false, max_tokens: 5 }
   testingConnection.value = true
   try {
-    const response = await fetchAPI('/api-call', { method: 'POST', body: { auth_index: authIndex || undefined, method: 'POST', url: endpoint, header, data: JSON.stringify(data) } })
+    const response = await fetchAPI('/requests/api-call', { method: 'POST', body: { auth_index: authIndex || undefined, method: 'POST', url: endpoint, header, data: JSON.stringify(data) } })
     if (!response?.status_code || response.status_code < 200 || response.status_code >= 300) throw new Error(`Upstream returned HTTP ${response?.status_code || 'error'}.`)
     testSuccess.value = true
   } catch (error) {
@@ -595,6 +684,7 @@ function loadGuidedEntry(entry) {
   }
   if (!Array.isArray(providerForm.value.models)) providerForm.value.models = []
   if (isCompat.value && !Array.isArray(providerForm.value['api-key-entries'])) providerForm.value['api-key-entries'] = []
+  providerForm.value.weight = entry.weight ?? entry['api-key-entries']?.[0]?.weight ?? 1
   providerKey.value = ''
   if (providerEditorMode.value === 'create' && !isCompat.value) providerKey.value = providerForm.value['api-key'] || ''
   if (providerEditorMode.value === 'create' && isCompat.value) providerKey.value = providerForm.value['api-key-entries']?.[0]?.['api-key'] || ''
@@ -626,6 +716,12 @@ function guidedEntry() {
     return null
   }
   value.priority = priority
+  const weight = value.weight === '' || value.weight == null ? 1 : Number(value.weight)
+  if (!Number.isSafeInteger(weight)) {
+    editorError.value = 'Weight must be a whole number.'
+    return null
+  }
+  value.weight = weight
   const retry = requestRetryText.value.trim()
   if (retry && (!/^\d+$/.test(retry) || !Number.isSafeInteger(Number(retry)))) { editorError.value = 'Request retry must be a non-negative whole number.'; return null }
   if (retry) value['request-retry'] = Number(retry)
@@ -693,7 +789,7 @@ function guidedEntry() {
     if (testModel.value.trim()) value['test-model'] = testModel.value.trim()
     else delete value['test-model']
     delete value['proxy-url']
-    if (providerKey.value.trim()) value['api-key-entries'] = [{ 'api-key': providerKey.value.trim() }]
+    if (providerKey.value.trim()) value['api-key-entries'] = [{ 'api-key': providerKey.value.trim(), weight: value.weight }]
     else delete value['api-key-entries']
   } else if (providerKey.value.trim()) value['api-key'] = providerKey.value.trim()
   else delete value['api-key']
@@ -704,9 +800,8 @@ function guidedEntry() {
     'excluded-models': value['excluded-models'],
     'disable-cooling': value['disable-cooling']
   }
-  for (const field of ['name', 'base-url', 'proxy-url', 'prefix']) {
-    if (value[field]) payload[field] = value[field]
-  }
+  for (const field of ['name', 'base-url', 'proxy-url', 'prefix']) payload[field] = value[field]
+  payload.weight = value.weight
   if (Object.hasOwn(value, 'request-retry')) payload['request-retry'] = value['request-retry']
   if (supportsWebsockets.value) payload.websockets = Boolean(value.websockets)
   if (isCompat.value) {
@@ -736,18 +831,10 @@ async function saveProviderEntry() {
 
   savingProvider.value = true
   try {
-    if (providerEditorMode.value === 'create') {
-      const current = await fetchAPI(`/${selectedProviderRoute.value}`)
-      await fetchAPI(`/${selectedProviderRoute.value}`, {
-        method: 'PUT',
-        body: [...entriesFromResponse(current, selectedProvider.value), value]
-      })
-    } else {
-      await fetchAPI(`/${selectedProviderRoute.value}`, {
-        method: 'PATCH',
-        body: providerPatchBody(editingProviderEntry.value, editingProviderIndex.value, value)
-      })
-    }
+    const entries = [...providerEntries.value]
+    if (providerEditorMode.value === 'create') entries.push(value)
+    else entries.splice(editingProviderIndex.value, 1, { ...editingProviderEntry.value, ...value })
+    await fetchAPI(providerApiPath(), { method: 'PUT', body: v8GroupsFromEntries(entries) })
     providerEditorOpen.value = false
     await refreshWorkspace()
     void refreshCategoryStats()
@@ -760,10 +847,14 @@ async function saveProviderEntry() {
   }
 }
 
-function confirmProviderDelete(entry) {
+function providerEntryMatches(candidate, target) {
+  if (!candidate || !target) return false
+  return candidate.__v8GroupIndex === target.__v8GroupIndex && candidate.__v8KeyIndex === target.__v8KeyIndex
+}
 
+function confirmProviderDelete(entry) {
   deleteTarget.value = entry
-  deleteTargetIndex.value = providerEntries.value.indexOf(entry)
+
   deleteOpen.value = true
 }
 
@@ -771,36 +862,22 @@ async function performDelete() {
   if (!deleteTarget.value) return
   deleting.value = true
   try {
-    const params = providerDeleteQuery(deleteTarget.value, deleteTargetIndex.value)
-    await fetchAPI(`/${selectedProviderRoute.value}?${params}`, { method: 'DELETE' })
+    const targetIndex = providerEntries.value.findIndex(candidate => providerEntryMatches(candidate, deleteTarget.value))
+    if (targetIndex < 0) throw new Error('Provider entry is no longer present. Reload the provider list and try again.')
+    const remaining = providerEntries.value.filter((_, index) => index !== targetIndex)
+    await fetchAPI(providerApiPath(), { method: 'PUT', body: remaining.length ? v8GroupsFromEntries(remaining) : [] })
     deleteOpen.value = false
     await refreshWorkspace()
     void refreshCategoryStats()
     emit('changed')
     toast.add({ title: 'Provider entry deleted', color: 'success', icon: 'i-tabler-circle-check' })
   } catch (error) {
-    toast.add({ title: 'Delete failed', description: 'Could not delete the provider entry.', color: 'error' })
+    toast.add({ title: 'Delete failed', description: error?.data?.message || error?.data?.error || error?.message || 'Could not delete the provider entry.', color: 'error' })
   } finally {
     deleting.value = false
   }
 }
 
-
-
-function providerPatchBody(entry, index, value) {
-  if (entry?.id) return { id: entry.id, value }
-  if (entry?.uuid) return { uuid: entry.uuid, value }
-  if (selectedProviderRoute.value === 'openai-compatibility' && entry?.name) return { name: entry.name, value }
-  return { index, value }
-}
-
-function providerDeleteQuery(entry, index) {
-  if (entry?.id) return `id=${encodeURIComponent(entry.id)}`
-  if (entry?.uuid) return `uuid=${encodeURIComponent(entry.uuid)}`
-  if (entry?.auth_index) return `auth_index=${encodeURIComponent(entry.auth_index)}`
-  if (selectedProviderRoute.value === 'openai-compatibility' && entry?.name) return `name=${encodeURIComponent(entry.name)}`
-  return `index=${encodeURIComponent(index)}`
-}
 
 function providerEntryLabel(entry) {
   return entry?.name || entry?.identifier || entry?.auth_index || entry?.id || `${selectedProvider.value.label} entry`

@@ -272,11 +272,8 @@ export const useUserApi = () => {
   const serverInfo = useState<UserServerInfo>('user-server-info', () => ({}))
 
   const configuredURL = String(config.public.apiUrl || '').trim().replace(/\/+$/, '')
-  const managementBase = `/${trimSlashes(String(config.public.apiBase || '/v0/management'))}`
   const normalizedURL = configuredURL.replace(/^(https?:\/\/)localhost(?=:\d+|\/|$)/i, (_, scheme: string) => `${scheme}127.0.0.1`)
-  const origin = normalizedURL.endsWith(managementBase)
-    ? normalizedURL.slice(0, -managementBase.length)
-    : normalizedURL.replace(/\/v0\/management$/i, '')
+  const origin = normalizedURL.replace(/\/v(?:0|8)\/management$/i, '')
   const apiBase = origin.endsWith('/user') ? origin : `${origin}/user`
 
   const resolveUrl = (path: string) => {

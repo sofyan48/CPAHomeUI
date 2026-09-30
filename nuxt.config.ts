@@ -26,7 +26,6 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiUrl: "",
-      apiBase: "/v0/management",
       secretKey: "",
     },
   },

@@ -168,6 +168,7 @@ const secretVisible = ref(false)
 
 const routingOptions = [
   { label: 'Round robin', value: 'round-robin' },
+  { label: 'Weighted round robin', value: 'weighted-round-robin' },
   { label: 'Fill first', value: 'fill-first' }
 ]
 

@@ -27,6 +27,29 @@ export class ManagementApiError extends Error {
 }
 
 const trimSlashes = (value: string) => value.replace(/^\/+|\/+$/g, '')
+const managementSuffixPattern = /\/v(?:0|8)\/management$/i
+const managementBase = '/v8/management'
+const providerPathPrefix = '/config/api-keys/'
+const providerPaths = new Set([
+  '/config/api-keys/gemini',
+  '/config/api-keys/interactions',
+  '/config/api-keys/claude',
+  '/config/api-keys/codex',
+  '/config/api-keys/xai',
+  '/config/api-keys/meta',
+  '/config/api-keys/vertex',
+  '/config/api-keys/openai-compatibility'
+])
+
+const configCache = new Map<string, { value: any, cachedAt: number }>()
+const configRequests = new Map<string, Promise<any>>()
+let configGeneration = 0
+
+const invalidateConfigCache = () => {
+  configGeneration++
+  configCache.clear()
+  configRequests.clear()
+}
 
 const errorMessage = (error: any) => {
   const data = error?.data
@@ -47,14 +70,9 @@ export const useApi = () => {
   })
 
   // Home often listens on IPv4 only; localhost may resolve to ::1 in browsers.
-  const configuredOrigin = String(config.public.apiUrl || '').replace(/\/+$/, '').replace(/^(https?:\/\/)localhost(?=:\d+|\/|$)/i, (_, scheme: string) => `${scheme}127.0.0.1`)
-  const configuredBase = `/${trimSlashes(String(config.public.apiBase || '/v0/management'))}`
-
-  const apiBase = (() => {
-    if (!configuredOrigin) return configuredBase
-    if (configuredOrigin.endsWith(configuredBase)) return configuredOrigin
-    return `${configuredOrigin}${configuredBase}`
-  })()
+  const configuredURL = String(config.public.apiUrl || '').trim().replace(/\/+$/, '').replace(/^(https?:\/\/)localhost(?=:\d+|\/|$)/i, (_, scheme: string) => `${scheme}127.0.0.1`)
+  const configuredOrigin = configuredURL.replace(managementSuffixPattern, '')
+  const apiBase = configuredOrigin ? `${configuredOrigin}${managementBase}` : managementBase
 
   const resolveUrl = (path: string) => {
     if (/^https?:\/\//i.test(path)) {
@@ -67,7 +85,7 @@ export const useApi = () => {
     }
     let cleanPath = path.trim()
     if (!cleanPath || cleanPath === '/') return apiBase
-    if (cleanPath.startsWith(configuredBase)) cleanPath = cleanPath.slice(configuredBase.length)
+    if (cleanPath.startsWith(managementBase)) cleanPath = cleanPath.slice(managementBase.length)
     return `${apiBase}/${trimSlashes(cleanPath)}`
   }
 
@@ -90,19 +108,60 @@ export const useApi = () => {
     return activeToken
   }
 
+  const fetchConfig = (options: ApiRequestOptions, activeToken: string) => {
+    const cacheKey = `${apiBase}\n${activeToken}`
+    const cached = configCache.get(cacheKey)
+    const now = Date.now()
+    if (cached && now - cached.cachedAt < 1000) return Promise.resolve(cached.value)
+
+    const pendingRequest = configRequests.get(cacheKey)
+    if (pendingRequest) return pendingRequest
+
+    const generation = configGeneration
+    const request = $fetch<any>(resolveUrl('/config'), {
+      method: 'GET',
+      headers: requestHeaders(options, activeToken),
+      responseType: 'json',
+      signal: options.signal
+    }).then((configRoot) => {
+      if (generation === configGeneration) configCache.set(cacheKey, { value: configRoot, cachedAt: Date.now() })
+      return configRoot
+    }).finally(() => {
+      if (configRequests.get(cacheKey) === request) configRequests.delete(cacheKey)
+    })
+    configRequests.set(cacheKey, request)
+    return request
+  }
+
+  const providerGroupsFromConfig = (configRoot: any, path: string) => {
+    const family = path.slice(providerPathPrefix.length).split('?', 1)[0] || ''
+    const groups = configRoot?.['api-keys']?.[family]
+    return Array.isArray(groups) ? groups : []
+  }
+
   const fetchAPI = async <T = unknown>(path: string, options: ApiRequestOptions = {}): Promise<T> => {
     const activeToken = requireToken(options.token)
-    const url = resolveUrl(path)
+    const method = options.method || (options.body === undefined ? 'GET' : 'POST')
+    const pathWithoutQuery = path.split('?', 1)[0]
+    const providerPath = pathWithoutQuery && providerPaths.has(pathWithoutQuery) ? pathWithoutQuery : ''
 
     try {
-      return await $fetch<T>(url, {
-        method: options.method || (options.body === undefined ? 'GET' : 'POST'),
+      if (method === 'GET' && providerPath) {
+        const configRoot = await fetchConfig(options, activeToken)
+        return providerGroupsFromConfig(configRoot, providerPath) as T
+      }
+
+      if (method !== 'GET') invalidateConfigCache()
+      const response = await $fetch<T>(resolveUrl(path), {
+        method,
         query: options.query,
         body: options.body as any,
         headers: requestHeaders(options, activeToken),
         responseType: options.responseType || 'json',
         signal: options.signal
       })
+      if (method !== 'GET') invalidateConfigCache()
+      return response
     } catch (error: any) {
       throw new ManagementApiError(errorMessage(error), error?.statusCode || error?.status, error?.data)
     }

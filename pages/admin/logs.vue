@@ -87,7 +87,7 @@
             <UInput v-model="applicationFilters.client_ip" placeholder="10.0.0.5" class="w-full" />
           </UFormField>
           <UFormField label="Request ID">
-            <UInput v-model="applicationFilters.request_id" placeholder="Exact request ID" class="w-full" />
+            <UInput v-model="applicationFilters.request_id" placeholder="Full or 8-character request ID" class="w-full" />
           </UFormField>
         </template>
 
@@ -584,7 +584,7 @@ const loadRequestLogs = async () => {
 const loadErrorLogs = async () => {
   errorLogsLoading.value = true
   try {
-    errorLogsResponse.value = await fetchAPI('/request-error-logs')
+    errorLogsResponse.value = await fetchAPI('/observability/logs/errors')
     const pages = Math.max(1, Math.ceil(filteredErrorLogs.value.length / errorLogPageSize.value))
     if (errorLogsPage.value > pages) errorLogsPage.value = pages
   } finally {
@@ -605,7 +605,7 @@ const loadApplicationLogs = async () => {
     if (source.request_id.trim()) params.set('request_id', source.request_id.trim())
     params.set('limit', String(applicationPageSize.value))
     params.set('offset', String((applicationPage.value - 1) * applicationPageSize.value))
-    applicationResponse.value = await fetchAPI(`/logs?${params.toString()}`)
+    applicationResponse.value = await fetchAPI(`/observability/logs?${params.toString()}`)
   } finally {
     applicationLoading.value = false
   }
@@ -751,7 +751,7 @@ const downloadErrorLog = async (name) => {
   downloadingId.value = name
   errorMessage.value = ''
   try {
-    const blob = await fetchAPI(`/request-error-logs/${encodeURIComponent(name)}`, { responseType: 'blob' })
+    const blob = await fetchAPI(`/observability/logs/errors/${encodeURIComponent(name)}`, { responseType: 'blob' })
     const objectUrl = URL.createObjectURL(blob)
     const anchor = document.createElement('a')
     anchor.href = objectUrl
@@ -771,7 +771,7 @@ const clearApplicationLogs = async () => {
   clearingLogs.value = true
   errorMessage.value = ''
   try {
-    await fetchAPI('/logs', { method: 'DELETE' })
+    await fetchAPI('/observability/logs', { method: 'DELETE' })
     clearConfirmOpen.value = false
     applicationPage.value = 1
     await loadApplicationLogs()

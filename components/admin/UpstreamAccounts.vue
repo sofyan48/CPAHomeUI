@@ -330,7 +330,7 @@ const oauthProviders = [
   { label: 'Antigravity', value: 'antigravity' }, { label: 'Kimi', value: 'kimi' },
   { label: 'xAI', value: 'xai' }
 ]
-const oauthRoutes = { claude: '/anthropic-auth-url', codex: '/codex-auth-url', antigravity: '/antigravity-auth-url', kimi: '/kimi-auth-url', xai: '/xai-auth-url' }
+const credentialRoute = suffix => `/credentials${suffix}`
 function handleCreateOpen(open) {
   if (!open && uploadActive.value) { nextTick(() => { createOpen.value = true }); return }
   if (!open) { stopOAuthPolling(); oauthSessions.value = {}; uploadResults.value = []; if (fileInput.value) fileInput.value.value = '' }
@@ -342,7 +342,7 @@ const flightError = ref('')
 async function loadData() {
   pageError.value = ''
   try {
-    return await fetchAPI('/auth-files')
+    return await fetchAPI(credentialRoute(''))
   } catch (error) {
     pageError.value = message(error)
     return { files: [] }
@@ -364,7 +364,13 @@ async function refreshData(notify = true) {
   } finally { selectedIDs.value = new Set() }
 }
 watch(() => props.syncRequest, () => { void refreshData(false) })
-const credentials = computed(() => Array.isArray(authData.value?.files) ? authData.value.files : [])
+const credentials = computed(() => {
+  const data = authData.value
+  if (Array.isArray(data)) return data
+  if (Array.isArray(data?.files)) return data.files
+  if (Array.isArray(data?.credentials)) return data.credentials
+  return Array.isArray(data?.items) ? data.items : []
+})
 const credentialIDs = computed(() => credentials.value.map(item => item.id).filter(Boolean).join(','))
 const quotaError = ref('')
 async function loadQuotaSummary() {
@@ -545,13 +551,13 @@ async function runBulk(action, items, request) {
 async function bulkStatus(disabled) {
   const items = credentials.value.filter(item => selectedIDs.value.has(item.id) && item.disabled !== disabled)
   if (!items.length) { selectedIDs.value = new Set(); return }
-  await runBulk(disabled ? 'Disable' : 'Enable', items, item => fetchAPI('/auth-files/status', { method: 'PATCH', body: { name: item.id, disabled } }))
+  await runBulk(disabled ? 'Disable' : 'Enable', items, item => fetchAPI(credentialRoute('/status'), { method: 'PATCH', body: { name: item.id, disabled } }))
 }
 async function bulkDelete() {
   if (!selectedIDs.value.size || bulkBusy.value) return
   const items = credentials.value.filter(item => selectedIDs.value.has(item.id))
   bulkDeleteOpen.value = false
-  await runBulk('Delete', items, item => fetchAPI(`/auth-files?id=${encodeURIComponent(item.id)}`, { method: 'DELETE' }))
+  await runBulk('Delete', items, item => fetchAPI(`${credentialRoute('')}?id=${encodeURIComponent(item.id)}`, { method: 'DELETE' }))
 }
 
 function supportsWebsockets(item) { return ['codex', 'xai'].includes(String(item.provider || '').toLowerCase()) }
@@ -559,7 +565,7 @@ async function setInlineField(item, field, nextValue) {
   if (!item.id || busy.value) return
   inlineChanging.value = item.id
   try {
-    await fetchAPI('/auth-files/fields', { method: 'PATCH', body: { id: item.id, [field]: nextValue } })
+    await fetchAPI(credentialRoute('/fields'), { method: 'PATCH', body: { id: item.id, [field]: nextValue } })
     await refreshData()
     toast.add({ title: 'Credential updated', color: 'success' })
   } catch (error) { toast.add({ title: 'Credential update failed', description: message(error), color: 'error' }) }
@@ -583,7 +589,7 @@ function formatFileSize(size) { return size < 1024 ? `${size} B` : size < 104857
 function uploadFile(item) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
-    xhr.open('POST', resolveUrl('/auth-files'))
+    xhr.open('POST', resolveUrl(credentialRoute('')))
     xhr.setRequestHeader('Authorization', `Bearer ${token.value}`)
     xhr.upload.onprogress = event => { const ratio = event.lengthComputable && event.total > 0 ? event.loaded / event.total : 0; item.progress = Math.min(99, Math.max(0, Math.round(100 * ratio))) }
     xhr.onerror = () => reject(Object.assign(new Error('Network error'), { code: 'network' }))
@@ -630,7 +636,7 @@ async function uploadFiles(event) { const files = Array.from(event.target.files 
 async function retryUpload(item) { await runUploadItems([item], false) }
 async function retryFailedUploads() { await runUploadItems(failedUploads.value.filter(isRetryableUpload), false) }
 async function uploadDroppedFiles(event) { if (!uploadActive.value && !busy.value) await addUploadFiles(Array.from(event.dataTransfer?.files || [])) }
-async function toggleStatus(item) { changing.value = item.id; try { await fetchAPI('/auth-files/status', { method: 'PATCH', body: { name: item.id, disabled: !item.disabled } }); await refreshData() } catch (error) { toast.add({ title: 'Status update failed', description: message(error), color: 'error' }) } finally { changing.value = '' } }
+async function toggleStatus(item) { changing.value = item.id; try { await fetchAPI(credentialRoute('/status'), { method: 'PATCH', body: { name: item.id, disabled: !item.disabled } }); await refreshData() } catch (error) { toast.add({ title: 'Status update failed', description: message(error), color: 'error' }) } finally { changing.value = '' } }
 async function showDetails(item, section = 'Overview') {
   detailsTarget.value = item
   initializeFields(item)
@@ -677,7 +683,7 @@ async function runConnectivity() {
   connectivityError.value = ''
   connectivityResult.value = null
   try {
-    connectivityResult.value = await fetchAPI('/api-call', {
+    connectivityResult.value = await fetchAPI('/requests/api-call', {
       method: 'POST',
       body: { auth_index: authIndex, method: 'GET', url, header: { Authorization: 'Bearer $TOKEN$', Accept: 'application/json' }, data: '' }
     })
@@ -712,7 +718,7 @@ async function saveFields() {
   if (Object.keys(body).length === 1) return
   savingFields.value = true; fieldsError.value = ''
   try {
-    await fetchAPI('/auth-files/fields', { method: 'PATCH', body })
+    await fetchAPI(credentialRoute('/fields'), { method: 'PATCH', body })
     await refreshData()
     const updated = credentials.value.find(item => item.id === body.id)
     if (updated) { detailsTarget.value = updated; initializeFields(updated) }
@@ -815,13 +821,13 @@ async function loadModels(item) {
   modelsLoading.value = true
   modelsError.value = ''
   credentialModels.value = []
-  try { const result = await fetchAPI('/auth-files/models', { query: { name: item.id } }); if (detailsTarget.value?.id === item.id) credentialModels.value = result.models || [] }
+  try { const result = await fetchAPI(credentialRoute('/models'), { query: { name: item.id } }); if (detailsTarget.value?.id === item.id) credentialModels.value = result.models || [] }
   catch (error) { if (detailsTarget.value?.id === item.id) modelsError.value = message(error) }
   finally { if (detailsTarget.value?.id === item.id) modelsLoading.value = false }
 }
 async function downloadCredential(item) {
   try {
-    const blob = await fetchAPI('/auth-files/download', { query: { id: item.id }, responseType: 'blob' })
+    const blob = await fetchAPI(credentialRoute('/download'), { query: { id: item.id }, responseType: 'blob' })
     const url = URL.createObjectURL(blob)
     const anchor = document.createElement('a')
     anchor.href = url
@@ -832,14 +838,15 @@ async function downloadCredential(item) {
 }
 
 function confirmDelete(item) { deleteTarget.value = item; deleteOpen.value = true }
-async function deleteCredential() { if (!deleteTarget.value) return; deleting.value = true; try { await fetchAPI(`/auth-files?id=${encodeURIComponent(deleteTarget.value.id)}`, { method: 'DELETE' }); deleteOpen.value = false; await refreshData(); toast.add({ title: 'Credential deleted', color: 'success' }) } catch (error) { toast.add({ title: 'Delete failed', description: message(error), color: 'error' }) } finally { deleting.value = false } }
+async function deleteCredential() { if (!deleteTarget.value) return; deleting.value = true; try { await fetchAPI(`${credentialRoute('')}?id=${encodeURIComponent(deleteTarget.value.id)}`, { method: 'DELETE' }); deleteOpen.value = false; await refreshData(); toast.add({ title: 'Credential deleted', color: 'success' }) } catch (error) { toast.add({ title: 'Delete failed', description: message(error), color: 'error' }) } finally { deleting.value = false } }
 async function startOAuth(provider) {
   startingOAuth.value = provider; oauthError.value = ''
   try {
-    const result = await fetchAPI(oauthRoutes[provider], { query: { is_webui: true } })
-    if (!result?.url) throw new Error('Authorization URL was not returned.')
+    const result = await fetchAPI('/oauth/auth-url', { query: { provider, is_webui: true } })
+    const url = result?.url || result?.auth_url
+    if (!url) throw new Error('Authorization URL was not returned.')
     stopOAuthPolling()
-    const sessions = { ...oauthSessions.value, [provider]: { url: result.url, state: result.state || '', status: '', code: '', redirect_url: '', callback_error: '' } }
+    const sessions = { ...oauthSessions.value, [provider]: { url, state: result.state || '', status: '', code: '', redirect_url: '', callback_error: '' } }
     oauthSessions.value = sessions
   } catch (error) { oauthError.value = message(error) }
   finally { startingOAuth.value = '' }
@@ -861,7 +868,7 @@ async function checkOAuthStatus(provider, notify = true) {
   if (!session?.state || checkingOAuth.value === provider) return
   checkingOAuth.value = provider
   try {
-    const result = await fetchAPI('/get-auth-status', { query: { state: session.state.trim() || undefined } })
+    const result = await fetchAPI('/oauth/status', { query: { state: session.state.trim() || undefined } })
     session.status = result.status || 'unknown'; session.error = result.error || ''
     if (String(session.status).trim().toLowerCase() === 'ok') await completeOAuth()
     else if (notify) toast.add({ title: 'OAuth status checked', color: 'neutral' })
@@ -873,7 +880,7 @@ async function pollOAuth(provider, state) {
   let failures = 0
   for (let attempt = 0; attempt < 150; attempt++) {
     try {
-      const result = await fetchAPI('/get-auth-status', { query: { state } })
+      const result = await fetchAPI('/oauth/status', { query: { state } })
       if (generation !== oauthGeneration) return
       failures = 0
       const session = oauthSessions.value[provider]
@@ -925,7 +932,7 @@ async function submitCallback(provider) {
       redirectURL = normalized || redirectURL
     }
     submittingCallback.value = provider
-    await fetchAPI('/oauth-callback', { method: 'POST', body: { provider, redirect_url: redirectURL, code, state, error: errorText } })
+    await fetchAPI('/oauth/callback', { method: 'POST', body: { provider, redirect_url: redirectURL, code, state, error: errorText } })
     toast.add({ title: 'OAuth callback submitted', color: 'success' })
     let pollState = state
     if (!pollState) { const match = session.redirect_url.match(/(?:^|[?&#])state=([^&]+)/i); if (match) { try { pollState = decodeURIComponent(match[1]) } catch { pollState = match[1] } } }
