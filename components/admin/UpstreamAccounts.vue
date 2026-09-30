@@ -85,7 +85,7 @@
       </div>
     </section>
 
-    <UModal v-model:open="createOpen" title="Add credential" description="Choose how to add an upstream account." :ui="{ content: 'sm:max-w-2xl' }" @update:open="handleCreateOpen">
+    <UModal v-model:open="createOpen" :dismissible="false" title="Add credential" description="Choose how to add an upstream account." :ui="{ content: 'sm:max-w-2xl' }" @update:open="handleCreateOpen">
       <template #body>
         <div class="space-y-5">
           <div class="grid grid-cols-3 gap-1 rounded-md bg-[var(--ui-bg-elevated)] p-1" role="tablist" aria-label="Credential creation method">
@@ -139,7 +139,7 @@
       </template>
     </USlideover>
 
-    <UModal v-model:open="resetCreditOpen" title="Reset Codex quota" description="Confirm the credit redemption for this credential." @update:open="handleResetCreditOpen">
+    <UModal v-model:open="resetCreditOpen" :dismissible="false" title="Reset Codex quota" description="Confirm the credit redemption for this credential." @update:open="handleResetCreditOpen">
       <template #body>
         <div class="space-y-4">
           <UAlert color="info" variant="subtle" title="This consumes one reset credit" :description="`Resetting ${resetCreditTarget?.label || resetCreditTarget?.name || resetCreditTarget?.id || 'this credential'} uses one available credit. This action cannot be undone.`" />
@@ -149,7 +149,7 @@
       </template>
     </UModal>
 
-    <UModal v-model:open="connectivityOpen" title="Test credential connectivity" description="Home sends a GET request using the selected credential for proxy selection and $TOKEN$ replacement.">
+    <UModal v-model:open="connectivityOpen" :dismissible="false" title="Test credential connectivity" description="Home sends a GET request using the selected credential for proxy selection and $TOKEN$ replacement.">
       <template #body>
         <form class="space-y-4" @submit.prevent="runConnectivity">
           <UAlert color="warning" variant="subtle" title="Trusted URLs only" description="Home sends this request and can reach internal services on its network. Only test URLs you trust." />
@@ -168,8 +168,8 @@
 
 
 
-    <UModal v-model:open="bulkDeleteOpen" title="Delete selected credentials"><template #body><div class="space-y-5"><UAlert color="warning" variant="subtle" title="Delete selected credentials?" :description="`${selectedIDs.size} credential(s) will be removed. This cannot be undone.`"/><div class="flex justify-end gap-3"><UButton color="neutral" variant="ghost" :disabled="bulkBusy" @click="bulkDeleteOpen = false">Cancel</UButton><UButton color="error" :loading="bulkBusy" :disabled="!selectedIDs.size" @click="bulkDelete">Delete {{ selectedIDs.size }}</UButton></div></div></template></UModal>
-    <UModal v-model:open="deleteOpen" title="Delete credential"><template #body><div class="space-y-5"><UAlert color="warning" variant="subtle" title="This credential will be removed" :description="deleteTarget?.label || deleteTarget?.name || deleteTarget?.id"/><div class="flex justify-end gap-3"><UButton color="neutral" variant="ghost" @click="deleteOpen = false">Cancel</UButton><UButton color="error" :loading="deleting" :disabled="bulkBusy" @click="deleteCredential">Delete</UButton></div></div></template></UModal>
+    <UModal v-model:open="bulkDeleteOpen" :dismissible="false" title="Delete selected credentials"><template #body><div class="space-y-5"><UAlert color="warning" variant="subtle" title="Delete selected credentials?" :description="`${selectedIDs.size} credential(s) will be removed. This cannot be undone.`"/><div class="flex justify-end gap-3"><UButton color="neutral" variant="ghost" :disabled="bulkBusy" @click="bulkDeleteOpen = false">Cancel</UButton><UButton color="error" :loading="bulkBusy" :disabled="!selectedIDs.size" @click="bulkDelete">Delete {{ selectedIDs.size }}</UButton></div></div></template></UModal>
+    <UModal v-model:open="deleteOpen" :dismissible="false" title="Delete credential"><template #body><div class="space-y-5"><UAlert color="warning" variant="subtle" title="This credential will be removed" :description="deleteTarget?.label || deleteTarget?.name || deleteTarget?.id"/><div class="flex justify-end gap-3"><UButton color="neutral" variant="ghost" @click="deleteOpen = false">Cancel</UButton><UButton color="error" :loading="deleting" :disabled="bulkBusy" @click="deleteCredential">Delete</UButton></div></div></template></UModal>
   </div>
 </template>
 

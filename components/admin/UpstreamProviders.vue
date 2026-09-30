@@ -97,13 +97,11 @@
       </div>
     </section>
 
-    <UModal
+    <AdminModalForm
       v-model:open="providerEditorOpen"
-      :ui="{ content: 'sm:max-w-2xl' }"
       :title="providerEditorMode === 'detail' ? 'Provider details' : providerEditorMode === 'edit' ? `Edit model key · ${selectedProvider.label}` : `New model key · ${selectedProvider.label}`"
       description="Configure model provider credentials and settings."
     >
-      <template #body>
         <div v-if="providerEditorMode === 'detail' && editingProviderEntry" class="max-h-[75vh] space-y-5 overflow-y-auto pr-1">
           <div><p class="text-xs font-medium uppercase text-[var(--ui-text-muted)]">Provider details</p><h2 class="mt-2 text-base font-semibold">{{ providerEntryLabel(editingProviderEntry) }}</h2></div>
           <dl class="grid gap-x-4 gap-y-3 sm:grid-cols-2">
@@ -138,7 +136,7 @@
             </div>
             <UCheckbox v-if="supportsWebsockets" v-model="providerForm.websockets" label="WebSocket support" />
             <UCheckbox v-if="isCompat" v-model="providerForm.disabled" label="Disabled" />
-            <details v-if="selectedProviderRoute === 'claude-api-key'" class="space-y-3 rounded-lg border border-white/40 bg-white/40 app-surface p-4 dark:border-white/10 dark:bg-neutral-900/40">
+            <AdminModalCard v-if="selectedProviderRoute === 'claude-api-key'" as="details" class="space-y-3">
               <summary class="cursor-pointer font-medium">Cloak configuration</summary>
               <div class="mt-3 space-y-3">
                 <UFormField label="Cloak mode" hint="Auto cloaks clients other than Claude Code."><USelect v-model="cloakMode" :items="cloakModeOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
@@ -146,13 +144,13 @@
                 <UFormField label="Sensitive words" hint="One word per line; obfuscated in system instructions."><UTextarea v-model="cloakSensitiveWordsText" :rows="3" class="w-full" /></UFormField>
                 <UFormField label="Cache user ID"><USelect v-model="cloakCacheUserID" :items="cloakCacheOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
               </div>
-            </details>
+            </AdminModalCard>
 
-            <details class="space-y-3 rounded-lg border border-white/40 bg-white/40 app-surface p-4 dark:border-white/10 dark:bg-neutral-900/40">
+            <AdminModalCard as="details" class="space-y-3">
               <summary class="cursor-pointer font-medium">Custom models</summary>
               <div class="mt-3 flex justify-end"><UButton type="button" size="sm" color="neutral" variant="outline" icon="i-tabler-plus" @click="addProviderModel">Add model</UButton></div>
 
-              <div v-if="supportsDiscovery" class="space-y-3 rounded-lg border border-white/40 bg-white/40 app-surface p-3 dark:border-white/10 dark:bg-neutral-900/40">
+              <AdminModalCard v-if="supportsDiscovery" nested class="space-y-3">
                 <p class="text-sm font-medium">Discover models</p>
                 <p class="text-xs text-[var(--ui-text-muted)]">Fetch available models from the upstream provider.</p>
                 <div class="flex flex-wrap items-center gap-2">
@@ -172,13 +170,13 @@
                   </div>
                   <div class="flex justify-end gap-2"><UButton type="button" size="sm" color="neutral" variant="ghost" @click="discoveryVisible = false">Close</UButton><UButton type="button" size="sm" color="primary" :disabled="!selectedDiscovered.length" @click="applyDiscoveredModels">Apply</UButton></div>
                 </div>
-              </div>
-              <div v-for="(model, index) in providerForm.models" :key="index" class="space-y-2 rounded-lg border border-white/40 bg-white/40 app-surface p-3 dark:border-white/10 dark:bg-neutral-900/40">
+              </AdminModalCard>
+              <AdminModalCard v-for="(model, index) in providerForm.models" :key="index" nested class="space-y-2">
                 <div class="grid gap-2 sm:grid-cols-2"><UFormField label="Model ID"><UInputMenu v-model="model.name" :items="modelSuggestions" create-item class="w-full" placeholder="Search catalog or enter model" @create="model.name = $event.trim()" /></UFormField><UFormField label="Alias"><UInput v-model="model.alias" class="w-full" /></UFormField><UFormField v-if="supportsModelMapping" label="Display name"><UInput v-model="model['display-name']" class="w-full" /></UFormField><div class="flex items-end justify-between gap-2"><UCheckbox v-if="supportsModelMapping" v-model="model['force-mapping']" label="Force response model mapping" /><UButton type="button" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove model" :disabled="providerForm.models.length <= 1" @click="removeProviderModel(index)" /></div></div>
-              </div>
-            </details>
-            <details class="rounded-lg border border-white/40 bg-white/40 app-surface p-4 dark:border-white/10 dark:bg-neutral-900/40"><summary class="cursor-pointer font-medium">Excluded models</summary><UTextarea v-model="excludedModelsText" :rows="3" class="mt-3 w-full" placeholder="Separate model IDs with commas or new lines" /></details>
-            <details class="space-y-3 rounded-lg border border-white/40 bg-white/40 app-surface p-4 dark:border-white/10 dark:bg-neutral-900/40">
+              </AdminModalCard>
+            </AdminModalCard>
+            <AdminModalCard v-if="!isCompat" as="details"><summary class="cursor-pointer font-medium">Excluded models</summary><UTextarea v-model="excludedModelsText" :rows="3" class="mt-3 w-full" placeholder="Separate model IDs with commas or new lines" /></AdminModalCard>
+            <AdminModalCard as="details" class="space-y-3">
               <summary class="cursor-pointer font-medium">Request headers</summary>
               <div class="mt-3 space-y-3">
                 <div class="flex justify-end"><UButton type="button" size="sm" color="neutral" variant="outline" icon="i-tabler-plus" @click="headerRows.push({ name: '', value: '' })">Add header</UButton></div>
@@ -188,13 +186,13 @@
                 <UButton type="button" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove header" :disabled="headerRows.length <= 1" @click="headerRows.splice(index, 1)" />
               </div>
               </div>
-            </details>
-            <div v-if="supportsTest" class="space-y-3 rounded-lg border border-white/40 bg-white/40 app-surface p-4 dark:border-white/10 dark:bg-neutral-900/40">
+            </AdminModalCard>
+            <AdminModalCard v-if="supportsTest" class="space-y-3">
               <UFormField label="Test model"><USelect v-model="testModel" :items="testModelOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
               <UButton type="button" color="neutral" variant="outline" :loading="testingConnection" @click="testProviderConnection">Test connectivity</UButton>
               <UAlert v-if="testError" color="error" variant="subtle" title="Connectivity test failed" :description="testError" />
               <UAlert v-if="testSuccess" color="success" variant="subtle" title="Connectivity test succeeded" />
-            </div>
+            </AdminModalCard>
           <div class="flex items-center justify-between border-t border-[var(--ui-border)] pt-4">
             <span class="text-xs text-[var(--ui-text-muted)]">Leave the key blank when editing to keep it.</span>
             <div class="flex gap-3">
@@ -203,8 +201,7 @@
             </div>
           </div>
         </form>
-      </template>
-    </UModal>
+    </AdminModalForm>
 
     <UModal v-model:open="deleteOpen" title="Delete provider entry">
       <template #body>
@@ -258,19 +255,21 @@ const providerForm = ref({})
 const excludedModelsText = ref('')
 const headerRows = ref([{ name: '', value: '' }])
 const providerKey = ref('')
-const cloakMode = ref('')
+const unsetCloakMode = '__not-set__'
+const automaticTestModel = '__auto__'
+const cloakMode = ref(unsetCloakMode)
 const cloakStrictMode = ref(false)
 const cloakSensitiveWordsText = ref('')
 const cloakCacheUserID = ref('inherit')
-const cloakModeOptions = [{ label: 'Not set', value: '' }, { label: 'Auto', value: 'auto' }, { label: 'Always', value: 'always' }, { label: 'Never', value: 'never' }]
+const cloakModeOptions = [{ label: 'Not set', value: unsetCloakMode }, { label: 'Auto', value: 'auto' }, { label: 'Always', value: 'always' }, { label: 'Never', value: 'never' }]
 const cloakCacheOptions = [{ label: 'Use default', value: 'inherit' }, { label: 'Cache per API key', value: 'enabled' }, { label: 'Generate for each request', value: 'disabled' }]
 const requestRetryText = ref('')
 
 const isCompat = computed(() => selectedProviderRoute.value === 'openai-compatibility')
 const supportsWebsockets = computed(() => ['codex-api-key', 'xai-api-key'].includes(selectedProviderRoute.value))
 const supportsTest = computed(() => ['claude-api-key', 'openai-compatibility'].includes(selectedProviderRoute.value))
-const testModel = ref('')
-const testModelOptions = computed(() => [{ label: 'Auto (first custom model)', value: '' }, ...providerForm.value.models.filter(model => String(model.name || '').trim()).map(model => ({ label: model.alias?.trim() ? `${model.name} · ${model.alias}` : model.name, value: model.name }))])
+const testModel = ref(automaticTestModel)
+const testModelOptions = computed(() => [{ label: 'Auto (first custom model)', value: automaticTestModel }, ...providerForm.value.models.filter(model => String(model.name || '').trim()).map(model => ({ label: model.alias?.trim() ? `${model.name} · ${model.alias}` : model.name, value: model.name }))])
 const testError = ref('')
 const testSuccess = ref(false)
 const testingConnection = ref(false)
@@ -389,6 +388,7 @@ function v8GroupsFromEntries(entries, category = selectedProvider.value) {
     const editedEntry = groupEntries.find(v8GroupFieldsChanged) || groupEntries[0]
     const group = cloneValue(editedEntry.__v8Group) || {}
     copyFields(group, editedEntry, v8GroupFields)
+    if (compat) delete group['excluded-models']
     if (!compat) {
       delete group.id
       delete group.uuid
@@ -605,7 +605,8 @@ async function discoverModels() {
 async function testProviderConnection() {
   testError.value = ''
   testSuccess.value = false
-  const model = testModel.value.trim() || providerForm.value.models.find(item => String(item.name || '').trim())?.name.trim()
+  const selectedTestModel = testModel.value === automaticTestModel ? '' : testModel.value.trim()
+  const model = selectedTestModel || providerForm.value.models.find(item => String(item.name || '').trim())?.name.trim()
   const authIndex = discoveryAuthIndex.value
   const key = providerKey.value.trim()
   const headers = Object.fromEntries(headerRows.value.filter(row => row.name.trim()).map(row => [row.name.trim(), row.value]))
@@ -692,7 +693,7 @@ function loadGuidedEntry(entry) {
   if (providerEditorMode.value === 'create') providerForm.value.priority = ''
   providerForm.value.models = providerForm.value.models.map(model => ({ ...model, 'display-name': model['display-name'] || '', 'force-mapping': Boolean(model['force-mapping']) }))
   excludedModelsText.value = Array.isArray(entry['excluded-models']) ? entry['excluded-models'].filter(model => String(model).trim() !== '*').join('\n') : ''
-  testModel.value = String(entry['test-model'] || '')
+  testModel.value = String(entry['test-model'] || automaticTestModel)
   testError.value = ''
   testSuccess.value = false
   requestRetryText.value = entry['request-retry'] == null ? '' : String(entry['request-retry'])
@@ -700,7 +701,7 @@ function loadGuidedEntry(entry) {
   headerRows.value = Object.entries(entry.headers || {}).map(([name, value]) => ({ name, value: typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' ? String(value) : '' }))
   if (!headerRows.value.length) headerRows.value = [{ name: '', value: '' }]
   const cloak = entry.cloak && typeof entry.cloak === 'object' && !Array.isArray(entry.cloak) ? entry.cloak : null
-  cloakMode.value = cloak?.mode || ''
+  cloakMode.value = cloak?.mode || unsetCloakMode
   cloakStrictMode.value = cloak?.['strict-mode'] === true
   cloakSensitiveWordsText.value = Array.isArray(cloak?.['sensitive-words']) ? cloak['sensitive-words'].join('\n') : ''
   cloakCacheUserID.value = cloak?.['cache-user-id'] == null ? 'inherit' : cloak['cache-user-id'] ? 'enabled' : 'disabled'
@@ -750,18 +751,20 @@ function guidedEntry() {
     if (name) value.headers[name] = header.value
   }
   if (selectedProviderRoute.value === 'claude-api-key') {
-    if (cloakMode.value || cloakStrictMode.value || cloakCacheUserID.value !== 'inherit' || cloakSensitiveWordsText.value.trim()) {
+    const selectedCloakMode = cloakMode.value === unsetCloakMode ? '' : cloakMode.value
+    if (selectedCloakMode || cloakStrictMode.value || cloakCacheUserID.value !== 'inherit' || cloakSensitiveWordsText.value.trim()) {
       if (!cloakModeOptions.some(option => option.value === cloakMode.value)) {
         editorError.value = 'Select a valid cloaking mode.'
         return null
       }
       const cloak = value.cloak && typeof value.cloak === 'object' && !Array.isArray(value.cloak) ? value.cloak : {}
       value.cloak = { ...cloak, 'strict-mode': cloakStrictMode.value, 'cache-user-id': cloakCacheUserID.value === 'enabled', 'sensitive-words': cloakSensitiveWordsText.value.split(/[,\n]/).map(word => word.trim()).filter(Boolean) }
-      if (cloakMode.value) value.cloak.mode = cloakMode.value
+      if (selectedCloakMode) value.cloak.mode = selectedCloakMode
       else delete value.cloak.mode
     } else delete value.cloak
   }
-  value['excluded-models'] = excludedModelsText.value.split(/[,\n]/).map(item => item.trim()).filter(Boolean)
+  if (isCompat.value) delete value['excluded-models']
+  else value['excluded-models'] = excludedModelsText.value.split(/[,\n]/).map(item => item.trim()).filter(Boolean)
   value['base-url'] = String(value['base-url'] || '').trim()
   value.prefix = String(value.prefix || '').trim()
   if (!isCompat.value) {
@@ -786,7 +789,7 @@ function guidedEntry() {
   }
   if (isCompat.value) {
     value.name = value.name.trim()
-    if (testModel.value.trim()) value['test-model'] = testModel.value.trim()
+    if (testModel.value !== automaticTestModel && testModel.value.trim()) value['test-model'] = testModel.value.trim()
     else delete value['test-model']
     delete value['proxy-url']
     if (providerKey.value.trim()) value['api-key-entries'] = [{ 'api-key': providerKey.value.trim(), weight: value.weight }]
@@ -797,9 +800,9 @@ function guidedEntry() {
     priority: value.priority,
     headers: value.headers,
     models: value.models,
-    'excluded-models': value['excluded-models'],
     'disable-cooling': value['disable-cooling']
   }
+  if (!isCompat.value) payload['excluded-models'] = value['excluded-models']
   for (const field of ['name', 'base-url', 'proxy-url', 'prefix']) payload[field] = value[field]
   payload.weight = value.weight
   if (Object.hasOwn(value, 'request-retry')) payload['request-retry'] = value['request-retry']
