@@ -121,7 +121,7 @@
             <p v-if="userForm.periods[window].enabled && Number(userForm.periods[window].limit) === 0" class="text-xs text-amber-600 dark:text-amber-400">A limit of 0 blocks new requests immediately.</p>
             <div v-if="window === '7d' && userForm.periods[window].enabled && userForm.periods[window].mode === 'calendar'" class="grid gap-3 sm:grid-cols-2"><UFormField label="Week starts on"><USelect v-model="userForm.week_reset_day" :items="weekDayOptions" value-key="value" label-key="label" class="w-full" /></UFormField><UFormField label="Week start hour (0–23)"><UInput v-model="userForm.week_reset_hour" type="number" min="0" max="23" step="1" class="w-full" /></UFormField></div>
           </div>
-          <UFormField label="Timezone"><USelect v-model="userForm.timezone" :items="timezoneOptions" class="w-full" /><p class="mt-1 text-xs text-[var(--ui-text-muted)]">IANA timezone used by calendar windows.</p></UFormField>
+          <UFormField label="Timezone"><UInputMenu v-model="userForm.timezone" :items="timezoneOptions" class="w-full" :search-input="{ placeholder: 'Search IANA timezones…' }" /><p class="mt-1 text-xs text-[var(--ui-text-muted)]">IANA timezone used by calendar windows. New users default to this device's timezone.</p></UFormField>
         </div>
         <div v-else class="rounded-md border border-dashed border-[var(--ui-border)] px-3 py-2.5 text-xs text-[var(--ui-text-muted)]">This runtime does not expose period-limit management. Period-limit fields will not be sent.</div>
         <div class="flex justify-end gap-2 border-t border-[var(--ui-border)] pt-4"><UButton type="button" color="neutral" variant="outline" @click="userFormOpen = false">Cancel</UButton><UButton type="submit" :loading="saving">{{ editingUser ? 'Save changes' : 'Create user' }}</UButton></div>
@@ -250,12 +250,22 @@ function toggleUserSelection(id, checked) { const next = new Set(selectedUserIds
 function toggleAllFilteredUsers(checked) { const next = new Set(selectedUserIds.value); for (const user of operableFilteredUsers.value) checked ? next.add(user.id) : next.delete(user.id); selectedUserIds.value = next }
 
 
-const periodWindowIds = ['5h', '1d', '7d', '30d'], timezoneOptions = ['Asia/Shanghai', 'Asia/Taipei', 'Asia/Tokyo', 'UTC', 'Europe/London', 'Europe/Berlin', 'America/New_York', 'America/Los_Angeles']
+const periodWindowIds = ['5h', '1d', '7d', '30d']
+const deviceTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+const fallbackTimezones = ['UTC', 'Asia/Shanghai', 'Asia/Taipei', 'Asia/Tokyo', 'Asia/Jakarta', 'Asia/Makassar', 'Asia/Jayapura', 'Asia/Singapore', 'Europe/London', 'Europe/Berlin', 'America/New_York', 'America/Los_Angeles']
+const timezoneOptions = (() => {
+  try {
+    const supported = typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : []
+    return [...new Set(['UTC', deviceTimezone, ...supported, ...fallbackTimezones])].filter(Boolean).sort((left, right) => left.localeCompare(right))
+  } catch {
+    return [...new Set([deviceTimezone, ...fallbackTimezones])].filter(Boolean).sort((left, right) => left.localeCompare(right))
+  }
+})()
 const weekDayOptions = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((label, index) => ({ label, value: index + 1 }))
 const periodWindowLabel = id => ({ '5h': '5 hours', '1d': '1 day', '7d': '7 days', '30d': '30 days' }[id])
 const periodModeOptions = id => (id === '5h' ? ['first_use', 'sliding'] : ['first_use', 'sliding', 'calendar']).map(value => ({ value, label: value === 'first_use' ? 'First use' : value[0].toUpperCase() + value.slice(1) }))
 const newPeriods = () => Object.fromEntries(periodWindowIds.map(id => [id, { enabled: false, limit: '0', mode: 'first_use' }]))
-const emptyUserForm = () => ({ username: '', password: '', credits: '0', credits_unlimited: false, timezone: 'Asia/Shanghai', week_reset_day: 1, week_reset_hour: 0, periods: newPeriods() })
+const emptyUserForm = () => ({ username: '', password: '', credits: '0', credits_unlimited: false, timezone: deviceTimezone, week_reset_day: 1, week_reset_hour: 0, periods: newPeriods() })
 const userFormOpen = ref(false), editingUser = ref(null), userForm = ref(emptyUserForm())
 function openUserCreate() { editingUser.value = null; userForm.value = emptyUserForm(); clearFormError(); userFormOpen.value = true }
 async function openUserEdit(user) { clearFormError(); try { const response = await fetchAPI(`/users/${user.id}`); const detail = response?.user || user; editingUser.value = detail; userForm.value = userToForm(detail); userFormOpen.value = true } catch (error) { toast.add({ title: 'Could not load user', description: errorMessage(error), color: 'error' }) } }
