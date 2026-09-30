@@ -29,6 +29,7 @@
         </nav>
         <div class="flex shrink-0 items-center gap-1 border-t border-slate-200 p-2 dark:border-white/10" :class="sidebarHidden ? 'lg:flex-col' : ''">
           <UButton to="/app/profile" icon="i-tabler-user-circle" color="neutral" variant="ghost" class="min-w-0 flex-1 rounded-lg" :class="sidebarHidden ? 'lg:w-full lg:justify-center' : 'justify-start'" aria-label="Profile" :title="sidebarHidden ? 'Profile' : undefined" :aria-current="route.path === '/app/profile' ? 'page' : undefined" @click="closeMobile"><span :class="sidebarHidden ? 'lg:hidden' : ''">Profile</span></UButton>
+          <UButton icon="i-tabler-logout" color="neutral" variant="ghost" aria-label="Log out" title="Log out" @click="logout" />
           <ThemeSwitcher />
         </div>
       </aside>
@@ -38,7 +39,6 @@
             <UButton class="lg:hidden" icon="i-tabler-menu-2" color="neutral" variant="ghost" aria-label="Open navigation" aria-controls="workspace-sidebar" :aria-expanded="mobileOpen" @click="openMobile" />
             <div class="min-w-0"><p class="truncate text-sm font-semibold text-[var(--ui-text-highlighted)]">{{ pageTitle }}</p><p class="truncate text-xs text-[var(--ui-text-muted)]">{{ pageSubtitle }}</p></div>
           </div>
-          <UButton color="neutral" variant="ghost" size="sm" icon="i-tabler-logout" class="shrink-0" @click="logout">Log out</UButton>
         </header>
         <main class="min-h-0 w-full flex-1 overflow-y-auto px-4 py-5 sm:p-5 lg:p-6"><slot /></main>
       </div>
