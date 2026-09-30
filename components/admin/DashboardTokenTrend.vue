@@ -117,10 +117,8 @@ const linePath = computed(() => {
   return path
 })
 const areaPath = computed(() => linePath.value ? `${linePath.value} L ${coordinates.value.at(-1)!.x} ${chartBounds.bottom} L ${coordinates.value[0]!.x} ${chartBounds.bottom} Z` : '')
-const defaultIndex = computed(() => points.value.length ? points.value.reduce((best, point, index, list) => point.tokens > list[best]!.tokens ? index : best, 0) : null)
-const selectedIndex = computed(() => activeIndex.value ?? defaultIndex.value)
 const selectedPoint = computed(() => {
-  const index = selectedIndex.value
+  const index = activeIndex.value
   if (index === null || index < 0 || index >= points.value.length) return null
   return { ...points.value[index]!, ...coordinates.value[index]!, index }
 })
@@ -161,7 +159,7 @@ function onKeydown(event: KeyboardEvent) {
   event.preventDefault()
   if (event.key === 'Home') activeIndex.value = 0
   else if (event.key === 'End') activeIndex.value = points.value.length - 1
-  else activeIndex.value = Math.max(0, Math.min(points.value.length - 1, (activeIndex.value ?? defaultIndex.value ?? (event.key === 'ArrowLeft' ? points.value.length : -1)) + (event.key === 'ArrowRight' ? 1 : -1)))
+  else activeIndex.value = Math.max(0, Math.min(points.value.length - 1, (activeIndex.value ?? (event.key === 'ArrowLeft' ? points.value.length : -1)) + (event.key === 'ArrowRight' ? 1 : -1)))
 }
 function onPointerMove(event: PointerEvent) {
   const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect()
