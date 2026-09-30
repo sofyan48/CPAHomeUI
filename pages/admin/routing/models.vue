@@ -3,10 +3,7 @@
     <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div>
         <h1 class="text-2xl font-bold text-[var(--ui-text-highlighted)]">Models</h1>
-        <p class="mt-1 max-w-3xl text-sm text-[var(--ui-text-muted)]">
-          Browse models currently available through active credentials or the complete static catalog.
-          Static entries are grouped by channel and retain their authoritative billing providers.
-        </p>
+
       </div>
       <UButton color="primary" icon="i-tabler-refresh" :loading="pending" @click="refresh">Refresh</UButton>
     </div>

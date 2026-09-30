@@ -3,7 +3,6 @@
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
         <h1 class="text-2xl font-bold text-[var(--ui-text-highlighted)]">Upstream</h1>
-        <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Credentials and model providers</p>
       </div>
       <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="syncing" @click="syncData">Sync data</UButton>
     </div>

@@ -19,8 +19,6 @@
         <span v-if="lastUpdated" class="text-xs text-[var(--ui-text-muted)]">Updated {{ formatTime(lastUpdated) }}</span>
       </div>
       <UAlert v-if="consoleError" color="error" variant="subtle" title="Some diagnostics could not be loaded" :description="consoleError" />
-      <p class="text-xs text-[var(--ui-text-muted)]">Overview and health use the selected rolling window; realtime always shows the last 15 minutes. Health reflects observed usage, not a provider probe.</p>
-
       <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <AppCard v-for="metric in summaryMetrics" :key="metric.label">
           <p class="text-sm text-[var(--ui-text-muted)]">{{ metric.label }}</p>

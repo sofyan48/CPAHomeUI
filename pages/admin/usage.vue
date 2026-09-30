@@ -30,10 +30,6 @@
 
     <AppCard class="usage-filter-panel">
       <form @submit.prevent="applyFilters">
-        <div class="mb-3">
-          <h2 class="text-sm font-semibold">Overview scope</h2>
-          <p class="text-xs text-[var(--ui-text-muted)]">Time, provider, model, endpoint, and Home IP apply to headline metrics, charts, insights, and records.</p>
-        </div>
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <UFormField label="Time range">
             <USelect v-model="rangePreset" :items="rangeOptions" value-key="value" label-key="label" class="w-full" @update:model-value="selectRange" />
@@ -61,15 +57,12 @@
         <div class="mt-4 flex flex-wrap items-center gap-2">
           <UButton type="submit" color="primary" :loading="loading">Apply filters</UButton>
           <UButton type="button" color="neutral" variant="ghost" @click="resetFilters">Reset</UButton>
-          <span class="ml-auto text-xs text-[var(--ui-text-muted)]">
-            Times are interpreted by Home in {{ timezone }}. Date-only “To” includes the full selected day.
-          </span>
+
         </div>
       </form>
     </AppCard>
 
     <section>
-      <div class="mb-2 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between"><div><h2 class="text-sm font-semibold">Overview</h2><p class="text-xs text-[var(--ui-text-muted)]">{{ overviewScopeLabel }}</p></div><span class="text-xs text-[var(--ui-text-muted)]">{{ formatRange(overviewRange.from, overviewRange.to) }}</span></div>
       <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <AppCard v-for="metric in chartMetrics" :key="metric.label" :ui="{ body: 'p-0' }">
           <div class="flex items-start justify-between gap-3 px-4 pt-3"><div><p class="text-xs font-medium text-[var(--ui-text-muted)]">{{ metric.label }}</p><p class="mt-1 text-xl font-semibold tracking-tight">{{ metric.value }}</p></div><UIcon :name="metric.icon" class="mt-0.5 size-4 text-[var(--ui-text-muted)]" /></div>
@@ -90,8 +83,25 @@
 
     <div class="grid items-start gap-3 xl:grid-cols-[minmax(0,1.7fr)_minmax(20rem,1fr)]">
       <AppCard :ui="{ body: 'p-0' }">
-        <template #header><div class="flex flex-wrap items-center justify-between gap-3"><div><h2 class="text-sm font-semibold">Token usage over time</h2><p class="text-xs text-[var(--ui-text-muted)]">Canonical token categories across the selected range.</p></div><div class="flex items-center gap-2"><USelect v-model="chartOverlay" :items="chartOverlayOptions" value-key="value" label-key="label" size="sm" class="w-32" /><UBadge v-if="overviewTokenBreakdown" :color="tokenQualityColor(overviewTokenBreakdown.quality)" variant="subtle">{{ overviewTokenBreakdown.quality || 'unknown' }}</UBadge></div></div></template>
-        <div class="p-4"><AdminUsageTokenChart :points="trend" :overlay="chartOverlayValues" /><div class="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-[var(--ui-text-muted)]"><span v-for="series in tokenSeriesLegend" :key="series.label" class="flex items-center gap-1.5"><span class="size-2 rounded-sm" :class="series.color" />{{ series.label }}</span><span v-if="chartOverlay !== 'none'" class="flex items-center gap-1.5"><span class="h-0.5 w-3 bg-amber-500" />{{ chartOverlay === 'requests' ? 'Requests' : 'Spend' }}</span></div></div>
+        <template #header>
+          <div class="space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div><h2 class="text-lg font-semibold">Token usage over time</h2><p class="text-xs text-[var(--ui-text-muted)]">Canonical token categories across the selected range.</p></div>
+              <div class="flex items-center gap-2">
+                <div class="inline-flex rounded-lg bg-[var(--ui-bg-muted)] p-1" role="group" aria-label="Chart overlay">
+                  <UButton v-for="option in chartOverlayOptions" :key="option.value" size="sm" color="neutral" :variant="chartOverlay === option.value ? 'solid' : 'ghost'" @click="chartOverlay = option.value">{{ option.label }}</UButton>
+                </div>
+                <UBadge v-if="overviewTokenBreakdown" :color="tokenQualityColor(overviewTokenBreakdown.quality)" variant="subtle">{{ overviewTokenBreakdown.quality || 'unknown' }}</UBadge>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <span v-for="series in tokenSeriesLegend" :key="series.label" class="inline-flex items-center gap-2 rounded-lg border border-[var(--ui-border)] px-3 py-1.5 text-xs font-medium">
+                <span class="size-2.5 rounded-full" :style="{ backgroundColor: series.color }" />{{ series.label }}
+              </span>
+            </div>
+          </div>
+        </template>
+        <div class="p-4"><AdminUsageTokenChart :points="trend" :overlay="chartOverlayValues" :overlay-type="chartOverlay" /></div>
       </AppCard>
       <AppCard :ui="{ body: 'p-0' }">
         <template #header><div><h2 class="text-sm font-semibold">Cost breakdown</h2><p class="text-xs text-[var(--ui-text-muted)]">{{ formatAmount(totals.total_amount, totals.currency) }} total · {{ formatAmount(totals.blended_cost_per_1m_tokens, totals.currency) }} / 1M tokens</p></div></template>
@@ -272,7 +282,7 @@ const detailLoading = ref(false)
 const selectedDetail = ref(null)
 const downloadingLog = ref(false)
 const chartOverlay = ref('requests')
-const chartOverlayOptions = [{ label: 'No overlay', value: 'none' }, { label: 'Requests', value: 'requests' }, { label: 'Spend', value: 'spend' }]
+const chartOverlayOptions = [{ label: 'Requests', value: 'requests' }, { label: 'Spend', value: 'spend' }]
 const rankingOpen = ref(false), rankingLoading = ref(false), rankingItems = ref([]), rankingGroup = ref('user'), rankingMetric = ref('total_amount'), rankingLimit = ref(10)
 const credentialUsage = ref([]), credentialsLoading = ref(false)
 
@@ -325,8 +335,8 @@ const chartMetrics = computed(() => [
   { label: 'Requests', value: formatNumber(totals.value.request_count), hint: `${formatNumber(totals.value.success_count)} successful · ${formatNumber(totals.value.failed_count)} failed`, icon: 'i-tabler-bolt', color: 'text-violet-500', points: trend.value.map(point => Number(point.request_count) || 0) }
 ])
 const tokenSeriesLegend = [
-  { label: 'Uncached input', color: 'bg-blue-500' }, { label: 'Cache read', color: 'bg-cyan-500' }, { label: 'Cache write', color: 'bg-teal-500' },
-  { label: 'Regular output', color: 'bg-violet-500' }, { label: 'Reasoning', color: 'bg-fuchsia-500' }, { label: 'Unclassified', color: 'bg-slate-400' }
+  { label: 'Uncached input', color: '#65baf0' }, { label: 'Cache read', color: '#50c7bd' }, { label: 'Cache write', color: '#e8ae45' },
+  { label: 'Regular output', color: '#6dcc91' }, { label: 'Reasoning', color: '#f49a45' }, { label: 'Unclassified', color: '#9aa6b2' }
 ]
 const rankingCards = computed(() => [
   { key: 'user', label: 'User ranking', items: Array.isArray(top.value.users) ? top.value.users.slice(0, 3) : [] },
@@ -562,4 +572,3 @@ const apiErrorMessage = (error, fallback) => error?.data?.message || error?.data
 
 onMounted(refreshAll)
 </script>
-

@@ -3,7 +3,6 @@
     <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
       <div>
         <h1 class="text-2xl font-bold text-[var(--ui-text-highlighted)]">Billing & Reports</h1>
-        <p class="mt-1 max-w-3xl text-sm text-[var(--ui-text-muted)]">Review Home multi-user billing: charge facts, balance records, and model prices.</p>
       </div>
       <div class="flex flex-wrap gap-2">
         <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" @click="refreshCurrent">
@@ -43,13 +42,10 @@
           <UFormField label="Model">
             <UInputMenu v-model="overviewFilters.model" :items="modelSearchOptions" create-item @create="overviewFilters.model = $event.trim()" placeholder="Search models..." class="w-full" />
           </UFormField>
-          <UFormField label="Timezone">
-            <UInput v-model="overviewFilters.timezone" placeholder="UTC" class="w-full" />
-          </UFormField>
+
           <div class="flex flex-wrap items-center gap-2 md:col-span-2 xl:col-span-6">
             <UButton type="submit" color="primary" :loading="overviewLoading">Apply filters</UButton>
             <UButton color="neutral" variant="ghost" @click="resetOverviewFilters">Reset</UButton>
-            <span class="ml-auto text-xs text-[var(--ui-text-muted)]">Date-only “To” includes the full selected day.</span>
           </div>
         </form>
       </AppCard>
@@ -57,21 +53,21 @@
       <template v-if="overview">
         <AppCard>
           <template #header><h2 class="text-sm font-semibold">Finance summary</h2></template>
-          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div v-for="metric in financeMetrics" :key="metric.label" class="min-w-0 border-t pt-3 first:border-t-0 first:pt-0 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0 lg:first:border-l-0 lg:first:pl-0">
-              <p class="text-xs text-[var(--ui-text-muted)]">{{ metric.label }}</p>
-              <p class="mt-2 text-xl font-semibold tabular-nums">{{ metric.value }}</p>
+          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <AppCard v-for="metric in financeMetrics" :key="metric.label" :ui="{ body: 'p-4' }">
+              <p class="text-xs font-medium text-[var(--ui-text-muted)]">{{ metric.label }}</p>
+              <p class="mt-2 text-xl font-semibold tabular-nums text-[var(--ui-text-highlighted)]">{{ metric.value }}</p>
               <p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ metric.hint }}</p>
-            </div>
+            </AppCard>
           </div>
         </AppCard>
         <AppCard>
           <template #header><h2 class="text-sm font-semibold">Usage summary</h2></template>
-          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <div v-for="metric in usageMetrics" :key="metric.label" class="min-w-0 border-t pt-3 first:border-t-0 first:pt-0 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0 lg:first:border-l-0 lg:first:pl-0">
-              <p class="text-xs text-[var(--ui-text-muted)]">{{ metric.label }}</p>
-              <p class="mt-2 text-xl font-semibold tabular-nums">{{ metric.value }}</p>
-            </div>
+          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <AppCard v-for="metric in usageMetrics" :key="metric.label" :ui="{ body: 'p-4' }">
+              <p class="text-xs font-medium text-[var(--ui-text-muted)]">{{ metric.label }}</p>
+              <p class="mt-2 text-xl font-semibold tabular-nums text-[var(--ui-text-highlighted)]">{{ metric.value }}</p>
+            </AppCard>
           </div>
         </AppCard>
       </template>
@@ -88,8 +84,8 @@
               <span class="text-xs text-[var(--ui-text-muted)]">{{ overviewRange.from || 'All time' }} – {{ overviewRange.to || 'Now' }}</span>
             </div>
           </template>
-          <div v-if="dailyTrend.length" class="space-y-3">
-            <div v-for="point in dailyTrend" :key="point.date" class="grid grid-cols-[6rem_1fr_auto] items-center gap-3 text-sm">
+          <div v-if="dailyTrend.length" class="max-h-96 overflow-y-auto pr-2">
+            <div v-for="point in dailyTrend" :key="point.date" class="grid grid-cols-[6rem_1fr_auto] items-center gap-3 border-b border-[var(--ui-border-muted)] py-3 text-sm first:pt-0 last:border-b-0 last:pb-0">
               <span class="text-xs text-[var(--ui-text-muted)]">{{ point.date }}</span>
               <div class="h-2 overflow-hidden rounded-full bg-[var(--ui-bg-elevated)]">
                 <div class="h-full rounded-full bg-[var(--ui-primary)]" :style="{ width: `${trendWidth(point.charge_amount)}%` }" />
@@ -110,13 +106,13 @@
               <p class="text-xs text-[var(--ui-text-muted)]">Users by charged amount</p>
             </div>
           </template>
-          <div v-if="topUsers.length" class="space-y-4">
-            <div v-for="(item, index) in topUsers" :key="item.id || item.label" class="flex items-center justify-between gap-4">
+          <div v-if="topUsers.length" class="max-h-96 overflow-y-auto pr-2">
+            <div v-for="(item, index) in topUsers" :key="item.id || item.label" class="flex items-center justify-between gap-4 border-b border-[var(--ui-border-muted)] py-3 first:pt-0 last:border-b-0 last:pb-0">
               <div class="min-w-0">
                 <p class="truncate text-sm font-medium">{{ index + 1 }}. {{ item.label || `User #${item.id}` }}</p>
                 <p class="text-xs text-[var(--ui-text-muted)]">{{ formatNumber(item.request_count) }} requests</p>
               </div>
-              <span class="font-mono text-sm font-semibold">{{ formatCredits(item.amount) }}</span>
+              <span class="font-mono text-sm font-semibold tabular-nums">{{ formatCredits(item.amount) }}</span>
             </div>
           </div>
           <div v-else class="py-8 text-center text-sm text-[var(--ui-text-muted)]">No user charges found.</div>
@@ -372,7 +368,7 @@ const settingsSaving = ref(false)
 
 const deviceTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
 const settingsForm = ref({ service_tier_source: 'request', report_timezone: deviceTimezone })
-const overviewFilters = ref({ ...defaultRange(), user: '', provider: '', model: '', timezone: deviceTimezone })
+const overviewFilters = ref({ ...defaultRange(), user: '', provider: '', model: '' })
 const appliedOverviewFilters = ref({ ...overviewFilters.value })
 const chargeFilters = ref({ ...defaultRange(), user: '', provider: '', model: '' })
 const appliedChargeFilters = ref({ ...chargeFilters.value })
@@ -455,8 +451,12 @@ const priceForm = ref(emptyPriceForm())
 
 const overviewData = computed(() => overview.value?.overview || {})
 const overviewRange = computed(() => overviewData.value.range || {})
-const dailyTrend = computed(() => Array.isArray(overviewData.value.daily_trend) ? overviewData.value.daily_trend : [])
-const topUsers = computed(() => Array.isArray(overviewData.value.top_users) ? overviewData.value.top_users : [])
+const dailyTrend = computed(() => (Array.isArray(overviewData.value.daily_trend) ? overviewData.value.daily_trend : [])
+  .slice()
+  .sort((left, right) => Date.parse(right.date) - Date.parse(left.date)))
+const topUsers = computed(() => (Array.isArray(overviewData.value.top_users) ? overviewData.value.top_users : [])
+  .slice()
+  .sort((left, right) => (Number(right.amount) || 0) - (Number(left.amount) || 0)))
 const topModels = computed(() => Array.isArray(overviewData.value.top_models) ? overviewData.value.top_models : [])
 const topProviders = computed(() => Array.isArray(overviewData.value.top_providers) ? overviewData.value.top_providers : [])
 const maxTrendCharge = computed(() => Math.max(0.000001, ...dailyTrend.value.map(point => Number(point.charge_amount) || 0)))
@@ -590,7 +590,7 @@ function buildRangeQuery(source, includeTimezone = true) {
   const query = {}
   if (source.from) query.from = source.from
   if (source.to) query.to = source.to
-  if (includeTimezone) query.timezone = source.timezone || deviceTimezone
+  if (includeTimezone) query.timezone = deviceTimezone
   if (source.user?.trim()) (/^\d+$/.test(source.user.trim()) ? query.user_id = source.user.trim() : query.user = source.user.trim())
   if (source.provider?.trim()) query.provider = source.provider.trim()
   if (source.model?.trim()) query.model = source.model.trim()
@@ -636,7 +636,7 @@ async function changePageSize(section) {
 }
 async function openMatchingSettings() { await loadSettings(); await loadDiagnostics(); matchingSettingsOpen.value = true }
 async function applyOverviewFilters() { appliedOverviewFilters.value = { ...overviewFilters.value }; await safely(loadOverview, 'Failed to load billing overview.') }
-async function resetOverviewFilters() { overviewPreset.value = '7d'; overviewFilters.value = { ...defaultRange(), user: '', provider: '', model: '', timezone: deviceTimezone }; appliedOverviewFilters.value = { ...overviewFilters.value }; await safely(loadOverview, 'Failed to load billing overview.') }
+async function resetOverviewFilters() { overviewPreset.value = '7d'; overviewFilters.value = { ...defaultRange(), user: '', provider: '', model: '' }; appliedOverviewFilters.value = { ...overviewFilters.value }; await safely(loadOverview, 'Failed to load billing overview.') }
 async function applyChargeFilters() { appliedChargeFilters.value = { ...chargeFilters.value }; chargePage.value = 1; await safely(loadCharges, 'Failed to load charges.') }
 async function resetChargeFilters() { chargePreset.value = '7d'; chargeFilters.value = { ...defaultRange(), user: '', provider: '', model: '' }; appliedChargeFilters.value = { ...chargeFilters.value }; chargePage.value = 1; await safely(loadCharges, 'Failed to load charges.') }
 async function applyBalanceFilters() { appliedBalanceFilters.value = { ...balanceFilters.value }; balancePage.value = 1; await safely(loadBalances, 'Failed to load balance records.') }
@@ -760,8 +760,6 @@ function errorMessage(error, fallback = 'Unexpected request error.') { return er
 onMounted(async () => {
   await safely(async () => {
     await loadSettings()
-    overviewFilters.value.timezone = deviceTimezone
-    appliedOverviewFilters.value.timezone = deviceTimezone
     await Promise.all([loadOverview(), loadCharges(), loadBalances(), loadPrices(), loadUsers()])
   }, 'Failed to load billing data.')
 })

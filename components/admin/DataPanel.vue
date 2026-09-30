@@ -12,7 +12,15 @@
       </div>
     </template>
 
-    <div class="min-w-0 overflow-x-auto">
+    <div v-if="$slots.toolbar" class="border-b border-[var(--ui-border)] px-4 py-3">
+      <slot name="toolbar" />
+    </div>
+
+    <div v-if="$slots.bulk" class="border-b border-[var(--ui-border)] bg-[var(--ui-bg-muted)] px-4 py-3">
+      <slot name="bulk" />
+    </div>
+
+    <div class="min-w-0 overflow-x-auto" :class="contentClass">
       <slot />
     </div>
 
@@ -23,8 +31,9 @@
 </template>
 
 <script setup lang="ts">
-withDefaults(defineProps<{ title?: string; description?: string }>(), {
+withDefaults(defineProps<{ title?: string; description?: string; contentClass?: string }>(), {
   title: '',
-  description: ''
+  description: '',
+  contentClass: ''
 })
 </script>

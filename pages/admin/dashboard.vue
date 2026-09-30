@@ -18,10 +18,10 @@
             <UButton icon="i-tabler-refresh" color="neutral" variant="ghost" size="sm" :loading="loading" @click="refreshDashboard">{{ loading ? 'Syncing' : 'Sync data' }}</UButton>
           </div>
         </template>
-        <div class="grid gap-4 text-sm sm:grid-cols-3">
-          <div><p class="text-xs text-[var(--ui-text-muted)]">Connected server</p><p class="font-medium">{{ runtimeMode || 'Home' }}</p></div>
-          <div><p class="text-xs text-[var(--ui-text-muted)]">Latest available version</p><p class="font-medium">{{ latestVersion || 'Unavailable' }}</p></div>
-          <div><p class="text-xs text-[var(--ui-text-muted)]">Last synced</p><p class="font-medium">{{ lastUpdated ? lastUpdated.toLocaleString() : 'Not synced' }}</p></div>
+        <div class="flex flex-wrap gap-2">
+          <UBadge color="info" variant="subtle" icon="i-tabler-server">Server: {{ runtimeMode || 'Home' }}</UBadge>
+          <UBadge color="success" variant="subtle" icon="i-tabler-tag">Version: {{ latestVersion || 'Unavailable' }}</UBadge>
+          <UBadge color="warning" variant="subtle" icon="i-tabler-clock-check">Synced: {{ lastUpdated ? lastUpdated.toLocaleString() : 'Not synced' }}</UBadge>
         </div>
         <div v-if="missingCapabilities.length" class="mt-4 flex flex-wrap gap-2"><UBadge v-for="item in missingCapabilities" :key="item.label" color="neutral" variant="subtle">{{ item.label }} unavailable</UBadge></div>
         <div v-if="suggestedActions.length" class="mt-4 flex flex-wrap items-center gap-2"><span class="text-xs font-medium">Suggested actions</span><UButton v-for="action in suggestedActions" :key="action.label" :to="action.to" size="sm" color="neutral" variant="outline">{{ action.label }}</UButton></div>

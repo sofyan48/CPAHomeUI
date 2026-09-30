@@ -16,20 +16,28 @@
 
     <UAlert v-if="!usersSupported" color="info" variant="subtle" title="This runtime does not expose user management" description="The connected runtime did not declare user management support. The page will not load user management tables or invent users, key ownership, or access scopes." />
 
-    <AdminDataPanel v-else title="Access workspace">
+    <AdminDataPanel v-else title="Access workspace" :content-class="activeTab === 'channelGroups' || activeTab === 'modelGroups' ? 'p-4' : ''">
       <template #actions>
         <UInput v-model="search" icon="i-tabler-search" placeholder="Filter users, keys, or scopes" class="w-full sm:w-80" />
       </template>
 
-      <div class="min-w-0">
-        <AppPanelTabs v-model="activeTab" :items="tabs" label="Users & Access" />
+      <template #toolbar>
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <AppPanelTabs v-model="activeTab" :items="tabs" label="Users & Access" />
+          <UButton v-if="activeTab === 'users'" size="sm" icon="i-tabler-plus" @click="openUserCreate">New user</UButton>
+          <UButton v-else-if="activeTab === 'keys'" size="sm" icon="i-tabler-plus" @click="openKeyCreate">New key</UButton>
+          <UButton v-else-if="activeTab === 'channelGroups' && accessGroupsSupported" size="sm" icon="i-tabler-plus" @click="openGroupForm('channel')">New credential scope</UButton>
+        </div>
+      </template>
 
-        <div v-if="activeTab === 'users'" class="grid gap-3 p-4">
-          <div class="flex justify-end"><UButton icon="i-tabler-plus" @click="openUserCreate">New user</UButton></div>
-          <div v-if="selectedUsers.length" class="flex flex-col gap-3 rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] px-3 py-2.5 lg:flex-row lg:items-center lg:justify-between">
-            <div><p class="text-sm font-medium">{{ selectedUsers.length }} users selected</p><p class="mt-0.5 text-xs text-[var(--ui-text-muted)]">Bulk operations create separate balance records for each user.</p></div>
-            <div class="flex flex-wrap gap-2"><UButton color="neutral" variant="ghost" @click="selectedUserIds = new Set()">Clear selection</UButton><UButton color="neutral" variant="ghost" icon="i-tabler-cash-banknote" @click="openBalance(selectedUsers)">Balance operation</UButton></div>
-          </div>
+      <template v-if="activeTab === 'users' && selectedUsers.length" #bulk>
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div><p class="text-sm font-medium">{{ selectedUsers.length }} users selected</p><p class="mt-0.5 text-xs text-[var(--ui-text-muted)]">Bulk operations create separate balance records for each user.</p></div>
+          <div class="flex flex-wrap gap-2"><UButton size="sm" color="neutral" variant="ghost" @click="selectedUserIds = new Set()">Clear selection</UButton><UButton size="sm" color="neutral" variant="ghost" icon="i-tabler-cash-banknote" @click="openBalance(selectedUsers)">Balance operation</UButton></div>
+        </div>
+      </template>
+
+        <template v-if="activeTab === 'users'">
           <AppTable :columns="userColumns" :data="filteredUsers" :loading="loading" empty="No users match the current filter.">
             <template #select-header>
               <UCheckbox :model-value="allFilteredUsersSelected" :indeterminate="someFilteredUsersSelected" :disabled="!operableFilteredUsers.length" aria-label="Select operable users in the current list" @update:model-value="toggleAllFilteredUsers(Boolean($event))" />
@@ -43,12 +51,11 @@
             <template #credentialScope-cell="{ row }"><span class="block max-w-52 truncate" :title="effectiveChannelScopes(row.original.id).join(', ')">{{ scopeSummary(effectiveChannelScopes(row.original.id)) }}</span></template>
             <template #modelScope-cell="{ row }"><span class="block max-w-52 truncate" :title="effectiveModelScopes(row.original.id).join(', ')">{{ scopeSummary(effectiveModelScopes(row.original.id)) }}</span></template>
             <template #updatedAt-cell="{ row }"><span class="whitespace-nowrap text-[var(--ui-text-muted)]">{{ formatDate(row.original.updated_at) }}</span></template>
-            <template #actions-cell="{ row }"><div class="flex items-center justify-end gap-1"><UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-eye" aria-label="View user" title="View user" @click="openUserDetail(row.original)" /><UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-pencil" aria-label="Edit user" title="Edit user" @click="openUserEdit(row.original)" /><UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-cash-banknote" aria-label="Balance operation" title="Balance operation" :disabled="!isOperableUser(row.original)" @click="openBalance([row.original])" /><UButton size="xs" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Delete user" title="Delete user" @click="confirmUserDelete(row.original)" /></div></template>
+            <template #actions-cell="{ row }"><div class="flex items-center justify-end gap-1"><AdminTableAction action="view" label="View user" @click="openUserDetail(row.original)" /><AdminTableAction action="edit" label="Edit user" @click="openUserEdit(row.original)" /><AdminTableAction action="edit" icon="i-tabler-cash-banknote" label="Balance operation" :disabled="!isOperableUser(row.original)" @click="openBalance([row.original])" /><AdminTableAction action="delete" label="Delete user" destructive @click="confirmUserDelete(row.original)" /></div></template>
           </AppTable>
-        </div>
+        </template>
 
-        <div v-else-if="activeTab === 'keys'" class="grid gap-3 p-4">
-          <div class="flex justify-end"><UButton icon="i-tabler-plus" @click="openKeyCreate">New key</UButton></div>
+        <template v-else-if="activeTab === 'keys'">
             <AppTable :columns="keyColumns" :data="filteredKeys" :loading="loading" class="min-w-0">
               <template #key-cell="{ row }"><div><p class="font-mono text-xs">{{ maskKey(rowValue(row).api_key) }}</p><p class="mt-1 text-xs text-[var(--ui-text-muted)]">Sequence {{ keySequence(rowValue(row)) }}</p></div></template>
               <template #owner-cell="{ row }"><span v-if="userById(rowValue(row).user_id)">{{ userById(rowValue(row).user_id).username }}</span><span v-else class="text-[var(--ui-text-muted)]">Unassigned</span></template>
@@ -58,17 +65,16 @@
               <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><AdminTableAction action="edit" label="Edit client key" @click="openKeyEdit(rowValue(row))" /><AdminTableAction action="delete" label="Delete client key" destructive @click="confirmKeyDelete(rowValue(row))" /></div></template>
               <template #empty><EmptyState icon="i-tabler-key" text="No client keys yet." /></template>
             </AppTable>
-        </div>
+        </template>
 
-        <div v-else-if="activeTab === 'channelGroups'" class="grid gap-3 p-4">
+        <template v-else-if="activeTab === 'channelGroups'">
           <UnsupportedScopes v-if="!accessGroupsSupported" />
           <template v-else>
-            <div class="flex justify-end"><UButton icon="i-tabler-plus" @click="openGroupForm('channel')">New credential scope</UButton></div>
             <GroupCards kind="channel" :groups="filteredChannelGroups" :details="channelDetailsData" :channel-groups="channelGroups" :channel-bindings-supported="modelChannelBindingsSupported" @edit="openGroupForm('channel', $event)" @delete="confirmGroupDelete('channel', $event)" @add="openBindings('credential', $event)" @delete-detail="confirmDetailDelete('channel', $event)" />
           </template>
-        </div>
+        </template>
 
-        <div v-else class="grid gap-3 p-4">
+        <template v-else>
           <UnsupportedScopes v-if="!accessGroupsSupported" />
           <section v-else class="grid gap-4 xl:grid-cols-[240px_minmax(0,1fr)]">
             <aside class="self-start rounded-lg border border-[var(--ui-border)] bg-[var(--glass-card)] p-3 max-xl:hidden" aria-label="Model scopes">
@@ -90,7 +96,7 @@
                   <UButton v-if="selectedModelGroup" size="sm" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Delete model scope" @click="confirmGroupDelete('model', selectedModelGroup)" />
                   <UButton size="sm" icon="i-tabler-plus" @click="selectedModelGroup ? openBindings('model', selectedModelGroup) : openGroupForm('model')">{{ selectedModelGroup ? 'Add models' : 'New scope' }}</UButton>
                 </template>
-                <div class="m-3 min-w-0">
+                <div class="min-w-0">
                   <AppTable :columns="modelBindingColumns" :data="selectedModelBindings" :loading="loading" class="min-w-0">
                     <template #model-cell="{ row }"><div class="min-w-0"><p class="truncate font-mono text-xs font-medium text-[var(--ui-text-highlighted)]" :title="rowValue(row).model_id">{{ rowValue(row).model_id }}</p></div></template>
                     <template #channels-cell="{ row }"><span class="block max-w-64 truncate text-xs text-[var(--ui-text-muted)]" :title="modelBindingChannelLabel(rowValue(row))">{{ modelBindingChannelLabel(rowValue(row)) }}</span></template>
@@ -102,8 +108,7 @@
               </AdminDataPanel>
             </div>
           </section>
-        </div>
-      </div>
+        </template>
     </AdminDataPanel>
 
     <USlideover v-model:open="userFormOpen" :title="editingUser ? 'Edit user' : 'New user'" :description="editingUser ? 'Username stays fixed after creation. This only updates password and other maintainable fields.' : 'Create an access subject that can own client keys. Password can be left blank.'" :ui="{ content: 'sm:max-w-xl' }">

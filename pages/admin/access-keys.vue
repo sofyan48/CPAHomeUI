@@ -38,32 +38,28 @@
       description="These keys grant clients access to the CPAHome server; they are not model provider keys."
       class="min-w-0"
     >
-      <template #actions>
-        <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-
-          <UInput v-model="search" icon="i-tabler-search" placeholder="Filter keys" class="w-full sm:w-72" />
+      <template #toolbar>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <UInput v-model="search" icon="i-tabler-search" placeholder="Filter keys" class="w-full sm:max-w-80" />
+          <span class="text-xs tabular-nums text-[var(--ui-text-muted)]">{{ filteredResources.length }} of {{ resources.length }} results</span>
         </div>
       </template>
 
-      <div class="p-4">
-        <div
-          v-if="selectedIDs.size"
-          class="mb-3 flex flex-col gap-3 rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between"
-        >
+      <template v-if="selectedIDs.size" #bulk>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <span class="text-sm font-medium">{{ selectedIDs.size }} keys selected</span>
           <div class="flex flex-wrap gap-2">
             <UButton color="neutral" variant="ghost" size="sm" :disabled="bulkDeleting" @click="clearSelection">Clear selection</UButton>
-            <UButton color="error" variant="ghost" size="sm" icon="i-tabler-trash" :disabled="bulkDeleting" @click="openBulkDelete">
-              Delete selected
-            </UButton>
+            <UButton color="error" variant="ghost" size="sm" icon="i-tabler-trash" :disabled="bulkDeleting" @click="openBulkDelete">Delete selected</UButton>
           </div>
         </div>
+      </template>
 
           <AppTable
             :columns="columns"
             :data="filteredResources"
             :loading="loading"
-            class="access-keys-table"
+            class="access-keys-table min-w-[980px]"
           >
             <template #select-header>
               <UCheckbox
@@ -133,10 +129,7 @@
             <template #length-cell="{ row }">{{ rowValue(row).length }}</template>
 
             <template #status-cell>
-              <span class="inline-flex items-center gap-1.5 rounded-md border border-primary-500/30 bg-primary-500/10 px-2 py-1 text-xs font-medium text-primary-500">
-                <UIcon name="i-tabler-circle-check" class="size-3" />
-                Accepted
-              </span>
+              <UBadge color="success" variant="subtle"><UIcon name="i-tabler-circle-check" class="mr-1 size-3" />Accepted</UBadge>
             </template>
 
             <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><AdminTableAction action="view" label="View access key" @click="openDetail(rowValue(row))" /><AdminTableAction action="edit" label="Edit access key" @click="openEdit(rowValue(row))" /><AdminTableAction v-if="rowValue(row).identifier" action="copy" label="Copy identifier" @click="copyText(rowValue(row).identifier, 'Identifier copied.')" /><AdminTableAction action="delete" label="Delete access key" destructive @click="openDelete(rowValue(row))" /></div></template>
@@ -145,7 +138,6 @@
               <div class="px-6 py-12 text-center text-sm text-[var(--ui-text-muted)]">No access keys match the current filter.</div>
             </template>
           </AppTable>
-      </div>
     </AdminDataPanel>
 
     <USlideover v-model:open="detailOpen" :title="detailTitle" :description="detailDescription" :ui="{ content: 'sm:max-w-xl' }" @update:open="handleDetailOpen">
