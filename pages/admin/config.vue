@@ -1,25 +1,12 @@
 <template>
   <section class="grid gap-5">
-    <div>
-      <h1 class="text-2xl font-bold text-[var(--ui-text-highlighted)]">Configuration workspace</h1>
-      <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Edit supported runtime settings through one visual workspace.</p>
-    </div>
+    <header class="sticky top-0 z-30 -mx-2 border-b border-[var(--ui-border)] bg-[var(--ui-bg)] px-2 py-3 sm:-mx-5 sm:px-5 lg:-mx-6 lg:px-6">
+      <h1 class="text-xl font-bold text-[var(--ui-text-highlighted)]">Configuration workspace</h1>
+      <p class="mt-0.5 text-sm text-[var(--ui-text-muted)]">Edit supported runtime settings through one visual workspace.</p>
+    </header>
 
     <UAlert v-if="pageError" color="error" variant="subtle" title="System config could not be loaded" :description="pageError" />
 
-    <div class="sticky top-16 z-20 flex flex-col gap-3 rounded-lg border border-white/40 bg-white/40 app-surface p-3 backdrop-blur dark:border-white/10 dark:bg-neutral-900/40 xl:flex-row xl:items-center xl:justify-between">
-      <div class="flex flex-wrap items-center gap-2">
-        <UBadge color="neutral" variant="subtle">Runtime: {{ runtimeMode }}</UBadge>
-        <UBadge color="neutral" variant="subtle">Updated {{ updatedLabel }}</UBadge>
-        <UBadge :color="dirtyCount ? 'warning' : 'neutral'" variant="subtle">{{ dirtyCount ? `${dirtyCount} visual changes` : 'No unsaved changes' }}</UBadge>
-        <UBadge v-if="validationCount" color="warning" variant="subtle">{{ validationCount }} fields need attention</UBadge>
-      </div>
-      <div class="flex flex-wrap gap-2">
-        <UButton color="neutral" variant="outline" :disabled="!dirtyCount" @click="changesOpen = true">View changes</UButton>
-        <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" :disabled="saving" @click="reloadWorkspace">Reload</UButton>
-        <UButton icon="i-tabler-check" :loading="saving" :disabled="!dirtyCount || validationCount > 0 || loading" @click="saveWorkspace">Save</UButton>
-      </div>
-    </div>
 
     <div v-if="loading && !loaded" class="grid gap-4">
       <USkeleton class="h-28 w-full" />
@@ -28,17 +15,19 @@
     </div>
 
     <div v-else class="grid gap-5 xl:grid-cols-[240px_minmax(0,1fr)]">
-      <aside class="sticky top-[8.5rem] hidden max-h-[calc(100dvh-10rem)] self-start overflow-y-auto rounded-lg border border-white/40 bg-white/40 app-surface p-2 dark:border-white/10 dark:bg-neutral-900/40 xl:block">
-        <p class="px-2 pb-2 text-xs font-semibold uppercase text-[var(--ui-text-muted)]">Configuration</p>
-        <button v-for="section in outline" :key="section.id" type="button" class="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm hover:bg-white/60 dark:hover:bg-neutral-800/50" @click="scrollToSection(section.id)">
-          <span>{{ section.short }}</span><span v-if="sectionDirty(section.keys)" class="size-2 rounded-full bg-[var(--ui-primary)]" />
-        </button>
+      <aside class="sticky top-24 hidden max-h-[calc(100dvh-7rem)] self-start overflow-y-auto xl:block">
+        <AppCard :ui="{ body: 'p-2' }">
+          <p class="px-2 pb-2 text-xs font-semibold uppercase text-[var(--ui-text-muted)]">Configuration</p>
+          <button v-for="section in outline" :key="section.id" type="button" class="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-[var(--ui-bg-elevated)]" @click="scrollToSection(section.id)">
+            <span>{{ section.short }}</span><span v-if="sectionDirty(section.keys)" class="size-2 rounded-full bg-[var(--ui-primary)]" />
+          </button>
+        </AppCard>
       </aside>
 
       <div class="min-w-0">
-        <div class="sticky top-[8.5rem] z-10 mb-4 flex gap-1 overflow-x-auto rounded-lg border border-white/40 bg-white/40 app-surface p-2 backdrop-blur dark:border-white/10 dark:bg-neutral-900/40 xl:hidden">
+        <AppCard class="sticky top-24 z-20 mb-4 xl:hidden" :ui="{ body: 'flex gap-1 overflow-x-auto p-2' }">
           <UButton v-for="section in outline" :key="section.id" size="sm" color="neutral" variant="ghost" class="shrink-0" @click="scrollToSection(section.id)">{{ section.short }}</UButton>
-        </div>
+        </AppCard>
 
         <AdminConfigVisualSections v-model:draft="draft" :validation-errors="validationErrors" :loading="loading">
           <template #oauth-rules>
@@ -56,7 +45,7 @@
 
                 <section class="space-y-3 border-t border-[var(--ui-border)] pt-5">
                   <div class="flex items-center justify-between"><div><h3 class="font-semibold">Model aliases</h3><p class="text-xs text-[var(--ui-text-muted)]">Map upstream model names to client-visible aliases.</p></div><UButton size="sm" color="neutral" variant="outline" @click="addAlias">Add alias</UButton></div>
-                  <div v-for="(row, index) in aliasRows" :key="row.key" class="grid gap-3 rounded-md border border-white/40 bg-white/40 app-surface p-3 dark:border-white/10 dark:bg-neutral-900/40 lg:grid-cols-[1fr_1.3fr_1.3fr_auto_auto_auto] lg:items-end"><UFormField label="Channel"><UInput v-model="row.channel" /></UFormField><UFormField label="Upstream model"><UInput v-model="row.name" /></UFormField><UFormField label="Client alias"><UInput v-model="row.alias" /></UFormField><UCheckbox v-model="row.fork" label="Fork" /><UCheckbox v-model="row.forceMapping" label="Force mapping" /><UButton color="error" variant="ghost" icon="i-tabler-trash" @click="aliasRows.splice(index, 1)" /></div>
+                  <AppCard v-for="(row, index) in aliasRows" :key="row.key" :ui="{ body: 'grid gap-3 p-3 lg:grid-cols-[1fr_1.3fr_1.3fr_auto_auto_auto] lg:items-end' }"><UFormField label="Channel"><UInput v-model="row.channel" /></UFormField><UFormField label="Upstream model"><UInput v-model="row.name" /></UFormField><UFormField label="Client alias"><UInput v-model="row.alias" /></UFormField><UCheckbox v-model="row.fork" label="Fork" /><UCheckbox v-model="row.forceMapping" label="Force mapping" /><UButton color="error" variant="ghost" icon="i-tabler-trash" @click="aliasRows.splice(index, 1)" /></AppCard>
                   <p v-if="!aliasRows.length" class="py-6 text-center text-sm text-[var(--ui-text-muted)]">No rules configured.</p>
                 </section>
               </div>
@@ -69,8 +58,8 @@
             <AppCard id="config-payload" class="border-white/40 bg-white/40 dark:border-white/10 dark:bg-neutral-900/40">
               <template #header><div><h2 class="font-semibold">Request parameter rewriting</h2><p class="text-xs text-[var(--ui-text-muted)]">Match requests by model and protocol, then fill, override, or remove parameters.</p></div></template>
               <div class="space-y-4">
-                <div class="grid gap-2 sm:grid-cols-5"><div v-for="mode in payloadModes" :key="mode.value" class="rounded-md border border-white/40 bg-white/40 app-surface p-3 dark:border-white/10 dark:bg-neutral-900/40"><p class="text-xs text-[var(--ui-text-muted)]">{{ mode.label }}</p><p class="text-xl font-semibold">{{ payloadDraft[mode.value]?.length || 0 }}</p></div></div>
-                <div v-for="mode in payloadModes" :key="mode.value" class="space-y-2"><div class="flex items-center justify-between"><h3 class="font-semibold">{{ mode.label }}</h3><UButton size="sm" color="neutral" variant="outline" @click="addPayloadRule(mode.value)">Add rule</UButton></div><div v-for="(rule, index) in payloadDraft[mode.value] || []" :key="index" class="rounded-md border border-white/40 bg-white/40 app-surface p-3 dark:border-white/10 dark:bg-neutral-900/40"><div class="flex items-center justify-between gap-3"><div><p class="text-sm font-medium">{{ payloadRuleSummary(rule) }}</p><p class="text-xs text-[var(--ui-text-muted)]">{{ payloadRulePaths(rule, mode.value) }}</p></div><div class="flex gap-1"><UButton size="sm" color="neutral" variant="ghost" @click="editPayload(mode.value, index)">Edit</UButton><UButton size="sm" color="neutral" variant="ghost" @click="duplicatePayload(mode.value, index)">Duplicate</UButton><UButton size="sm" color="error" variant="ghost" @click="removePayload(mode.value, index)">Remove</UButton></div></div></div></div>
+                <div class="grid gap-2 sm:grid-cols-5"><AppCard v-for="mode in payloadModes" :key="mode.value" :ui="{ body: 'p-3' }"><p class="text-xs text-[var(--ui-text-muted)]">{{ mode.label }}</p><p class="mt-1 text-xl font-semibold tabular-nums">{{ payloadDraft[mode.value]?.length || 0 }}</p></AppCard></div>
+                <div v-for="mode in payloadModes" :key="mode.value" class="space-y-2"><div class="flex items-center justify-between"><h3 class="font-semibold">{{ mode.label }}</h3><UButton size="sm" color="neutral" variant="outline" @click="addPayloadRule(mode.value)">Add rule</UButton></div><AppCard v-for="(rule, index) in payloadDraft[mode.value] || []" :key="index" :ui="{ body: 'p-3' }"><div class="flex items-center justify-between gap-3"><div><p class="text-sm font-medium">{{ payloadRuleSummary(rule) }}</p><p class="text-xs text-[var(--ui-text-muted)]">{{ payloadRulePaths(rule, mode.value) }}</p></div><div class="flex gap-1"><UButton size="sm" color="neutral" variant="ghost" @click="editPayload(mode.value, index)">Edit</UButton><UButton size="sm" color="neutral" variant="ghost" @click="duplicatePayload(mode.value, index)">Duplicate</UButton><UButton size="sm" color="error" variant="ghost" @click="removePayload(mode.value, index)">Remove</UButton></div></div></AppCard></div>
                 <details><summary class="cursor-pointer text-sm">View payload JSON to save</summary><pre class="mt-2 max-h-80 overflow-auto rounded-md bg-[var(--ui-bg-muted)] p-3 text-xs">{{ JSON.stringify(payloadDraft, null, 2) }}</pre></details>
               </div>
             </AppCard>
@@ -79,7 +68,21 @@
       </div>
     </div>
 
-    <USlideover v-model:open="changesOpen" title="Configuration changes" description="Review changed visual fields before saving." :ui="{ content: 'sm:max-w-xl' }"><template #body><div class="space-y-2"><button v-for="change in changes" :key="change.key" type="button" class="w-full rounded-md border border-white/40 bg-white/40 app-surface p-3 text-left hover:bg-white/60 dark:border-white/10 dark:bg-neutral-900/40 dark:hover:bg-neutral-800/50" @click="changesOpen = false; scrollToSection(change.section)"><p class="font-medium">{{ change.label }}</p><p class="mt-1 break-all text-xs text-[var(--ui-text-muted)]">{{ change.before }} → {{ change.after }}</p></button></div></template></USlideover>
+    <AppCard v-if="loaded" :ui="{ body: 'flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between' }">
+      <div class="flex flex-wrap items-center gap-2">
+        <UBadge color="neutral" variant="subtle">Runtime: {{ runtimeMode }}</UBadge>
+        <UBadge color="neutral" variant="subtle">Updated {{ updatedLabel }}</UBadge>
+        <UBadge :color="dirtyCount ? 'warning' : 'neutral'" variant="subtle">{{ dirtyCount ? `${dirtyCount} visual changes` : 'No unsaved changes' }}</UBadge>
+        <UBadge v-if="validationCount" color="warning" variant="subtle">{{ validationCount }} fields need attention</UBadge>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <UButton color="neutral" variant="outline" :disabled="!dirtyCount" @click="changesOpen = true">View changes</UButton>
+        <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" :disabled="saving" @click="reloadWorkspace">Reload</UButton>
+        <UButton icon="i-tabler-check" :loading="saving" :disabled="!dirtyCount || validationCount > 0 || loading" @click="saveWorkspace">Save</UButton>
+      </div>
+    </AppCard>
+
+    <USlideover v-model:open="changesOpen" title="Configuration changes" description="Review changed visual fields before saving." :ui="{ content: 'sm:max-w-xl' }"><template #body><div class="space-y-2"><AppCard v-for="change in changes" :key="change.key" :ui="{ body: 'p-0' }"><button type="button" class="w-full p-3 text-left transition-colors hover:bg-[var(--ui-bg-elevated)]" @click="changesOpen = false; scrollToSection(change.section)"><p class="font-medium">{{ change.label }}</p><p class="mt-1 break-all text-xs text-[var(--ui-text-muted)]">{{ change.before }} → {{ change.after }}</p></button></AppCard></div></template></USlideover>
 
     <UModal v-model:open="reloadConfirmOpen" title="Reload config?" description="Discard unsaved local changes and reload?"><template #body><div class="flex justify-end gap-2"><UButton color="neutral" variant="ghost" @click="reloadConfirmOpen = false">Cancel</UButton><UButton color="error" @click="reloadConfirmOpen = false; loadWorkspace()">Discard and reload</UButton></div></template></UModal>
 

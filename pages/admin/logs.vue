@@ -35,19 +35,7 @@
       {{ errorMessage }}
     </div>
 
-    <div class="inline-flex max-w-full overflow-x-auto rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] p-1">
-      <button
-        v-for="view in views"
-        :key="view.value"
-        type="button"
-        class="flex min-w-max items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors"
-        :class="activeView === view.value ? 'bg-[var(--ui-bg)] text-[var(--ui-text-highlighted)] shadow-sm' : 'text-[var(--ui-text-muted)] hover:text-[var(--ui-text-highlighted)]'"
-        @click="switchView(view.value)"
-      >
-        <UIcon :name="view.icon" class="size-4" />
-        {{ view.label }}
-      </button>
-    </div>
+    <AppPanelTabs :model-value="activeView" :items="views" label="Log views" @update:model-value="switchView" />
 
     <AppCard>
       <form class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6" @submit.prevent="applyFilters">

@@ -4,9 +4,7 @@
       <h1 class="text-2xl font-bold">Diagnostics</h1>
       <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Usage, health, realtime traffic and request logs from Home.</p>
     </div>
-    <div class="flex flex-wrap gap-2" role="tablist" aria-label="Diagnostics views">
-      <UButton v-for="view in views" :key="view.value" role="tab" :aria-selected="activeView === view.value" :color="activeView === view.value ? 'primary' : 'neutral'" :variant="activeView === view.value ? 'solid' : 'outline'" @click="activeView = view.value">{{ view.label }}</UButton>
-    </div>
+    <AppPanelTabs v-model="activeView" :items="views" label="Diagnostics views" />
 
     <section v-if="activeView === 'console'" class="space-y-6" role="tabpanel">
       <div class="flex flex-wrap items-end gap-3">
