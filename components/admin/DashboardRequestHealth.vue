@@ -1,15 +1,17 @@
 <template>
-  <section class="rounded-xl border border-white/40 bg-white/40 app-surface p-4 dark:border-white/10 dark:bg-neutral-900/40 sm:p-5" aria-labelledby="request-health-title">
-    <div class="flex flex-wrap items-start justify-between gap-2">
-      <div>
-        <h2 id="request-health-title" class="font-semibold text-[var(--ui-text-highlighted)]">Request health</h2>
-        <p class="text-xs text-[var(--ui-text-muted)]">{{ buckets.filter(bucket => bucket.requests > 0).length }} / {{ buckets.length }} active intervals · {{ number.format(buckets.reduce((sum, bucket) => sum + bucket.requests, 0)) }} requests</p>
+  <AppCard class="border-white/40 bg-white/40 dark:border-white/10 dark:bg-neutral-900/40" aria-labelledby="request-health-title">
+    <template #header>
+      <div class="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h2 id="request-health-title" class="font-semibold text-[var(--ui-text-highlighted)]">Request health</h2>
+          <p class="text-xs text-[var(--ui-text-muted)]">{{ buckets.filter(bucket => bucket.requests > 0).length }} / {{ buckets.length }} active intervals · {{ number.format(buckets.reduce((sum, bucket) => sum + bucket.requests, 0)) }} requests</p>
+        </div>
+        <span v-if="rangeLabel" class="text-xs text-[var(--ui-text-muted)]">{{ rangeLabel }}</span>
       </div>
-      <span v-if="rangeLabel" class="text-xs text-[var(--ui-text-muted)]">{{ rangeLabel }}</span>
-    </div>
+    </template>
 
     <template v-if="buckets.length">
-      <div class="mt-5 overflow-x-auto pb-2">
+      <div class="overflow-x-auto pb-2">
         <div
           class="w-full min-w-max rounded-md outline-none focus-visible:ring-2 focus-visible:ring-primary"
           role="group"
@@ -47,7 +49,7 @@
       </div>
     </template>
     <p v-else class="flex min-h-48 items-center justify-center text-center text-sm text-[var(--ui-text-muted)]">No request activity is available for this range.</p>
-  </section>
+  </AppCard>
 </template>
 
 <script setup lang="ts">

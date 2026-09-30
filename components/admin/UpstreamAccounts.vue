@@ -47,7 +47,7 @@
       <AppTable :columns="columns" :data="filteredCredentials" :loading="pending" class="accounts-table min-w-0">
         <template #select-header><input type="checkbox" aria-label="Select all visible credentials" :checked="allVisibleSelected" :indeterminate="someVisibleSelected && !allVisibleSelected" :disabled="bulkBusy || pending || !filteredCredentials.length" @change="toggleAllVisible($event.target.checked)"></template>
         <template #select-cell="{ row }"><input type="checkbox" :aria-label="`Select ${value(row).label || value(row).name || value(row).id}`" :checked="selectedIDs.has(value(row).id)" :disabled="bulkBusy || pending" @change="toggleSelected(value(row).id, $event.target.checked)"></template>
-        <template #identity-cell="{ row }"><div class="flex min-w-0 items-center gap-2.5"><span class="flex size-8 shrink-0 items-center justify-center rounded-md bg-[var(--ui-bg-elevated)] text-[var(--ui-primary)]"><UIcon name="i-tabler-key" class="size-4" /></span><div class="min-w-0"><p class="truncate font-medium">{{ value(row).label || value(row).name }}</p><p class="mt-1 truncate font-mono text-xs text-[var(--ui-text-muted)]">{{ value(row).name || value(row).auth_index || value(row).id }}</p><p v-if="value(row).note" class="mt-0.5 truncate text-xs text-[var(--ui-text-muted)]">{{ value(row).note }}</p></div></div></template>
+        <template #identity-cell="{ row }"><div class="flex min-w-0 items-center gap-2.5"><span class="flex size-8 shrink-0 items-center justify-center rounded-md bg-[var(--ui-bg-elevated)] text-[var(--ui-primary)]"><UIcon name="i-tabler-key" class="size-4" /></span><div class="min-w-0"><p class="truncate font-medium">{{ value(row).label || value(row).name }}</p><p class="mt-1 truncate font-mono text-xs text-[var(--ui-text-muted)]" :title="credentialIdentifier(value(row))">{{ compactIdentifier(credentialIdentifier(value(row))) }}</p><p v-if="value(row).note" class="mt-0.5 truncate text-xs text-[var(--ui-text-muted)]">{{ value(row).note }}</p></div></div></template>
         <template #provider-cell="{ row }"><div class="flex flex-col items-start gap-1"><UBadge color="primary" variant="subtle">{{ value(row).provider || value(row).type || 'Unknown' }}</UBadge><UBadge v-if="value(row).type && String(value(row).type).toLowerCase() !== String(value(row).provider || '').toLowerCase()" color="neutral" variant="subtle" class="font-mono text-xs">{{ value(row).type }}</UBadge></div></template>
         <template #status-cell="{ row }"><div class="flex items-center gap-2"><USwitch :model-value="!value(row).disabled" :disabled="busy" :loading="changing === value(row).id" :aria-label="`${value(row).disabled ? 'Enable' : 'Disable'} ${value(row).label || value(row).id}`" @update:model-value="toggleStatus(value(row))" /><UBadge :color="credentialColor(value(row))" variant="subtle"><UIcon :name="value(row).disabled || value(row).unavailable ? 'i-tabler-alert-triangle' : 'i-tabler-circle-check'" class="mr-1 inline size-3" />{{ credentialStatus(value(row)) }}</UBadge></div></template>
         <template #concurrency-cell="{ row }"><div class="text-sm"><span class="font-semibold">{{ concurrency(value(row)).in_flight || value(row).in_flight || 0 }}</span><span class="text-[var(--ui-text-muted)]"> / {{ concurrency(value(row)).max_in_flight ?? value(row).max_in_flight ?? '∞' }}</span><p v-if="concurrency(value(row)).total_saturated || value(row).total_saturated" class="text-xs text-amber-500">Saturated</p></div></template>
@@ -77,7 +77,7 @@
           <span v-else class="text-xs text-[var(--ui-text-muted)]" title="WebSockets are not applicable to this provider">N/A</span>
         </template>
         <template #cooling-cell="{ row }"><USwitch :model-value="!value(row)['disable-cooling']" :disabled="busy || !value(row).id" :loading="inlineChanging === value(row).id" :aria-label="`Cooling schedule for ${value(row).label || value(row).name || value(row).id}`" @update:model-value="setInlineField(value(row), 'disable_cooling', !$event)" /></template>
-        <template #priority-cell="{ row }"><span class="font-mono text-xs tabular-nums">{{ value(row).priority ?? 'Not set' }}</span></template>
+        <template #priority-cell="{ row }"><span class="font-mono text-xs tabular-nums" :title="value(row).priority == null ? 'Not set' : undefined">{{ value(row).priority ?? '—' }}</span></template>
         <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><AdminTableAction action="view" label="View credential details" @click="showDetails(value(row))" /><AdminTableAction action="test" label="Test connectivity" @click="openConnectivity(value(row))" /><AdminTableAction action="download" label="Download credential" :disabled="busy" @click="downloadCredential(value(row))" /><AdminTableAction action="delete" label="Delete credential" destructive :disabled="busy" @click="confirmDelete(value(row))" /></div></template>
         <template #empty><div class="py-14 text-center text-sm text-[var(--ui-text-muted)]"><p>{{ pending ? 'Loading accounts…' : pageError ? 'Could not load accounts. Check the connection and refresh.' : hasActiveFilters ? 'No matching credentials.' : 'No credentials have been added.' }}</p><UButton v-if="hasActiveFilters && !pending" class="mt-3" color="neutral" variant="outline" size="sm" @click="clearFilters">Clear filters</UButton></div></template>
       </AppTable>
@@ -179,6 +179,13 @@ const { fetchAPI, resolveUrl, token } = useApi()
 const { supports } = useCapabilities()
 const toast = useToast()
 const value = row => row?.original ?? row
+const credentialIdentifier = item => String(item?.name || item?.auth_index || item?.id || '')
+function compactIdentifier(value, maxLength = 42) {
+  const text = String(value || '')
+  if (text.length <= maxLength) return text
+  const suffixLength = 18
+  return `${text.slice(0, maxLength - suffixLength - 1)}…${text.slice(-suffixLength)}`
+}
 const fileInput = ref(null)
 const route = useRoute()
 const emit = defineEmits(['changed'])

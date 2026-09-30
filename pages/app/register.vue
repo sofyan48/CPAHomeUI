@@ -19,8 +19,7 @@
         <UFormField label="Confirm password" required>
           <UInput v-model="form.confirmPassword" class="w-full" type="password" autocomplete="new-password" icon="i-tabler-lock" />
         </UFormField>
-        <UCheckbox v-model="form.remember" label="Keep me signed in" />
-        <p class="text-xs text-[var(--ui-text-muted)]">Without this option, the browser cookie expires when the browsing session ends. The server token still uses its configured expiry.</p>
+        <p class="text-xs text-[var(--ui-text-muted)]">Your session stays signed in on this browser until it expires or you log out.</p>
         <UButton type="submit" color="primary" block size="lg" :loading="loading">Create account</UButton>
       </form>
       <template #footer><p class="text-center text-sm text-[var(--ui-text-muted)]">Already registered? <NuxtLink to="/app/login" class="font-medium text-primary-500">Sign in</NuxtLink></p></template>
@@ -31,8 +30,8 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'app' })
 const router = useRouter()
-const { fetchAPI, saveSession, capabilities, loadCapabilities, rememberSession } = useUserApi()
-const form = reactive({ username: '', email: '', password: '', confirmPassword: '', remember: false })
+const { fetchAPI, saveSession, capabilities, loadCapabilities } = useUserApi()
+const form = reactive({ username: '', email: '', password: '', confirmPassword: '' })
 const loading = ref(false)
 const error = ref('')
 const capabilityLoaded = ref(false)
@@ -46,7 +45,7 @@ async function submit() {
   loading.value = true
   try {
     const session = await fetchAPI<UserSessionResponse>('/register', { method: 'POST', auth: false, body: { username: form.username.trim(), password: form.password, ...(form.email.trim() ? { email: form.email.trim() } : {}) } })
-    saveSession(session, form.remember)
+    saveSession(session)
     await router.replace('/app')
   } catch (cause: any) {
     error.value = cause?.message || 'Unable to create account.'
@@ -54,7 +53,6 @@ async function submit() {
 }
 
 onMounted(async () => {
-  form.remember = Boolean(rememberSession.value)
   try {
     await loadCapabilities()
     capabilityLoaded.value = true

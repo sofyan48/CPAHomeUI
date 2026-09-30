@@ -1,14 +1,16 @@
 <template>
-  <section class="rounded-xl border border-white/40 bg-white/40 app-surface p-4 dark:border-white/10 dark:bg-neutral-900/40 sm:p-5" aria-labelledby="token-trend-title">
-    <div class="flex flex-wrap items-start justify-between gap-2">
-      <div>
-        <h2 id="token-trend-title" class="font-semibold text-[var(--ui-text-highlighted)]">Overall consumption trend</h2>
-        <p class="text-xs text-[var(--ui-text-muted)]">{{ points.length }} intervals · {{ number.format(points.reduce((sum, point) => sum + point.tokens, 0)) }} tokens total</p>
+  <AppCard class="border-white/40 bg-white/40 dark:border-white/10 dark:bg-neutral-900/40" aria-labelledby="token-trend-title">
+    <template #header>
+      <div class="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h2 id="token-trend-title" class="font-semibold text-[var(--ui-text-highlighted)]">Overall consumption trend</h2>
+          <p class="text-xs text-[var(--ui-text-muted)]">{{ points.length }} intervals · {{ number.format(points.reduce((sum, point) => sum + point.tokens, 0)) }} tokens total</p>
+        </div>
+        <span v-if="rangeLabel" class="text-xs text-[var(--ui-text-muted)]">{{ rangeLabel }}</span>
       </div>
-      <span v-if="rangeLabel" class="text-xs text-[var(--ui-text-muted)]">{{ rangeLabel }}</span>
-    </div>
+    </template>
 
-    <div v-if="points.length" class="mt-5">
+    <div v-if="points.length">
       <div
         class="relative rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary"
         role="group"
@@ -45,7 +47,7 @@
       </p>
     </div>
     <p v-else class="flex min-h-48 items-center justify-center text-center text-sm text-[var(--ui-text-muted)]">No token trend is available for this range.</p>
-  </section>
+  </AppCard>
 </template>
 
 <script setup lang="ts">

@@ -288,27 +288,25 @@ export const useUserApi = () => {
     currentUser.value = null
   }
 
-  const saveSession = (sessionValue: UserSessionResponse, remember = rememberSession.value) => {
+  const saveSession = (sessionValue: UserSessionResponse) => {
     const session = normalizeSession(sessionValue)
     const expiresAt = new Date(session.expires_at)
     const cookieOptions = {
       sameSite: 'strict' as const,
       secure: import.meta.client && window.location.protocol === 'https:',
-      ...(remember && Number.isFinite(expiresAt.getTime()) ? { expires: expiresAt } : {})
+      ...(Number.isFinite(expiresAt.getTime()) ? { expires: expiresAt } : {})
     }
     useCookie<string | null>('user_token', cookieOptions).value = session.token
     useCookie<string | null>('user_token_expires_at', cookieOptions).value = session.expires_at
-    useCookie<boolean>('user_remember_session', cookieOptions).value = remember
+    useCookie<boolean>('user_remember_session', cookieOptions).value = true
     token.value = session.token
     tokenExpiresAt.value = session.expires_at
-    rememberSession.value = remember
+    rememberSession.value = true
     currentUser.value = session.user
     if (import.meta.client) {
-      const stored: StoredUserSession = { ...session, baseUrl: apiBase, rememberSession: remember }
-      const target = remember ? localStorage : sessionStorage
-      const other = remember ? sessionStorage : localStorage
-      target.setItem(remember ? persistentSessionKey : temporarySessionKey, JSON.stringify(stored))
-      other.removeItem(remember ? temporarySessionKey : persistentSessionKey)
+      const stored: StoredUserSession = { ...session, baseUrl: apiBase, rememberSession: true }
+      localStorage.setItem(persistentSessionKey, JSON.stringify(stored))
+      sessionStorage.removeItem(temporarySessionKey)
     }
   }
 
@@ -323,7 +321,11 @@ export const useUserApi = () => {
         const normalized = normalizeSession(parsed)
         const expiry = new Date(normalized.expires_at)
         if (!normalized.token || !Number.isFinite(expiry.getTime()) || expiry <= new Date()) { storage.removeItem(key); continue }
-        token.value = normalized.token; tokenExpiresAt.value = normalized.expires_at; rememberSession.value = remembered; currentUser.value = normalized.user
+        token.value = normalized.token; tokenExpiresAt.value = normalized.expires_at; rememberSession.value = true; currentUser.value = normalized.user
+        if (!remembered) {
+          localStorage.setItem(persistentSessionKey, JSON.stringify({ ...normalized, baseUrl: apiBase, rememberSession: true }))
+          sessionStorage.removeItem(temporarySessionKey)
+        }
         break
       } catch { storage.removeItem(key) }
     }
@@ -368,17 +370,17 @@ export const useUserApi = () => {
     return currentUser.value
   }
 
-  const login = async (username: string, password: string, totpCode?: string, remember = false) => {
+  const login = async (username: string, password: string, totpCode?: string) => {
     const response = await fetchAPI<UserSessionResponse>(totpCode ? '/login/totp' : '/login', {
       method: 'POST',
       auth: false,
       body: { username, password, ...(totpCode ? { totp_code: totpCode } : {}) }
     })
-    saveSession(response, remember)
+    saveSession(response)
     return response
   }
 
-  const loginWithPasskey = async (username: string, remember = false) => {
+  const loginWithPasskey = async (username: string) => {
     if (!import.meta.client || !window.PublicKeyCredential) throw new UserApiError('Passkeys are not supported by this browser.')
     const begin = await fetchAPI<{ challenge_id: string; publicKey: any }>('/login/passkey/begin', {
       method: 'POST', auth: false, body: { username }
@@ -388,7 +390,7 @@ export const useUserApi = () => {
     const response = await fetchAPI<UserSessionResponse>('/login/passkey', {
       method: 'POST', auth: false, body: { username, challenge_id: begin.challenge_id, credential: credentialJSON(credential) }
     })
-    saveSession(response, remember)
+    saveSession(response)
     return response
   }
 

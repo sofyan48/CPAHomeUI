@@ -5,29 +5,35 @@
     </UAlert>
 
     <template v-if="snapshot && !loadError">
-      <section class="rounded-lg border border-white/40 bg-white/40 app-surface p-5 dark:border-white/10 dark:bg-neutral-900/40">
-        <div class="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <UBadge :color="health.color" variant="subtle">{{ health.label }}</UBadge>
-            <h1 class="mt-3 text-2xl font-semibold">{{ health.title }}</h1>
-            <p class="mt-1 text-sm text-[var(--ui-text-muted)]">{{ health.description }}</p>
+      <AppCard class="border-white/40 bg-white/40 dark:border-white/10 dark:bg-neutral-900/40">
+        <template #header>
+          <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <h1 class="font-semibold">{{ health.title }}</h1>
+                <UBadge :color="health.color" variant="subtle">{{ health.label }}</UBadge>
+              </div>
+              <p class="mt-1 text-sm text-[var(--ui-text-muted)]">{{ health.description }}</p>
+            </div>
+            <UButton icon="i-tabler-refresh" color="neutral" variant="ghost" size="sm" :loading="loading" @click="refreshDashboard">{{ loading ? 'Syncing' : 'Sync data' }}</UButton>
           </div>
-          <UButton icon="i-tabler-refresh" color="neutral" variant="outline" :loading="loading" @click="refreshDashboard">{{ loading ? 'Syncing' : 'Sync data' }}</UButton>
-        </div>
-        <div class="mt-5 grid gap-3 border-t border-[var(--ui-border)] pt-4 text-sm sm:grid-cols-3">
+        </template>
+        <div class="grid gap-4 text-sm sm:grid-cols-3">
           <div><p class="text-xs text-[var(--ui-text-muted)]">Connected server</p><p class="font-medium">{{ runtimeMode || 'Home' }}</p></div>
           <div><p class="text-xs text-[var(--ui-text-muted)]">Latest available version</p><p class="font-medium">{{ latestVersion || 'Unavailable' }}</p></div>
           <div><p class="text-xs text-[var(--ui-text-muted)]">Last synced</p><p class="font-medium">{{ lastUpdated ? lastUpdated.toLocaleString() : 'Not synced' }}</p></div>
         </div>
-        <div v-if="missingCapabilities.length" class="mt-3 flex flex-wrap gap-2"><UBadge v-for="item in missingCapabilities" :key="item.label" color="neutral" variant="subtle">{{ item.label }} unavailable</UBadge></div>
+        <div v-if="missingCapabilities.length" class="mt-4 flex flex-wrap gap-2"><UBadge v-for="item in missingCapabilities" :key="item.label" color="neutral" variant="subtle">{{ item.label }} unavailable</UBadge></div>
         <div v-if="suggestedActions.length" class="mt-4 flex flex-wrap items-center gap-2"><span class="text-xs font-medium">Suggested actions</span><UButton v-for="action in suggestedActions" :key="action.label" :to="action.to" size="sm" color="neutral" variant="outline">{{ action.label }}</UButton></div>
-      </section>
+      </AppCard>
 
       <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <NuxtLink v-for="card in operatingCards" :key="card.label" :to="card.to" class="rounded-lg border border-white/40 bg-white/40 app-surface p-4 transition-colors hover:bg-white/60 dark:border-white/10 dark:bg-neutral-900/40 dark:hover:bg-neutral-800/50">
-          <p class="text-sm text-[var(--ui-text-muted)]">{{ card.label }}</p>
-          <p class="mt-3 text-2xl font-semibold tabular-nums">{{ card.value }}</p>
-          <p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ card.detail }}</p>
+        <NuxtLink v-for="card in operatingCards" :key="card.label" :to="card.to" class="group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+          <AppCard class="h-full border-white/40 bg-white/40 transition-shadow group-hover:shadow-lg dark:border-white/10 dark:bg-neutral-900/40">
+            <template #header><h2 class="font-semibold">{{ card.label }}</h2></template>
+            <p class="text-2xl font-semibold tabular-nums">{{ card.value }}</p>
+            <p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ card.detail }}</p>
+          </AppCard>
         </NuxtLink>
       </section>
 

@@ -286,13 +286,13 @@ const rangeOptions = [
   { label: 'Last 30 days', value: '30d' },
   { label: 'Custom', value: 'custom' }
 ]
-const pageSizeOptions = [20, 50, 100].map(value => ({ label: String(value), value }))
+const pageSizeOptions = [5, 20, 50, 100].map(value => ({ label: String(value), value }))
 const rangePreset = ref('today')
 const rangeFrom = ref('')
 const rangeTo = ref('')
 const appliedRange = ref<BillingRange>(presetRange('today'))
 const chargePage = ref(1)
-const chargePageSize = ref(20)
+const chargePageSize = ref(5)
 const chargePages = computed(() => Math.max(1, Math.ceil(chargesTotal.value / chargePageSize.value)))
 const chargeRangeStart = computed(() => chargesTotal.value ? (chargePage.value - 1) * chargePageSize.value + 1 : 0)
 const chargeRangeEnd = computed(() => Math.min(chargePage.value * chargePageSize.value, chargesTotal.value))
@@ -748,7 +748,7 @@ function formatDate(value?: string) {
 
 onMounted(() => {
   const stored = Number(localStorage.getItem('hmc:user-billing:page-size'))
-  if ([20, 50, 100].includes(stored)) chargePageSize.value = stored
+  if ([5, 20, 50, 100].includes(stored)) chargePageSize.value = stored
   void loadWorkspace()
 })
 </script>
