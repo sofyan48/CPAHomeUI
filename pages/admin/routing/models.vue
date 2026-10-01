@@ -1,13 +1,5 @@
 <template>
   <div class="space-y-6">
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-[var(--ui-text-highlighted)]">Models</h1>
-
-      </div>
-      <AppButton color="primary" icon="i-tabler-refresh" :loading="pending" @click="refresh">Refresh</AppButton>
-    </div>
-
     <UAlert
       v-if="pageError"
       color="error"

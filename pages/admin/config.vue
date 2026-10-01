@@ -1,16 +1,5 @@
 <template>
   <section class="grid gap-5">
-    <AppCard>
-      <header>
-        <h1 class="text-xl font-bold text-[var(--ui-text-highlighted)]">
-          Configuration workspace
-        </h1>
-        <p class="mt-0.5 text-sm text-[var(--ui-text-muted)]">
-          Edit supported runtime settings through one visual workspace.
-        </p>
-      </header>
-    </AppCard>
-
     <UAlert
       v-if="pageError"
       color="error"
@@ -25,11 +14,11 @@
       <USkeleton class="h-64 w-full" />
     </div>
 
-    <div v-else class="grid gap-5 xl:grid-cols-[240px_minmax(0,1fr)]">
+    <div v-else class="grid items-start gap-5 xl:grid-cols-[240px_minmax(0,1fr)]">
       <aside
-        class="sticky top-24 hidden max-h-[calc(100dvh-7rem)] self-start overflow-y-auto xl:block"
+        class="hidden min-w-0 self-start xl:block"
       >
-        <AppCard :ui="{ body: 'p-2' }">
+        <AppCard :ui="{ body: 'p-2 sm:p-2' }">
           <p
             class="px-2 pb-2 text-xs font-semibold uppercase text-[var(--ui-text-muted)]"
           >

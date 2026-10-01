@@ -3,19 +3,6 @@
     <header
       class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
     >
-      <div class="min-w-0">
-        <div class="flex flex-wrap items-center gap-2">
-          <h1 class="text-2xl font-bold text-[var(--ui-text-highlighted)]">
-            Client access keys
-          </h1>
-          <UBadge color="primary" variant="subtle"
-            >{{ resources.length }} keys configured</UBadge
-          >
-        </div>
-      </div>
-      <div class="flex flex-wrap gap-2">
-        <AppSyncButton :loading="loading" @click="syncData" />
-      </div>
     </header>
 
     <AppCard v-if="primaryError">

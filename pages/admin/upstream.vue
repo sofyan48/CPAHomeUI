@@ -1,14 +1,5 @@
 <template>
   <div class="space-y-5">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <h1 class="text-2xl font-bold text-[var(--ui-text-highlighted)]">
-          Upstream
-        </h1>
-      </div>
-      <AppSyncButton :loading="syncing" @click="syncData" />
-    </div>
-
     <p
       v-if="summaryPending"
       role="status"

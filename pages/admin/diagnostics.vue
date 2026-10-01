@@ -1,9 +1,5 @@
 <template>
   <div class="space-y-6">
-    <div>
-      <h1 class="text-2xl font-bold">Diagnostics</h1>
-      <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Usage, health, realtime traffic and request logs from Home.</p>
-    </div>
     <AppPanelTabs v-model="activeView" :items="views" label="Diagnostics views" />
 
     <section v-if="activeView === 'console'" class="space-y-6" role="tabpanel">

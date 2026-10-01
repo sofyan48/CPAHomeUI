@@ -1,17 +1,5 @@
 <template>
   <div class="space-y-6">
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-[var(--ui-text-highlighted)]">Billing & Reports</h1>
-      </div>
-      <div class="flex flex-wrap gap-2">
-        <AppButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" @click="refreshCurrent">
-          Refresh
-        </AppButton>
-
-      </div>
-    </div>
-
     <UAlert
       v-if="pageError"
       color="error"

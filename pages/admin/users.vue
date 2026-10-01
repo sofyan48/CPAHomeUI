@@ -1,24 +1,5 @@
 <template>
   <section class="grid gap-5">
-    <header
-      class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
-    >
-      <div class="min-w-0">
-        <h1 class="text-2xl font-bold text-[var(--ui-text-highlighted)]">
-          Users &amp; Access
-        </h1>
-        <div class="mt-3 flex flex-wrap gap-2">
-          <UBadge color="primary" variant="subtle"
-            >{{ users.length }} users</UBadge
-          >
-          <UBadge v-if="unassignedKeyCount > 0" color="warning" variant="subtle"
-            >{{ unassignedKeyCount }} unassigned keys</UBadge
-          >
-        </div>
-      </div>
-      <AppSyncButton :loading="loading" @click="syncAll(true)" />
-    </header>
-
     <UAlert
       v-if="capabilitiesError"
       color="warning"
