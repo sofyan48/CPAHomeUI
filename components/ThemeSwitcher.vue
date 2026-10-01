@@ -1,6 +1,6 @@
 <template>
   <UPopover>
-    <UButton
+    <AppButton
       color="neutral"
       variant="ghost"
       :icon="themeIcon"
@@ -9,7 +9,7 @@
     />
     <template #content>
       <div class="grid min-w-40 gap-1 p-1.5">
-        <UButton
+        <AppButton
           v-for="option in options"
           :key="option.value"
           color="neutral"
@@ -19,7 +19,7 @@
           @click="setTheme(option.value)"
         >
           {{ option.label }}
-        </UButton>
+        </AppButton>
       </div>
     </template>
   </UPopover>

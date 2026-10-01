@@ -13,32 +13,32 @@
 
       <div v-else-if="capabilityState === 'failure'" class="space-y-5">
         <UAlert color="error" variant="subtle" title="Unable to check password recovery" :description="capabilityError" />
-        <UButton color="primary" block :loading="capabilityLoading" @click="checkCapabilities">Try again</UButton>
-        <UButton to="/app/login" color="neutral" variant="ghost" block>Back to sign in</UButton>
+        <AppButton color="primary" block :loading="capabilityLoading" @click="checkCapabilities">Try again</AppButton>
+        <AppButton to="/app/login" color="neutral" variant="ghost" block>Back to sign in</AppButton>
       </div>
 
       <div v-else-if="capabilityState === 'unsupported'" class="space-y-5">
         <UAlert color="warning" variant="subtle" title="Password recovery is not supported" description="This Home server does not advertise password recovery. Ask an administrator for help accessing your account." />
-        <UButton to="/app/login" color="primary" block>Back to sign in</UButton>
+        <AppButton to="/app/login" color="primary" block>Back to sign in</AppButton>
       </div>
 
       <div v-else-if="capabilityState === 'disabled'" class="space-y-5">
         <UAlert color="warning" variant="subtle" title="Password recovery is disabled" description="Email password recovery is not enabled on this Home server. Ask an administrator for help accessing your account." />
-        <UButton to="/app/login" color="primary" block>Back to sign in</UButton>
+        <AppButton to="/app/login" color="primary" block>Back to sign in</AppButton>
       </div>
 
       <div v-else-if="sent" class="space-y-5 text-center">
         <div class="mx-auto flex size-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500"><UIcon name="i-tabler-mail" class="size-7" /></div>
         <p class="text-sm text-[var(--ui-text-muted)]">{{ acceptedMessage }}</p>
-        <UButton color="neutral" variant="outline" block @click="requestAnother">Submit another request</UButton>
-        <UButton to="/app/login" color="primary" block>Return to sign in</UButton>
+        <AppButton color="neutral" variant="outline" block @click="requestAnother">Submit another request</AppButton>
+        <AppButton to="/app/login" color="primary" block>Return to sign in</AppButton>
       </div>
 
       <form v-else class="space-y-5" @submit.prevent="submit">
         <UAlert v-if="error" color="error" variant="subtle" title="Request failed" :description="error" />
         <UFormField label="Email" required><UInput v-model="email" class="w-full" type="email" autocomplete="email" icon="i-tabler-mail" /></UFormField>
-        <UButton type="submit" color="primary" block :loading="loading">Send reset instructions</UButton>
-        <UButton to="/app/login" color="neutral" variant="ghost" block>Back to sign in</UButton>
+        <AppButton type="submit" color="primary" block :loading="loading">Send reset instructions</AppButton>
+        <AppButton to="/app/login" color="neutral" variant="ghost" block>Back to sign in</AppButton>
       </form>
     </AppCard>
   </div>

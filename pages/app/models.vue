@@ -5,7 +5,7 @@
         <h1 class="text-4xl font-bold tracking-tight text-[var(--ui-text-highlighted)]">Find the right model</h1>
         <p class="mt-2 max-w-2xl text-[var(--ui-text-muted)]">Browse models available to your API keys, including pricing and observed availability.</p>
       </div>
-      <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading || capabilityLoading" @click="refreshCatalog">Refresh</UButton>
+      <AppButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading || capabilityLoading" @click="refreshCatalog">Refresh</AppButton>
     </section>
 
     <UAlert v-if="catalogUnsupported" color="warning" variant="subtle" title="Model catalog unavailable" description="This Home server does not support the public model catalog endpoint." />
@@ -27,7 +27,7 @@
 
       <fieldset class="flex flex-wrap items-center gap-1.5 rounded-xl border border-[var(--ui-border)] px-3 py-2.5">
         <legend class="px-1 text-xs font-semibold uppercase tracking-wide text-[var(--ui-text-dimmed)]">Required capabilities</legend>
-        <UButton v-for="option in capabilityOptions" :key="option.value" type="button" size="xs" :color="selectedCapabilities.includes(option.value) ? 'primary' : 'neutral'" :variant="selectedCapabilities.includes(option.value) ? 'soft' : 'outline'" :icon="selectedCapabilities.includes(option.value) ? 'i-tabler-check' : undefined" :aria-pressed="selectedCapabilities.includes(option.value)" @click="setCapability(option.value, !selectedCapabilities.includes(option.value))">{{ option.label }}</UButton>
+        <AppButton v-for="option in capabilityOptions" :key="option.value" type="button" size="xs" :color="selectedCapabilities.includes(option.value) ? 'primary' : 'neutral'" :variant="selectedCapabilities.includes(option.value) ? 'soft' : 'outline'" :icon="selectedCapabilities.includes(option.value) ? 'i-tabler-check' : undefined" :aria-pressed="selectedCapabilities.includes(option.value)" @click="setCapability(option.value, !selectedCapabilities.includes(option.value))">{{ option.label }}</AppButton>
       </fieldset>
 
       <p class="text-xs text-[var(--ui-text-muted)]">{{ filteredModels.length }} of {{ models.length }} models · Unknown modalities and capabilities do not match support filters. Availability is observed cluster-wide, not a guarantee.</p>
@@ -47,13 +47,13 @@
             <p class="truncate text-sm font-semibold text-[var(--ui-text-highlighted)]" :title="model.display_name || model.id">{{ model.display_name || model.id }}</p>
             <div class="mt-0.5 flex min-w-0 items-center gap-0.5">
               <code class="truncate text-[10px] text-[var(--ui-text-muted)]" :title="model.id">{{ model.id }}</code>
-              <UButton color="neutral" variant="ghost" size="xs" icon="i-tabler-copy" :aria-label="`Copy model ID ${model.id}`" @click.stop="copyModelId(model.id)" />
+              <AppButton color="neutral" variant="ghost" size="xs" icon="i-tabler-copy" :aria-label="`Copy model ID ${model.id}`" @click.stop="copyModelId(model.id)" />
             </div>
           </div>
           <p v-if="model.pricing?.status === 'published'" class="mt-3 text-xs font-medium leading-5">From {{ credits(lowestPrice(model, 'input')) }} in / {{ credits(lowestPrice(model, 'output')) }} out / 1M tokens</p>
           <p v-else class="mt-3 text-xs text-[var(--ui-text-muted)]">Price not published</p>
           <div class="mt-auto pt-3">
-            <UButton block color="neutral" variant="outline" size="xs" :aria-label="`View details for ${model.display_name || model.id}`" @click="openDetails(model, $event)">Details</UButton>
+            <AppButton block color="neutral" variant="outline" size="xs" :aria-label="`View details for ${model.display_name || model.id}`" @click="openDetails(model, $event)">Details</AppButton>
           </div>
         </AppCard>
       </div>
@@ -69,7 +69,7 @@
             </div>
             <div class="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] px-3 py-2">
               <code class="min-w-0 flex-1 break-all text-xs">{{ selectedModel.id }}</code>
-              <UButton color="neutral" variant="outline" size="xs" icon="i-tabler-copy" @click="copyModelId(selectedModel.id)">Copy ID</UButton>
+              <AppButton color="neutral" variant="outline" size="xs" icon="i-tabler-copy" @click="copyModelId(selectedModel.id)">Copy ID</AppButton>
             </div>
           </div>
           <p class="text-[var(--ui-text-muted)]">{{ selectedModel.description || 'No description has been published.' }}</p>
@@ -368,9 +368,14 @@ function capabilityText(status?: string) { return status === 'supported' ? 'Supp
 function budgetText(budget: Record<string, unknown>) { return Object.entries(budget).map(([key, value]) => `${key.replaceAll('_', ' ')}: ${value}`).join(' · ') }
 function duration(ms?: number) { return ms == null ? 'Not published' : `${ms.toLocaleString()} ms` }
 function dateText(value?: string) { return value ? new Date(value).toLocaleString() : 'Not published' }
+function modelLimit(model: UserModel, field: 'context_length' | 'max_output_tokens') {
+  if (model[field]) return formatTokens(model[field])
+  const published = (model.provider_limits || []).map(limit => limit[field]).filter((value): value is number => Boolean(value))
+  return published.length ? 'Varies by provider' : 'Not published'
+}
 function modelFacts(model: UserModel) { return [
-  { label: 'Model ID', value: model.id }, { label: 'Context', value: formatTokens(model.context_length) },
-  { label: 'Maximum output', value: formatTokens(model.max_output_tokens) }, { label: 'Version', value: model.version || 'Not published' },
+  { label: 'Model ID', value: model.id }, { label: 'Context', value: modelLimit(model, 'context_length') },
+  { label: 'Maximum output', value: modelLimit(model, 'max_output_tokens') }, { label: 'Version', value: model.version || 'Not published' },
   { label: 'Owner', value: model.owned_by || 'Not published' }, { label: 'Type', value: model.type || 'Not published' }
 ] }
 

@@ -7,7 +7,7 @@
       <p class="text-sm font-medium text-[var(--ui-text-highlighted)]">{{ title }}</p>
       <p class="truncate text-xs text-[var(--ui-text-muted)]">{{ detail }}</p>
     </div>
-    <UButton color="neutral" variant="soft" size="sm" @click="$emit('action')">{{ action }}</UButton>
+    <AppButton color="neutral" variant="soft" size="sm" @click="$emit('action')">{{ action }}</AppButton>
   </div>
 </template>
 

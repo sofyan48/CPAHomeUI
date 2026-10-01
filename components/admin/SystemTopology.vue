@@ -17,7 +17,7 @@
             <p class="mt-2 max-w-2xl text-sm leading-6 text-[var(--ui-text-muted)]">{{ fatalError }}</p>
           </div>
         </div>
-        <UButton color="neutral" variant="outline" icon="i-tabler-refresh" @click="refreshSystem">Retry</UButton>
+        <AppButton color="neutral" variant="outline" icon="i-tabler-refresh" @click="refreshSystem">Retry</AppButton>
       </div>
     </AppCard>
 
@@ -42,8 +42,8 @@
             </div>
           </div>
           <div class="flex shrink-0 flex-wrap gap-2 lg:justify-end">
-            <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" @click="refreshSystem">{{ loading ? 'Syncing' : 'Sync data' }}</UButton>
-            <UButton color="neutral" variant="outline" icon="i-tabler-square-terminal" @click="openDiagnostics">Diagnostics</UButton>
+            <AppButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" @click="refreshSystem">{{ loading ? 'Syncing' : 'Sync data' }}</AppButton>
+            <AppButton color="neutral" variant="outline" icon="i-tabler-square-terminal" @click="openDiagnostics">Diagnostics</AppButton>
           </div>
         </div>
         <div class="mt-5 grid gap-2 border-t border-[var(--ui-border)] pt-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -83,7 +83,7 @@
             </div>
             <p class="mt-1 text-xs leading-5 text-[var(--ui-text-muted)]">{{ topologyDescription }}</p>
           </div>
-          <UButton icon="i-tabler-plus" class="lg:shrink-0" @click="openEnrollment">Add node</UButton>
+          <AppButton icon="i-tabler-plus" class="lg:shrink-0" @click="openEnrollment">Add node</AppButton>
         </div>
 
         <div class="mt-4">
@@ -126,7 +126,7 @@
                     <p class="text-xs font-medium text-[var(--ui-text-muted)]">{{ node.node_name ? 'CPA node name' : 'CPA node IP' }}</p>
                     <div class="mt-1 flex min-w-0 flex-wrap items-center gap-2">
                       <p class="truncate text-sm" :class="node.node_name ? 'font-medium' : 'font-mono'">{{ node.node_name || node.ip || 'Unknown node' }}</p>
-                      <UButton v-if="node.node_id" color="neutral" variant="ghost" size="xs" icon="i-tabler-pencil" :aria-label="`Rename ${node.node_name || node.ip || 'node'}`" @click="openRename(node)" />
+                      <AppButton v-if="node.node_id" color="neutral" variant="ghost" size="xs" icon="i-tabler-pencil" :aria-label="`Rename ${node.node_name || node.ip || 'node'}`" @click="openRename(node)" />
                       <UBadge :color="healthColor(nodeHealth(node))" variant="subtle">{{ healthLabel(nodeHealth(node)) }}</UBadge>
                     </div>
                     <p v-if="node.node_name" class="mt-1 truncate font-mono text-xs text-[var(--ui-text-muted)]">{{ node.ip || 'N/A' }}</p>
@@ -170,7 +170,7 @@
               <UFormField label="Headers JSON"><UTextarea v-model="diagnostic.headers" :rows="6" class="w-full font-mono text-xs" /></UFormField>
               <UFormField label="Body"><UTextarea v-model="diagnostic.data" :rows="6" placeholder="Optional, body is sent as written" class="w-full font-mono text-xs" /></UFormField>
               <UAlert v-if="diagnosticError" color="error" variant="subtle" :description="diagnosticError" />
-              <UButton type="submit" icon="i-tabler-player-play" :loading="diagnosticLoading">Send diagnostic request</UButton>
+              <AppButton type="submit" icon="i-tabler-player-play" :loading="diagnosticLoading">Send diagnostic request</AppButton>
             </form>
             <div v-if="diagnosticResult" class="rounded-md border border-[var(--ui-border)] p-3">
               <p class="text-sm font-medium">Response status: {{ diagnosticResult.status_code ?? 'N/A' }}</p>
@@ -180,25 +180,25 @@
         </template>
       </USlideover>
 
-      <UModal v-model:open="enrollmentOpen" title="Node enrollment token" :description="enrollment ? 'Configure the credential on the node you want to enroll. Store it securely; closing this panel does not revoke the token.' : 'Name this node so you can identify it later, then generate its credential.'">
+      <AppModal v-model:open="enrollmentOpen" title="Node enrollment token" :description="enrollment ? 'Configure the credential on the node you want to enroll. Store it securely; closing this panel does not revoke the token.' : 'Name this node so you can identify it later, then generate its credential.'">
         <template #body>
           <div v-if="enrollment" class="space-y-4">
             <div v-if="enrollment.id"><p class="text-xs font-medium text-[var(--ui-text-muted)]">Client ID</p><p class="mt-2 break-all font-mono text-sm">{{ enrollment.id }}</p></div>
             <div v-if="enrollment.node_name"><p class="text-xs font-medium text-[var(--ui-text-muted)]">Node name</p><p class="mt-2 text-sm">{{ enrollment.node_name }}</p></div>
             <div><p class="text-xs font-medium text-[var(--ui-text-muted)]">Credential</p><pre class="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-all rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] p-3 font-mono text-xs leading-5">{{ enrollment.home_jwt }}</pre></div>
-            <div class="flex justify-end"><UButton icon="i-tabler-copy" @click="copyJWT">Copy credential</UButton></div>
+            <div class="flex justify-end"><AppButton icon="i-tabler-copy" @click="copyJWT">Copy credential</AppButton></div>
           </div>
           <form v-else class="space-y-4" @submit.prevent="generateEnrollment">
             <UFormField label="Node name" hint="Optional. Up to 128 characters. You can rename the node later.">
               <UInput v-model="nodeName" maxlength="128" placeholder="e.g. us-east-gateway" class="w-full" />
             </UFormField>
             <UAlert v-if="enrollmentError" color="error" variant="subtle" :description="enrollmentError" />
-            <div class="flex justify-end"><UButton type="submit" :loading="generating">Generate credential</UButton></div>
+            <div class="flex justify-end"><AppButton type="submit" :loading="generating">Generate credential</AppButton></div>
           </form>
         </template>
-      </UModal>
+      </AppModal>
 
-      <UModal v-model:open="renameOpen" title="Rename CPA node" description="Give this CPA node a recognizable name. Names are console labels only and do not need to be unique.">
+      <AppModal v-model:open="renameOpen" title="Rename CPA node" description="Give this CPA node a recognizable name. Names are console labels only and do not need to be unique.">
         <template #body>
           <form class="space-y-4" @submit.prevent="saveRename">
             <UFormField label="Node name" hint="Up to 128 characters. Leave empty to clear the name.">
@@ -206,12 +206,12 @@
             </UFormField>
             <UAlert v-if="renameError" color="error" variant="subtle" :description="renameError" />
             <div class="flex justify-end gap-2">
-              <UButton type="button" color="neutral" variant="outline" :disabled="renaming" @click="closeRename">Cancel</UButton>
-              <UButton type="submit" :loading="renaming">Save name</UButton>
+              <AppButton type="button" color="neutral" variant="outline" :disabled="renaming" @click="closeRename">Cancel</AppButton>
+              <AppButton type="submit" :loading="renaming">Save name</AppButton>
             </div>
           </form>
         </template>
-      </UModal>
+      </AppModal>
     </template>
   </section>
 </template>
@@ -367,7 +367,7 @@ async function refreshSystem() {
     await refreshCapabilities(true)
     probedAt.value = new Date()
     const requests: Array<{ scope: string, run: () => Promise<void> }> = [
-      { scope: 'Latest version', run: async () => { const value: any = await fetchAPI('/latest-version'); latestVersion.value = String(value?.['latest-version'] || value?.latest_version || '') } },
+      { scope: 'Latest version', run: async () => { const value: any = await fetchAPI('/server/latest-version'); latestVersion.value = String(value?.['latest-version'] || value?.latest_version || '') } },
       { scope: 'Config summary', run: async () => { configSnapshot.value = await fetchAPI('/config') } }
     ]
     if (supports('nodes', true)) requests.push({ scope: 'Node connections', run: async () => { nodesResponse.value = await fetchAPI('/nodes') } })
@@ -418,7 +418,7 @@ async function runDiagnostic() {
   catch { diagnosticError.value = 'Headers must be a valid JSON object.'; return }
   diagnosticLoading.value = true
   try {
-    diagnosticResult.value = await fetchAPI('/api-call', { method: 'POST', body: { auth_index: diagnostic.authIndex || undefined, method: diagnostic.method, url: diagnostic.url.trim(), header: headers, data: diagnostic.data } })
+    diagnosticResult.value = await fetchAPI('/requests/api-call', { method: 'POST', body: { auth_index: diagnostic.authIndex || undefined, method: diagnostic.method, url: diagnostic.url.trim(), header: headers, data: diagnostic.data } })
     toast.add({ title: 'Diagnostic request completed', color: 'success' })
   } catch (error: any) { diagnosticError.value = errorMessage(error, 'The diagnostic request failed.') }
   finally { diagnosticLoading.value = false }

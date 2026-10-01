@@ -58,7 +58,7 @@
           </div>
           <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
             <UInput v-model="providerSearch" icon="i-tabler-search" placeholder="Filter entries..." class="w-full sm:w-72" />
-            <UButton color="primary" icon="i-tabler-plus" :disabled="pending || !!pageError" @click="openProviderCreate">New provider</UButton>
+            <AppButton color="primary" icon="i-tabler-plus" :disabled="pending || !!pageError" @click="openProviderCreate">New provider</AppButton>
           </div>
         </div>
 
@@ -97,13 +97,11 @@
       </div>
     </section>
 
-    <UModal
+    <AdminModalForm
       v-model:open="providerEditorOpen"
-      :ui="{ content: 'sm:max-w-2xl' }"
       :title="providerEditorMode === 'detail' ? 'Provider details' : providerEditorMode === 'edit' ? `Edit model key · ${selectedProvider.label}` : `New model key · ${selectedProvider.label}`"
       description="Configure model provider credentials and settings."
     >
-      <template #body>
         <div v-if="providerEditorMode === 'detail' && editingProviderEntry" class="max-h-[75vh] space-y-5 overflow-y-auto pr-1">
           <div><p class="text-xs font-medium uppercase text-[var(--ui-text-muted)]">Provider details</p><h2 class="mt-2 text-base font-semibold">{{ providerEntryLabel(editingProviderEntry) }}</h2></div>
           <dl class="grid gap-x-4 gap-y-3 sm:grid-cols-2">
@@ -112,7 +110,7 @@
           <details class="rounded-md border border-[var(--ui-border)] px-3 py-2.5 text-sm"><summary class="cursor-pointer font-medium">Additional metadata</summary>
             <dl class="mt-3 grid gap-x-4 gap-y-3 sm:grid-cols-2"><div v-for="field in providerMetadataFields" :key="field.label"><dt class="text-xs text-[var(--ui-text-muted)]">{{ field.label }}</dt><dd class="mt-1 break-words font-mono text-xs">{{ field.value }}</dd></div></dl>
           </details>
-          <div class="flex justify-end gap-2 border-t border-[var(--ui-border)] pt-4"><UButton color="neutral" variant="ghost" @click="providerEditorOpen = false">Close</UButton><UButton color="primary" icon="i-tabler-pencil" @click="openProviderEdit(editingProviderEntry)">Edit</UButton></div>
+          <div class="flex justify-end gap-2 border-t border-[var(--ui-border)] pt-4"><AppButton color="neutral" variant="ghost" @click="providerEditorOpen = false">Close</AppButton><AppButton color="primary" icon="i-tabler-pencil" @click="openProviderEdit(editingProviderEntry)">Edit</AppButton></div>
         </div>
         <form v-else novalidate class="max-h-[75vh] space-y-4 overflow-y-auto pr-1" @submit.prevent="saveProviderEntry">
           <UAlert
@@ -132,12 +130,13 @@
               <UFormField v-if="!isCompat" label="Proxy URL"><UInput v-model="providerForm['proxy-url']" type="url" class="w-full" placeholder="http://127.0.0.1:7890" /></UFormField>
               <UFormField label="Model prefix"><UInput v-model="providerForm.prefix" class="w-full" /></UFormField>
               <UFormField label="Priority"><UInput v-model="providerForm.priority" type="number" step="1" class="w-full" /></UFormField>
+              <UFormField label="Weight" hint="Used by weighted round-robin routing"><UInput v-model="providerForm.weight" type="number" step="1" class="w-full" /></UFormField>
               <UFormField label="Request retry rounds" hint="Blank inherits global; 0 disables retry rounds"><UInput v-model="requestRetryText" type="number" min="0" step="1" class="w-full" placeholder="Inherit global" /></UFormField>
               <UCheckbox v-model="providerForm['disable-cooling']" label="Disable cooling" />
             </div>
             <UCheckbox v-if="supportsWebsockets" v-model="providerForm.websockets" label="WebSocket support" />
             <UCheckbox v-if="isCompat" v-model="providerForm.disabled" label="Disabled" />
-            <details v-if="selectedProviderRoute === 'claude-api-key'" class="space-y-3 rounded-lg border border-white/40 bg-white/40 app-surface p-4 dark:border-white/10 dark:bg-neutral-900/40">
+            <AdminModalCard v-if="selectedProviderRoute === 'claude-api-key'" as="details" class="space-y-3">
               <summary class="cursor-pointer font-medium">Cloak configuration</summary>
               <div class="mt-3 space-y-3">
                 <UFormField label="Cloak mode" hint="Auto cloaks clients other than Claude Code."><USelect v-model="cloakMode" :items="cloakModeOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
@@ -145,17 +144,17 @@
                 <UFormField label="Sensitive words" hint="One word per line; obfuscated in system instructions."><UTextarea v-model="cloakSensitiveWordsText" :rows="3" class="w-full" /></UFormField>
                 <UFormField label="Cache user ID"><USelect v-model="cloakCacheUserID" :items="cloakCacheOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
               </div>
-            </details>
+            </AdminModalCard>
 
-            <details class="space-y-3 rounded-lg border border-white/40 bg-white/40 app-surface p-4 dark:border-white/10 dark:bg-neutral-900/40">
+            <AdminModalCard as="details" class="space-y-3">
               <summary class="cursor-pointer font-medium">Custom models</summary>
-              <div class="mt-3 flex justify-end"><UButton type="button" size="sm" color="neutral" variant="outline" icon="i-tabler-plus" @click="addProviderModel">Add model</UButton></div>
+              <div class="mt-3 flex justify-end"><AppButton type="button" size="sm" color="neutral" variant="outline" icon="i-tabler-plus" @click="addProviderModel">Add model</AppButton></div>
 
-              <div v-if="supportsDiscovery" class="space-y-3 rounded-lg border border-white/40 bg-white/40 app-surface p-3 dark:border-white/10 dark:bg-neutral-900/40">
+              <AdminModalCard v-if="supportsDiscovery" nested class="space-y-3">
                 <p class="text-sm font-medium">Discover models</p>
                 <p class="text-xs text-[var(--ui-text-muted)]">Fetch available models from the upstream provider.</p>
                 <div class="flex flex-wrap items-center gap-2">
-                  <UButton type="button" color="neutral" variant="outline" icon="i-tabler-search" :loading="discovering" :disabled="!discoveryReady" @click="discoverModels">{{ discoveryLoaded ? 'Reload' : 'Discover models' }}</UButton>
+                  <AppButton type="button" color="neutral" variant="outline" icon="i-tabler-search" :loading="discovering" :disabled="!discoveryReady" @click="discoverModels">{{ discoveryLoaded ? 'Reload' : 'Discover models' }}</AppButton>
                   <span class="text-xs text-[var(--ui-text-muted)]">{{ discoveryAuthLabel }} · {{ requiresBaseURL ? providerForm['base-url']?.trim() ? 'Base URL set' : 'Base URL required' : 'Default Base URL available' }}</span>
                 </div>
                 <UAlert v-if="discoveryError" color="error" variant="subtle" title="Discovery failed" :description="discoveryError" />
@@ -164,48 +163,47 @@
                   <p v-if="discoveryLoaded && !discoveredModels.length" class="text-xs text-[var(--ui-text-muted)]">No models found.</p>
                   <div class="flex flex-wrap items-center justify-between gap-2">
                     <p class="text-sm">{{ selectedDiscovered.length }} of {{ discoveredModels.length }} selected</p>
-                    <div class="flex gap-2"><UButton type="button" size="sm" color="neutral" variant="ghost" @click="selectAllDiscoveredModels">Select all</UButton><UButton type="button" size="sm" color="neutral" variant="ghost" @click="selectedDiscovered = []">Clear</UButton></div>
+                    <div class="flex gap-2"><AppButton type="button" size="sm" color="neutral" variant="ghost" @click="selectAllDiscoveredModels">Select all</AppButton><AppButton type="button" size="sm" color="neutral" variant="ghost" @click="selectedDiscovered = []">Clear</AppButton></div>
                   </div>
                   <div class="max-h-40 space-y-1 overflow-y-auto">
                     <UCheckbox v-for="model in filteredDiscoveredModels" :key="model.name" :model-value="existingModelNames.has(model.name.toLowerCase()) || selectedDiscovered.includes(model.name)" :disabled="existingModelNames.has(model.name.toLowerCase())" :label="existingModelNames.has(model.name.toLowerCase()) ? `${model.name} · Already added` : model.alias ? `${model.name} · ${model.alias}` : model.name" @update:model-value="toggleDiscoveredModel(model.name, $event)" />
                   </div>
-                  <div class="flex justify-end gap-2"><UButton type="button" size="sm" color="neutral" variant="ghost" @click="discoveryVisible = false">Close</UButton><UButton type="button" size="sm" color="primary" :disabled="!selectedDiscovered.length" @click="applyDiscoveredModels">Apply</UButton></div>
+                  <div class="flex justify-end gap-2"><AppButton type="button" size="sm" color="neutral" variant="ghost" @click="discoveryVisible = false">Close</AppButton><AppButton type="button" size="sm" color="primary" :disabled="!selectedDiscovered.length" @click="applyDiscoveredModels">Apply</AppButton></div>
                 </div>
-              </div>
-              <div v-for="(model, index) in providerForm.models" :key="index" class="space-y-2 rounded-lg border border-white/40 bg-white/40 app-surface p-3 dark:border-white/10 dark:bg-neutral-900/40">
-                <div class="grid gap-2 sm:grid-cols-2"><UFormField label="Model ID"><UInputMenu v-model="model.name" :items="modelSuggestions" create-item class="w-full" placeholder="Search catalog or enter model" @create="model.name = $event.trim()" /></UFormField><UFormField label="Alias"><UInput v-model="model.alias" class="w-full" /></UFormField><UFormField v-if="supportsModelMapping" label="Display name"><UInput v-model="model['display-name']" class="w-full" /></UFormField><div class="flex items-end justify-between gap-2"><UCheckbox v-if="supportsModelMapping" v-model="model['force-mapping']" label="Force response model mapping" /><UButton type="button" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove model" :disabled="providerForm.models.length <= 1" @click="removeProviderModel(index)" /></div></div>
-              </div>
-            </details>
-            <details class="rounded-lg border border-white/40 bg-white/40 app-surface p-4 dark:border-white/10 dark:bg-neutral-900/40"><summary class="cursor-pointer font-medium">Excluded models</summary><UTextarea v-model="excludedModelsText" :rows="3" class="mt-3 w-full" placeholder="Separate model IDs with commas or new lines" /></details>
-            <details class="space-y-3 rounded-lg border border-white/40 bg-white/40 app-surface p-4 dark:border-white/10 dark:bg-neutral-900/40">
+              </AdminModalCard>
+              <AdminModalCard v-for="(model, index) in providerForm.models" :key="index" nested class="space-y-2">
+                <div class="grid gap-2 sm:grid-cols-2"><UFormField label="Model ID"><UInputMenu v-model="model.name" :items="modelSuggestions" create-item class="w-full" placeholder="Search catalog or enter model" @create="model.name = $event.trim()" /></UFormField><UFormField label="Alias"><UInput v-model="model.alias" class="w-full" /></UFormField><UFormField v-if="supportsModelMapping" label="Display name"><UInput v-model="model['display-name']" class="w-full" /></UFormField><div class="flex items-end justify-between gap-2"><UCheckbox v-if="supportsModelMapping" v-model="model['force-mapping']" label="Force response model mapping" /><AppButton type="button" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove model" :disabled="providerForm.models.length <= 1" @click="removeProviderModel(index)" /></div></div>
+              </AdminModalCard>
+            </AdminModalCard>
+            <AdminModalCard v-if="!isCompat" as="details"><summary class="cursor-pointer font-medium">Excluded models</summary><UTextarea v-model="excludedModelsText" :rows="3" class="mt-3 w-full" placeholder="Separate model IDs with commas or new lines" /></AdminModalCard>
+            <AdminModalCard as="details" class="space-y-3">
               <summary class="cursor-pointer font-medium">Request headers</summary>
               <div class="mt-3 space-y-3">
-                <div class="flex justify-end"><UButton type="button" size="sm" color="neutral" variant="outline" icon="i-tabler-plus" @click="headerRows.push({ name: '', value: '' })">Add header</UButton></div>
+                <div class="flex justify-end"><AppButton type="button" size="sm" color="neutral" variant="outline" icon="i-tabler-plus" @click="headerRows.push({ name: '', value: '' })">Add header</AppButton></div>
                 <div v-for="(header, index) in headerRows" :key="index" class="flex items-end gap-2">
                 <UFormField label="Header name" class="flex-1"><UInput v-model="header.name" class="w-full" /></UFormField>
                 <UFormField label="Header value" class="flex-1"><UInput v-model="header.value" class="w-full" /></UFormField>
-                <UButton type="button" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove header" :disabled="headerRows.length <= 1" @click="headerRows.splice(index, 1)" />
+                <AppButton type="button" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove header" :disabled="headerRows.length <= 1" @click="headerRows.splice(index, 1)" />
               </div>
               </div>
-            </details>
-            <div v-if="supportsTest" class="space-y-3 rounded-lg border border-white/40 bg-white/40 app-surface p-4 dark:border-white/10 dark:bg-neutral-900/40">
+            </AdminModalCard>
+            <AdminModalCard v-if="supportsTest" class="space-y-3">
               <UFormField label="Test model"><USelect v-model="testModel" :items="testModelOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
-              <UButton type="button" color="neutral" variant="outline" :loading="testingConnection" @click="testProviderConnection">Test connectivity</UButton>
+              <AppButton type="button" color="neutral" variant="outline" :loading="testingConnection" @click="testProviderConnection">Test connectivity</AppButton>
               <UAlert v-if="testError" color="error" variant="subtle" title="Connectivity test failed" :description="testError" />
               <UAlert v-if="testSuccess" color="success" variant="subtle" title="Connectivity test succeeded" />
-            </div>
+            </AdminModalCard>
           <div class="flex items-center justify-between border-t border-[var(--ui-border)] pt-4">
             <span class="text-xs text-[var(--ui-text-muted)]">Leave the key blank when editing to keep it.</span>
             <div class="flex gap-3">
-              <UButton color="neutral" variant="ghost" type="button" @click="providerEditorOpen = false">Cancel</UButton>
-              <UButton color="primary" type="submit" :loading="savingProvider">Save entry</UButton>
+              <AppButton color="neutral" variant="ghost" type="button" @click="providerEditorOpen = false">Cancel</AppButton>
+              <AppButton color="primary" type="submit" :loading="savingProvider">Save entry</AppButton>
             </div>
           </div>
         </form>
-      </template>
-    </UModal>
+    </AdminModalForm>
 
-    <UModal v-model:open="deleteOpen" title="Delete provider entry">
+    <AppModal v-model:open="deleteOpen" title="Delete provider entry">
       <template #body>
         <div class="space-y-5">
           <UAlert
@@ -216,12 +214,12 @@
             :description="deleteDescription"
           />
           <div class="flex justify-end gap-3">
-            <UButton color="neutral" variant="ghost" @click="deleteOpen = false">Cancel</UButton>
-            <UButton color="error" :loading="deleting" @click="performDelete">Delete</UButton>
+            <AppButton color="neutral" variant="ghost" @click="deleteOpen = false">Cancel</AppButton>
+            <AppButton color="error" :loading="deleting" @click="performDelete">Delete</AppButton>
           </div>
         </div>
       </template>
-    </UModal>
+    </AppModal>
   </div>
 </template>
 
@@ -233,14 +231,14 @@ const toast = useToast()
 const rowValue = (row) => row?.original ?? row
 
 const providerCategories = [
-  { label: 'Gemini API keys', value: 'gemini-api-key', responseKey: 'gemini-api-key', template: { 'api-key': '', 'base-url': '', priority: 0, prefix: '', 'proxy-url': '', models: [], headers: {}, 'excluded-models': [] } },
-  { label: 'Gemini Interactions', value: 'interactions-api-key', responseKey: 'interactions-api-key', template: { 'api-key': '', 'base-url': '', priority: 0, prefix: '', 'proxy-url': '', models: [], headers: {}, 'excluded-models': [] } },
-  { label: 'Claude API keys', value: 'claude-api-key', responseKey: 'claude-api-key', template: { 'api-key': '', 'base-url': '', priority: 0, prefix: '', 'proxy-url': '', models: [], headers: {}, 'excluded-models': [] } },
-  { label: 'Codex API keys', value: 'codex-api-key', responseKey: 'codex-api-key', template: { 'api-key': '', 'base-url': '', priority: 0, prefix: '', 'proxy-url': '', models: [], headers: {}, websockets: false } },
-  { label: 'xAI API keys', value: 'xai-api-key', responseKey: 'xai-api-key', template: { 'api-key': '', 'base-url': 'https://api.x.ai/v1', priority: 0, prefix: '', 'proxy-url': '', models: [], headers: {}, websockets: false } },
-  { label: 'Meta API keys', value: 'meta-api-key', responseKey: 'meta-api-key', template: { 'api-key': '', 'base-url': '', priority: 0, prefix: '', 'proxy-url': '', models: [], headers: {} } },
-  { label: 'Vertex compatibility', value: 'vertex-api-key', responseKey: 'vertex-api-key', template: { 'api-key': '', 'base-url': '', priority: 0, prefix: '', 'proxy-url': '', models: [], headers: {} } },
-  { label: 'OpenAI compatibility', value: 'openai-compatibility', responseKey: 'openai-compatibility', template: { name: '', 'base-url': '', priority: 0, disabled: false, prefix: '', 'api-key-entries': [], models: [], headers: {} } }
+  { label: 'Gemini API keys', value: 'gemini-api-key', path: '/config/api-keys/gemini', template: { 'api-key': '', 'base-url': '', priority: 0, weight: 1, prefix: '', 'proxy-url': '', models: [], headers: {}, 'excluded-models': [] } },
+  { label: 'Gemini Interactions', value: 'interactions-api-key', path: '/config/api-keys/interactions', template: { 'api-key': '', 'base-url': '', priority: 0, weight: 1, prefix: '', 'proxy-url': '', models: [], headers: {}, 'excluded-models': [] } },
+  { label: 'Claude API keys', value: 'claude-api-key', path: '/config/api-keys/claude', template: { 'api-key': '', 'base-url': '', priority: 0, weight: 1, prefix: '', 'proxy-url': '', models: [], headers: {}, 'excluded-models': [] } },
+  { label: 'Codex API keys', value: 'codex-api-key', path: '/config/api-keys/codex', template: { 'api-key': '', 'base-url': '', priority: 0, weight: 1, prefix: '', 'proxy-url': '', models: [], headers: {}, websockets: false } },
+  { label: 'xAI API keys', value: 'xai-api-key', path: '/config/api-keys/xai', template: { 'api-key': '', 'base-url': 'https://api.x.ai/v1', priority: 0, weight: 1, prefix: '', 'proxy-url': '', models: [], headers: {}, websockets: false } },
+  { label: 'Meta API keys', value: 'meta-api-key', path: '/config/api-keys/meta', template: { 'api-key': '', 'base-url': '', priority: 0, weight: 1, prefix: '', 'proxy-url': '', models: [], headers: {} } },
+  { label: 'Vertex compatibility', value: 'vertex-api-key', path: '/config/api-keys/vertex', template: { 'api-key': '', 'base-url': '', priority: 0, weight: 1, prefix: '', 'proxy-url': '', models: [], headers: {} } },
+  { label: 'OpenAI compatibility', value: 'openai-compatibility', path: '/config/api-keys/openai-compatibility', template: { name: '', 'base-url': '', priority: 0, weight: 1, disabled: false, prefix: '', 'api-key-entries': [], models: [], headers: {} } }
 ]
 
 const providerMarks = ['G', 'G', 'C', 'Cx', 'xAI', 'M', 'V', 'AI']
@@ -257,19 +255,21 @@ const providerForm = ref({})
 const excludedModelsText = ref('')
 const headerRows = ref([{ name: '', value: '' }])
 const providerKey = ref('')
-const cloakMode = ref('')
+const unsetCloakMode = '__not-set__'
+const automaticTestModel = '__auto__'
+const cloakMode = ref(unsetCloakMode)
 const cloakStrictMode = ref(false)
 const cloakSensitiveWordsText = ref('')
 const cloakCacheUserID = ref('inherit')
-const cloakModeOptions = [{ label: 'Not set', value: '' }, { label: 'Auto', value: 'auto' }, { label: 'Always', value: 'always' }, { label: 'Never', value: 'never' }]
+const cloakModeOptions = [{ label: 'Not set', value: unsetCloakMode }, { label: 'Auto', value: 'auto' }, { label: 'Always', value: 'always' }, { label: 'Never', value: 'never' }]
 const cloakCacheOptions = [{ label: 'Use default', value: 'inherit' }, { label: 'Cache per API key', value: 'enabled' }, { label: 'Generate for each request', value: 'disabled' }]
 const requestRetryText = ref('')
 
 const isCompat = computed(() => selectedProviderRoute.value === 'openai-compatibility')
 const supportsWebsockets = computed(() => ['codex-api-key', 'xai-api-key'].includes(selectedProviderRoute.value))
 const supportsTest = computed(() => ['claude-api-key', 'openai-compatibility'].includes(selectedProviderRoute.value))
-const testModel = ref('')
-const testModelOptions = computed(() => [{ label: 'Auto (first custom model)', value: '' }, ...providerForm.value.models.filter(model => String(model.name || '').trim()).map(model => ({ label: model.alias?.trim() ? `${model.name} · ${model.alias}` : model.name, value: model.name }))])
+const testModel = ref(automaticTestModel)
+const testModelOptions = computed(() => [{ label: 'Auto (first custom model)', value: automaticTestModel }, ...providerForm.value.models.filter(model => String(model.name || '').trim()).map(model => ({ label: model.alias?.trim() ? `${model.name} · ${model.alias}` : model.name, value: model.name }))])
 const testError = ref('')
 const testSuccess = ref(false)
 const testingConnection = ref(false)
@@ -311,7 +311,7 @@ const editorError = ref('')
 const savingProvider = ref(false)
 const deleteOpen = ref(false)
 const deleteTarget = ref(null)
-const deleteTargetIndex = ref(-1)
+
 const deleting = ref(false)
 
 
@@ -327,18 +327,103 @@ const providerColumns = [
 const selectedProvider = computed(() => providerCategories.find(item => item.value === selectedProviderRoute.value) || providerCategories[0])
 const providerOptions = providerCategories.map(item => ({ label: item.label, value: item.value }))
 
+const v8GroupFields = ['name', 'base-url', 'priority', 'disabled', 'prefix', 'proxy-url', 'headers', 'models', 'excluded-models', 'disable-cooling', 'request-retry', 'request-scoped-errors', 'support-prompt-cache-key']
+const v8NativeKeyFields = ['id', 'uuid', 'api-key', 'weight', 'priority', 'prefix', 'proxy-url', 'headers', 'models', 'excluded-models', 'disable-cooling', 'request-retry', 'request-scoped-errors', 'websockets', 'alpha-search', 'disable-codex-cloaking', 'cloak', 'experimental-cch-signing', 'rebuild-mid-system-message', 'fingerprint-profile']
+
+function cloneValue(value) {
+  return value == null ? value : JSON.parse(JSON.stringify(value))
+}
+
+function providerApiPath(category = selectedProvider.value) {
+  return category.path
+}
+
+function flattenV8Groups(groups, category) {
+  if (!Array.isArray(groups)) return []
+  const compat = category.value === 'openai-compatibility'
+  return groups.flatMap((sourceGroup, groupIndex) => {
+    const group = cloneValue(sourceGroup) || {}
+    const keys = Array.isArray(group.keys) ? group.keys : []
+    delete group.keys
+    const groupEntries = keys.length ? keys : [null]
+    return groupEntries.map((sourceKey, keyIndex) => {
+      const key = cloneValue(sourceKey) || {}
+      const entry = compat
+        ? { ...group, id: key.id || group.id, uuid: key.uuid || group.uuid, weight: key.weight ?? 1, 'api-key-entries': sourceKey ? [key] : [] }
+        : { ...group, ...key, weight: key.weight ?? 1 }
+      entry.__v8Group = group
+      entry.__v8GroupIndex = groupIndex
+      entry.__v8KeyIndex = sourceKey ? keyIndex : -1
+      entry.__v8Key = sourceKey ? key : null
+      return entry
+    })
+  })
+}
+
 function entriesFromResponse(response, category) {
-  const candidate = response?.[category.responseKey] ?? response?.items ?? response?.data
-  if (Array.isArray(candidate)) return candidate
-  if (candidate && typeof candidate === 'object') return [candidate]
-  return []
+  return flattenV8Groups(response, category)
+}
+
+function copyFields(target, source, fields) {
+  for (const field of fields) {
+    if (Object.hasOwn(source, field)) target[field] = cloneValue(source[field])
+    else delete target[field]
+  }
+}
+
+function v8GroupFieldsChanged(entry) {
+  const original = entry.__v8Group || {}
+  return v8GroupFields.some(field => JSON.stringify(entry[field]) !== JSON.stringify(original[field]))
+}
+
+function v8GroupsFromEntries(entries, category = selectedProvider.value) {
+  const compat = category.value === 'openai-compatibility'
+  const buckets = new Map()
+  entries.forEach((entry, index) => {
+    const key = Number.isInteger(entry.__v8GroupIndex) ? `existing:${entry.__v8GroupIndex}` : `new:${index}`
+    if (!buckets.has(key)) buckets.set(key, [])
+    buckets.get(key).push(entry)
+  })
+  return [...buckets.values()].map((groupEntries) => {
+    const editedEntry = groupEntries.find(v8GroupFieldsChanged) || groupEntries[0]
+    const group = cloneValue(editedEntry.__v8Group) || {}
+    copyFields(group, editedEntry, v8GroupFields)
+    if (compat) delete group['excluded-models']
+    if (!compat) {
+      delete group.id
+      delete group.uuid
+      group.keys = groupEntries.map((entry) => {
+        const key = cloneValue(entry.__v8Key) || {}
+        copyFields(key, entry, v8NativeKeyFields)
+        return key
+      })
+      return group
+    }
+    group.keys = groupEntries.flatMap((entry) => {
+      const existingKey = cloneValue(entry.__v8Key)
+      const currentKey = Array.isArray(entry['api-key-entries']) ? entry['api-key-entries'][0] : null
+      if (!existingKey && !currentKey) return []
+      const key = existingKey || {}
+      if (currentKey) Object.assign(key, cloneValue(currentKey))
+      key.weight = entry.weight
+      return [key]
+    })
+    if (group.keys.length) {
+      delete group.id
+      delete group.uuid
+    } else {
+      if (editedEntry.id) group.id = editedEntry.id
+      if (editedEntry.uuid) group.uuid = editedEntry.uuid
+    }
+    return group
+  })
 }
 
 async function loadWorkspace() {
   const providerRoute = selectedProviderRoute.value
   pageError.value = ''
   try {
-    const providerResponse = await fetchAPI(`/${providerRoute}`)
+    const providerResponse = await fetchAPI(providerApiPath(providerCategories.find(category => category.value === providerRoute)))
     return { providerResponse, providerRoute }
   } catch (error) {
     pageError.value = error?.message || 'Could not load provider entries. Check the Management API connection and try again.'
@@ -350,7 +435,7 @@ const { data, pending, refresh: refreshWorkspace } = useAsyncData('management-pr
 async function loadCategoryStats() {
   const results = await Promise.all(providerCategories.map(async category => {
     try {
-      const response = await fetchAPI(`/${category.value}`)
+      const response = await fetchAPI(providerApiPath(category))
       const entries = entriesFromResponse(response, category)
       return [category.value, { total: entries.length, active: entries.filter(entry => !entry.disabled).length, disabled: entries.filter(entry => entry.disabled).length }]
     } catch { return [category.value, null] }
@@ -397,6 +482,7 @@ const providerMetadataFields = computed(() => {
     { label: 'Excluded models', value: String(entry['excluded-models']?.length || 0) },
     { label: 'API key entries', value: String(entry['api-key-entries']?.length || 0) },
     { label: 'Priority', value: entry.priority ?? 'Not set' },
+    { label: 'Weight', value: entry.weight ?? 'Default (1)' },
     { label: 'Request retry', value: entry['request-retry'] ?? 'Inherited' },
     { label: 'Cooling disabled', value: entry['disable-cooling'] ? 'Yes' : 'No' },
     ...(supportsWebsockets.value ? [{ label: 'WebSockets', value: entry.websockets ? 'Enabled' : 'Disabled' }] : [])
@@ -437,9 +523,12 @@ function duplicateProvider(entry) {
   delete copy.uuid
   delete copy.auth_index
   delete copy.disabled
+  delete copy.__v8Group
+  delete copy.__v8GroupIndex
+  delete copy.__v8Key
   if (isCompat.value) {
     copy.name = ''
-    copy['api-key-entries'] = (copy['api-key-entries'] || []).map(key => ({ 'api-key': '', 'proxy-url': key['proxy-url'] || '' }))
+    copy['api-key-entries'] = (copy['api-key-entries'] || []).map(key => ({ 'api-key': '', 'proxy-url': key['proxy-url'] || '', weight: key.weight ?? copy.weight ?? 1 }))
   } else copy['api-key'] = ''
   loadGuidedEntry(copy)
   editorError.value = ''
@@ -479,7 +568,7 @@ async function discoverModels() {
     for (let page = 0; page < (['gemini-api-key', 'interactions-api-key'].includes(route) ? 20 : 1); page++) {
       const pageURL = new URL(url)
       if (pageToken) pageURL.searchParams.set('pageToken', pageToken)
-      const request = (requestHeader, index) => fetchAPI('/api-call', { method: 'POST', body: { auth_index: index || undefined, method: 'GET', url: pageURL.href, header: requestHeader } })
+      const request = (requestHeader, index) => fetchAPI('/requests/api-call', { method: 'POST', body: { auth_index: index || undefined, method: 'GET', url: pageURL.href, header: requestHeader } })
       let response
       try {
         response = await request(header, authIndex)
@@ -516,7 +605,8 @@ async function discoverModels() {
 async function testProviderConnection() {
   testError.value = ''
   testSuccess.value = false
-  const model = testModel.value.trim() || providerForm.value.models.find(item => String(item.name || '').trim())?.name.trim()
+  const selectedTestModel = testModel.value === automaticTestModel ? '' : testModel.value.trim()
+  const model = selectedTestModel || providerForm.value.models.find(item => String(item.name || '').trim())?.name.trim()
   const authIndex = discoveryAuthIndex.value
   const key = providerKey.value.trim()
   const headers = Object.fromEntries(headerRows.value.filter(row => row.name.trim()).map(row => [row.name.trim(), row.value]))
@@ -541,7 +631,7 @@ async function testProviderConnection() {
   const data = claude ? { model, max_tokens: 8, messages: [{ role: 'user', content: 'Hi' }] } : { model, messages: [{ role: 'user', content: 'Hi' }], stream: false, max_tokens: 5 }
   testingConnection.value = true
   try {
-    const response = await fetchAPI('/api-call', { method: 'POST', body: { auth_index: authIndex || undefined, method: 'POST', url: endpoint, header, data: JSON.stringify(data) } })
+    const response = await fetchAPI('/requests/api-call', { method: 'POST', body: { auth_index: authIndex || undefined, method: 'POST', url: endpoint, header, data: JSON.stringify(data) } })
     if (!response?.status_code || response.status_code < 200 || response.status_code >= 300) throw new Error(`Upstream returned HTTP ${response?.status_code || 'error'}.`)
     testSuccess.value = true
   } catch (error) {
@@ -595,6 +685,7 @@ function loadGuidedEntry(entry) {
   }
   if (!Array.isArray(providerForm.value.models)) providerForm.value.models = []
   if (isCompat.value && !Array.isArray(providerForm.value['api-key-entries'])) providerForm.value['api-key-entries'] = []
+  providerForm.value.weight = entry.weight ?? entry['api-key-entries']?.[0]?.weight ?? 1
   providerKey.value = ''
   if (providerEditorMode.value === 'create' && !isCompat.value) providerKey.value = providerForm.value['api-key'] || ''
   if (providerEditorMode.value === 'create' && isCompat.value) providerKey.value = providerForm.value['api-key-entries']?.[0]?.['api-key'] || ''
@@ -602,7 +693,7 @@ function loadGuidedEntry(entry) {
   if (providerEditorMode.value === 'create') providerForm.value.priority = ''
   providerForm.value.models = providerForm.value.models.map(model => ({ ...model, 'display-name': model['display-name'] || '', 'force-mapping': Boolean(model['force-mapping']) }))
   excludedModelsText.value = Array.isArray(entry['excluded-models']) ? entry['excluded-models'].filter(model => String(model).trim() !== '*').join('\n') : ''
-  testModel.value = String(entry['test-model'] || '')
+  testModel.value = String(entry['test-model'] || automaticTestModel)
   testError.value = ''
   testSuccess.value = false
   requestRetryText.value = entry['request-retry'] == null ? '' : String(entry['request-retry'])
@@ -610,7 +701,7 @@ function loadGuidedEntry(entry) {
   headerRows.value = Object.entries(entry.headers || {}).map(([name, value]) => ({ name, value: typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' ? String(value) : '' }))
   if (!headerRows.value.length) headerRows.value = [{ name: '', value: '' }]
   const cloak = entry.cloak && typeof entry.cloak === 'object' && !Array.isArray(entry.cloak) ? entry.cloak : null
-  cloakMode.value = cloak?.mode || ''
+  cloakMode.value = cloak?.mode || unsetCloakMode
   cloakStrictMode.value = cloak?.['strict-mode'] === true
   cloakSensitiveWordsText.value = Array.isArray(cloak?.['sensitive-words']) ? cloak['sensitive-words'].join('\n') : ''
   cloakCacheUserID.value = cloak?.['cache-user-id'] == null ? 'inherit' : cloak['cache-user-id'] ? 'enabled' : 'disabled'
@@ -626,6 +717,12 @@ function guidedEntry() {
     return null
   }
   value.priority = priority
+  const weight = value.weight === '' || value.weight == null ? 1 : Number(value.weight)
+  if (!Number.isSafeInteger(weight)) {
+    editorError.value = 'Weight must be a whole number.'
+    return null
+  }
+  value.weight = weight
   const retry = requestRetryText.value.trim()
   if (retry && (!/^\d+$/.test(retry) || !Number.isSafeInteger(Number(retry)))) { editorError.value = 'Request retry must be a non-negative whole number.'; return null }
   if (retry) value['request-retry'] = Number(retry)
@@ -654,18 +751,20 @@ function guidedEntry() {
     if (name) value.headers[name] = header.value
   }
   if (selectedProviderRoute.value === 'claude-api-key') {
-    if (cloakMode.value || cloakStrictMode.value || cloakCacheUserID.value !== 'inherit' || cloakSensitiveWordsText.value.trim()) {
+    const selectedCloakMode = cloakMode.value === unsetCloakMode ? '' : cloakMode.value
+    if (selectedCloakMode || cloakStrictMode.value || cloakCacheUserID.value !== 'inherit' || cloakSensitiveWordsText.value.trim()) {
       if (!cloakModeOptions.some(option => option.value === cloakMode.value)) {
         editorError.value = 'Select a valid cloaking mode.'
         return null
       }
       const cloak = value.cloak && typeof value.cloak === 'object' && !Array.isArray(value.cloak) ? value.cloak : {}
       value.cloak = { ...cloak, 'strict-mode': cloakStrictMode.value, 'cache-user-id': cloakCacheUserID.value === 'enabled', 'sensitive-words': cloakSensitiveWordsText.value.split(/[,\n]/).map(word => word.trim()).filter(Boolean) }
-      if (cloakMode.value) value.cloak.mode = cloakMode.value
+      if (selectedCloakMode) value.cloak.mode = selectedCloakMode
       else delete value.cloak.mode
     } else delete value.cloak
   }
-  value['excluded-models'] = excludedModelsText.value.split(/[,\n]/).map(item => item.trim()).filter(Boolean)
+  if (isCompat.value) delete value['excluded-models']
+  else value['excluded-models'] = excludedModelsText.value.split(/[,\n]/).map(item => item.trim()).filter(Boolean)
   value['base-url'] = String(value['base-url'] || '').trim()
   value.prefix = String(value.prefix || '').trim()
   if (!isCompat.value) {
@@ -690,10 +789,10 @@ function guidedEntry() {
   }
   if (isCompat.value) {
     value.name = value.name.trim()
-    if (testModel.value.trim()) value['test-model'] = testModel.value.trim()
+    if (testModel.value !== automaticTestModel && testModel.value.trim()) value['test-model'] = testModel.value.trim()
     else delete value['test-model']
     delete value['proxy-url']
-    if (providerKey.value.trim()) value['api-key-entries'] = [{ 'api-key': providerKey.value.trim() }]
+    if (providerKey.value.trim()) value['api-key-entries'] = [{ 'api-key': providerKey.value.trim(), weight: value.weight }]
     else delete value['api-key-entries']
   } else if (providerKey.value.trim()) value['api-key'] = providerKey.value.trim()
   else delete value['api-key']
@@ -701,12 +800,11 @@ function guidedEntry() {
     priority: value.priority,
     headers: value.headers,
     models: value.models,
-    'excluded-models': value['excluded-models'],
     'disable-cooling': value['disable-cooling']
   }
-  for (const field of ['name', 'base-url', 'proxy-url', 'prefix']) {
-    if (value[field]) payload[field] = value[field]
-  }
+  if (!isCompat.value) payload['excluded-models'] = value['excluded-models']
+  for (const field of ['name', 'base-url', 'proxy-url', 'prefix']) payload[field] = value[field]
+  payload.weight = value.weight
   if (Object.hasOwn(value, 'request-retry')) payload['request-retry'] = value['request-retry']
   if (supportsWebsockets.value) payload.websockets = Boolean(value.websockets)
   if (isCompat.value) {
@@ -736,18 +834,10 @@ async function saveProviderEntry() {
 
   savingProvider.value = true
   try {
-    if (providerEditorMode.value === 'create') {
-      const current = await fetchAPI(`/${selectedProviderRoute.value}`)
-      await fetchAPI(`/${selectedProviderRoute.value}`, {
-        method: 'PUT',
-        body: [...entriesFromResponse(current, selectedProvider.value), value]
-      })
-    } else {
-      await fetchAPI(`/${selectedProviderRoute.value}`, {
-        method: 'PATCH',
-        body: providerPatchBody(editingProviderEntry.value, editingProviderIndex.value, value)
-      })
-    }
+    const entries = [...providerEntries.value]
+    if (providerEditorMode.value === 'create') entries.push(value)
+    else entries.splice(editingProviderIndex.value, 1, { ...editingProviderEntry.value, ...value })
+    await fetchAPI(providerApiPath(), { method: 'PUT', body: v8GroupsFromEntries(entries) })
     providerEditorOpen.value = false
     await refreshWorkspace()
     void refreshCategoryStats()
@@ -760,10 +850,14 @@ async function saveProviderEntry() {
   }
 }
 
-function confirmProviderDelete(entry) {
+function providerEntryMatches(candidate, target) {
+  if (!candidate || !target) return false
+  return candidate.__v8GroupIndex === target.__v8GroupIndex && candidate.__v8KeyIndex === target.__v8KeyIndex
+}
 
+function confirmProviderDelete(entry) {
   deleteTarget.value = entry
-  deleteTargetIndex.value = providerEntries.value.indexOf(entry)
+
   deleteOpen.value = true
 }
 
@@ -771,36 +865,22 @@ async function performDelete() {
   if (!deleteTarget.value) return
   deleting.value = true
   try {
-    const params = providerDeleteQuery(deleteTarget.value, deleteTargetIndex.value)
-    await fetchAPI(`/${selectedProviderRoute.value}?${params}`, { method: 'DELETE' })
+    const targetIndex = providerEntries.value.findIndex(candidate => providerEntryMatches(candidate, deleteTarget.value))
+    if (targetIndex < 0) throw new Error('Provider entry is no longer present. Reload the provider list and try again.')
+    const remaining = providerEntries.value.filter((_, index) => index !== targetIndex)
+    await fetchAPI(providerApiPath(), { method: 'PUT', body: remaining.length ? v8GroupsFromEntries(remaining) : [] })
     deleteOpen.value = false
     await refreshWorkspace()
     void refreshCategoryStats()
     emit('changed')
     toast.add({ title: 'Provider entry deleted', color: 'success', icon: 'i-tabler-circle-check' })
   } catch (error) {
-    toast.add({ title: 'Delete failed', description: 'Could not delete the provider entry.', color: 'error' })
+    toast.add({ title: 'Delete failed', description: error?.data?.message || error?.data?.error || error?.message || 'Could not delete the provider entry.', color: 'error' })
   } finally {
     deleting.value = false
   }
 }
 
-
-
-function providerPatchBody(entry, index, value) {
-  if (entry?.id) return { id: entry.id, value }
-  if (entry?.uuid) return { uuid: entry.uuid, value }
-  if (selectedProviderRoute.value === 'openai-compatibility' && entry?.name) return { name: entry.name, value }
-  return { index, value }
-}
-
-function providerDeleteQuery(entry, index) {
-  if (entry?.id) return `id=${encodeURIComponent(entry.id)}`
-  if (entry?.uuid) return `uuid=${encodeURIComponent(entry.uuid)}`
-  if (entry?.auth_index) return `auth_index=${encodeURIComponent(entry.auth_index)}`
-  if (selectedProviderRoute.value === 'openai-compatibility' && entry?.name) return `name=${encodeURIComponent(entry.name)}`
-  return `index=${encodeURIComponent(index)}`
-}
 
 function providerEntryLabel(entry) {
   return entry?.name || entry?.identifier || entry?.auth_index || entry?.id || `${selectedProvider.value.label} entry`

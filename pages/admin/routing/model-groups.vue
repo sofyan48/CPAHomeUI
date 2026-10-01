@@ -7,14 +7,14 @@
           Define reusable model allowlists. Each model may optionally be restricted to selected channel groups.
         </p>
       </div>
-      <UButton color="primary" icon="i-tabler-plus" @click="openCreateGroup">New model group</UButton>
+      <AppButton color="primary" icon="i-tabler-plus" @click="openCreateGroup">New model group</AppButton>
     </div>
 
     <UAlert v-if="pageError" color="error" variant="subtle" icon="i-tabler-alert-triangle" title="Unable to load model groups" :description="pageError" />
 
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <UInput v-model="search" icon="i-tabler-search" placeholder="Search model groups..." class="w-full sm:max-w-sm" />
-      <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="pending" @click="refreshWorkspace">Refresh</UButton>
+      <AppButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="pending" @click="refreshWorkspace">Refresh</AppButton>
     </div>
 
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.6fr)]">
@@ -37,8 +37,8 @@
           </template>
           <template #actions-cell="{ row }">
             <div class="flex justify-end gap-1">
-              <UButton color="neutral" variant="ghost" size="sm" icon="i-tabler-pencil" aria-label="Edit group" @click.stop="openEditGroup(rowValue(row))" />
-              <UButton color="error" variant="ghost" size="sm" icon="i-tabler-trash" aria-label="Delete group" @click.stop="confirmDelete('group', rowValue(row))" />
+              <AppButton color="neutral" variant="ghost" size="sm" icon="i-tabler-pencil" aria-label="Edit group" @click.stop="openEditGroup(rowValue(row))" />
+              <AppButton color="error" variant="ghost" size="sm" icon="i-tabler-trash" aria-label="Delete group" @click.stop="confirmDelete('group', rowValue(row))" />
             </div>
           </template>
           <template #empty>
@@ -57,7 +57,7 @@
               </div>
               <p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ details.length }} model binding{{ details.length === 1 ? '' : 's' }}</p>
             </div>
-            <UButton color="primary" variant="soft" icon="i-tabler-plus" @click="openCreateDetail">Add model</UButton>
+            <AppButton color="primary" variant="soft" icon="i-tabler-plus" @click="openCreateDetail">Add model</AppButton>
           </div>
         </template>
         <AppTable :columns="detailColumns" :data="details" :loading="detailsPending">
@@ -75,8 +75,8 @@
           </template>
           <template #actions-cell="{ row }">
             <div class="flex justify-end gap-1">
-              <UButton color="neutral" variant="ghost" size="sm" icon="i-tabler-pencil" aria-label="Edit model binding" @click="openEditDetail(rowValue(row))" />
-              <UButton color="error" variant="ghost" size="sm" icon="i-tabler-trash" aria-label="Delete model binding" @click="confirmDelete('detail', rowValue(row))" />
+              <AppButton color="neutral" variant="ghost" size="sm" icon="i-tabler-pencil" aria-label="Edit model binding" @click="openEditDetail(rowValue(row))" />
+              <AppButton color="error" variant="ghost" size="sm" icon="i-tabler-trash" aria-label="Delete model binding" @click="confirmDelete('detail', rowValue(row))" />
             </div>
           </template>
           <template #empty>
@@ -96,7 +96,7 @@
       </div>
     </div>
 
-    <UModal v-model:open="groupFormOpen" :title="editingGroup ? 'Edit model group' : 'Create model group'" description="Model groups are reusable model allowlists for client API keys.">
+    <AppModal v-model:open="groupFormOpen" :title="editingGroup ? 'Edit model group' : 'Create model group'" description="Model groups are reusable model allowlists for client API keys.">
       <template #body>
         <form class="space-y-5" @submit.prevent="submitGroup">
           <UAlert v-if="formError" color="error" variant="subtle" icon="i-tabler-alert-circle" title="Could not save model group" :description="formError" />
@@ -113,14 +113,14 @@
             </div>
           </UFormField>
           <div class="flex justify-end gap-3 border-t border-[var(--ui-border)] pt-4">
-            <UButton color="neutral" variant="ghost" type="button" @click="groupFormOpen = false">Cancel</UButton>
-            <UButton color="primary" type="submit" :loading="submitting">{{ editingGroup ? 'Save changes' : 'Create group' }}</UButton>
+            <AppButton color="neutral" variant="ghost" type="button" @click="groupFormOpen = false">Cancel</AppButton>
+            <AppButton color="primary" type="submit" :loading="submitting">{{ editingGroup ? 'Save changes' : 'Create group' }}</AppButton>
           </div>
         </form>
       </template>
-    </UModal>
+    </AppModal>
 
-    <UModal v-model:open="detailFormOpen" :title="editingDetail ? 'Edit model binding' : 'Add model binding'" description="Choose a catalog model or enter a canonical model ID manually.">
+    <AppModal v-model:open="detailFormOpen" :title="editingDetail ? 'Edit model binding' : 'Add model binding'" description="Choose a catalog model or enter a canonical model ID manually.">
       <template #body>
         <form class="space-y-5" @submit.prevent="submitDetail">
           <UAlert v-if="formError" color="error" variant="subtle" icon="i-tabler-alert-circle" title="Could not save model binding" :description="formError" />
@@ -146,24 +146,24 @@
             <p v-else class="text-sm text-[var(--ui-text-muted)]">No channel groups configured.</p>
           </fieldset>
           <div class="flex justify-end gap-3 border-t border-[var(--ui-border)] pt-4">
-            <UButton color="neutral" variant="ghost" type="button" @click="detailFormOpen = false">Cancel</UButton>
-            <UButton color="primary" type="submit" :loading="submitting">{{ editingDetail ? 'Save changes' : 'Add model' }}</UButton>
+            <AppButton color="neutral" variant="ghost" type="button" @click="detailFormOpen = false">Cancel</AppButton>
+            <AppButton color="primary" type="submit" :loading="submitting">{{ editingDetail ? 'Save changes' : 'Add model' }}</AppButton>
           </div>
         </form>
       </template>
-    </UModal>
+    </AppModal>
 
-    <UModal v-model:open="deleteOpen" :title="deleteKind === 'group' ? 'Delete model group' : 'Remove model binding'" description="This action soft-deletes the selected record.">
+    <AppModal v-model:open="deleteOpen" :title="deleteKind === 'group' ? 'Delete model group' : 'Remove model binding'" description="This action soft-deletes the selected record.">
       <template #body>
         <div class="space-y-5">
           <UAlert color="warning" variant="subtle" icon="i-tabler-alert-triangle" title="Confirm deletion" :description="deleteDescription" />
           <div class="flex justify-end gap-3">
-            <UButton color="neutral" variant="ghost" @click="deleteOpen = false">Cancel</UButton>
-            <UButton color="error" :loading="deleting" @click="performDelete">Delete</UButton>
+            <AppButton color="neutral" variant="ghost" @click="deleteOpen = false">Cancel</AppButton>
+            <AppButton color="error" :loading="deleting" @click="performDelete">Delete</AppButton>
           </div>
         </div>
       </template>
-    </UModal>
+    </AppModal>
   </div>
 </template>
 

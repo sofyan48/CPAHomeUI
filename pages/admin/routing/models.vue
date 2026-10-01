@@ -5,7 +5,7 @@
         <h1 class="text-2xl font-bold text-[var(--ui-text-highlighted)]">Models</h1>
 
       </div>
-      <UButton color="primary" icon="i-tabler-refresh" :loading="pending" @click="refresh">Refresh</UButton>
+      <AppButton color="primary" icon="i-tabler-refresh" :loading="pending" @click="refresh">Refresh</AppButton>
     </div>
 
     <UAlert
@@ -65,7 +65,7 @@
         </div>
         <div class="mt-4 flex items-center justify-between gap-2 border-t border-[var(--ui-border)] pt-3">
           <span class="truncate text-xs text-[var(--ui-text-muted)]">{{ model.type || model.owned_by || '—' }}</span>
-          <UButton color="neutral" variant="outline" size="xs" :aria-label="`View details for ${model.id}`" @click="showDetails(model)">Details</UButton>
+          <AppButton color="neutral" variant="outline" size="xs" :aria-label="`View details for ${model.id}`" @click="showDetails(model)">Details</AppButton>
         </div>
       </AppCard>
     </div>
@@ -75,7 +75,7 @@
       <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Try another catalog, channel, or search term.</p>
     </div>
 
-    <UModal v-model:open="detailsOpen" title="Model details" description="Model metadata returned by the management API.">
+    <USlideover v-model:open="detailsOpen" side="right" title="Model details" description="Model metadata returned by the management API." :ui="{ content: 'sm:max-w-xl' }">
       <template #body>
         <div v-if="selectedModel" class="space-y-5">
           <div class="rounded-xl bg-[var(--ui-bg-muted)] p-4">
@@ -84,9 +84,21 @@
           </div>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <DetailItem label="Channel" :value="selectedModel.channel || 'Runtime registry'" />
+            <DetailItem label="Object" :value="selectedModel.object || '—'" />
             <DetailItem label="Type" :value="selectedModel.type || '—'" />
             <DetailItem label="Owned by" :value="selectedModel.owned_by || '—'" />
+            <DetailItem label="Name" :value="selectedModel.name || '—'" />
+            <DetailItem label="Version" :value="selectedModel.version || '—'" />
             <DetailItem label="Created" :value="selectedModel.created ? formatCreated(selectedModel.created) : '—'" />
+            <DetailItem label="Context length" :value="formatLimit(selectedModel.context_length || selectedModel.inputTokenLimit)" />
+            <DetailItem label="Input token limit" :value="formatLimit(selectedModel.inputTokenLimit)" />
+            <DetailItem label="Output token limit" :value="formatLimit(selectedModel.outputTokenLimit || selectedModel.max_completion_tokens)" />
+            <DetailItem label="Max completion tokens" :value="formatLimit(selectedModel.max_completion_tokens)" />
+            <DetailItem label="Configuration updates" :value="selectedModel.support_configuration_update ? 'Supported' : 'Not declared'" />
+          </div>
+          <div v-if="selectedModel.description">
+            <p class="mb-2 text-sm font-medium">Description</p>
+            <p class="whitespace-pre-wrap text-sm text-[var(--ui-text-muted)]">{{ selectedModel.description }}</p>
           </div>
           <div>
             <p class="mb-2 text-sm font-medium">Authoritative providers</p>
@@ -95,12 +107,22 @@
               <span v-if="!selectedModel.providers.length" class="text-sm text-[var(--ui-text-muted)]">No billing provider identity</span>
             </div>
           </div>
+          <div v-for="group in modelMetadataGroups" :key="group.label">
+            <p class="mb-2 text-sm font-medium">{{ group.label }}</p>
+            <div class="flex flex-wrap gap-2">
+              <UBadge v-for="value in group.values" :key="value" color="neutral" variant="subtle">{{ value }}</UBadge>
+            </div>
+          </div>
+          <details v-if="hasCapabilityMetadata" class="rounded-xl border border-[var(--ui-border)] px-4 py-3 text-sm">
+            <summary class="cursor-pointer font-medium">Capability metadata</summary>
+            <pre class="mt-3 max-h-72 overflow-auto whitespace-pre-wrap break-words text-xs text-[var(--ui-text-muted)]">{{ capabilityMetadata }}</pre>
+          </details>
           <div class="flex justify-end border-t border-[var(--ui-border)] pt-4">
-            <UButton color="neutral" variant="ghost" @click="detailsOpen = false">Close</UButton>
+            <AppButton color="neutral" variant="ghost" @click="detailsOpen = false">Close</AppButton>
           </div>
         </div>
       </template>
-    </UModal>
+    </USlideover>
   </div>
 </template>
 
@@ -159,6 +181,20 @@ const filteredModels = computed(() => {
 })
 const providerCount = computed(() => new Set(modelsList.value.flatMap(model => model.providers || [])).size)
 const channelCount = computed(() => new Set(modelsList.value.map(model => model.channel).filter(Boolean)).size)
+const modelMetadataGroups = computed(() => {
+  if (!selectedModel.value) return []
+  return [
+    { label: 'Generation methods', values: selectedModel.value.supportedGenerationMethods },
+    { label: 'Supported parameters', values: selectedModel.value.supported_parameters },
+    { label: 'Input modalities', values: selectedModel.value.supportedInputModalities },
+    { label: 'Output modalities', values: selectedModel.value.supportedOutputModalities }
+  ].filter(group => Array.isArray(group.values) && group.values.length)
+})
+const capabilityMetadata = computed(() => JSON.stringify({
+  thinking: selectedModel.value?.thinking,
+  native_capabilities: selectedModel.value?.native_capabilities
+}, null, 2))
+const hasCapabilityMetadata = computed(() => Boolean(selectedModel.value?.thinking || selectedModel.value?.native_capabilities))
 
 function showDetails(row) {
   selectedModel.value = row
@@ -167,6 +203,10 @@ function showDetails(row) {
 function formatCreated(value) {
   const date = new Date(Number(value) * 1000)
   return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString()
+}
+function formatLimit(value) {
+  const limit = Number(value)
+  return Number.isFinite(limit) && limit > 0 ? limit.toLocaleString() : '—'
 }
 function errorMessage(error) {
   return error?.data?.message || error?.data?.error || error?.response?._data?.message || error?.response?._data?.error || error?.message || 'Unexpected request error.'

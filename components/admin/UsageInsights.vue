@@ -5,9 +5,9 @@
     <div class="flex flex-wrap gap-3">
       <USelect v-model="groupBy" :items="['model', 'provider', 'user', 'client_key', 'credential', 'endpoint', 'home_ip']" class="w-44" />
       <USelect v-model="metric" :items="['request_count', 'total_tokens', 'total_amount', 'failed_count', 'avg_latency_ms', 'p95_latency_ms']" class="w-48" />
-      <UButton :loading="loading" @click="refresh">Load insights</UButton>
-      <UButton color="neutral" variant="outline" :loading="exporting" @click="exportRecords('csv')">Export CSV</UButton>
-      <UButton color="neutral" variant="outline" :loading="exporting" @click="exportRecords('jsonl')">Export JSONL</UButton>
+      <AppButton :loading="loading" @click="refresh">Load insights</AppButton>
+      <AppButton color="neutral" variant="outline" :loading="exporting" @click="exportRecords('csv')">Export CSV</AppButton>
+      <AppButton color="neutral" variant="outline" :loading="exporting" @click="exportRecords('jsonl')">Export JSONL</AppButton>
       <span class="text-xs text-[var(--ui-text-muted)]">Exports use applied record filters and sort (up to 10,000 rows). Overview and insights support only date, provider, model, endpoint, and Home IP filters; without dates they default to 24 hours. Realtime uses the last 15 minutes.</span>
     </div>
     <div class="grid gap-4 xl:grid-cols-2">
@@ -54,7 +54,7 @@
     </div>
     <AppCard>
       <template #header><h3 class="font-semibold">Session tree</h3></template>
-      <form class="flex flex-wrap gap-2" @submit.prevent="loadTree"><UInput v-model="sessionID" placeholder="Session or request ID" class="min-w-64 flex-1" /><UButton type="submit" :loading="loadingTree">Find session</UButton></form>
+      <form class="flex flex-wrap gap-2" @submit.prevent="loadTree"><UInput v-model="sessionID" placeholder="Session or request ID" class="min-w-64 flex-1" /><AppButton type="submit" :loading="loadingTree">Find session</AppButton></form>
       <UAlert v-if="treeError" class="mt-3" color="error" variant="subtle" :description="treeError" />
       <pre v-if="tree" class="mt-4 max-h-96 overflow-auto whitespace-pre-wrap text-xs">{{ JSON.stringify(tree, null, 2) }}</pre>
     </AppCard>

@@ -2,7 +2,7 @@
 
 The Nuxt UI can run separately during development or be embedded into CLIProxyAPIHome. Open `http://localhost:3000/admin/upstream` for the admin workspace, or `/app/login` for the user workspace.
 
-Configure `NUXT_PUBLIC_API_URL` to reach Home from the browser (for example `http://127.0.0.1:8327`); `NUXT_PUBLIC_API_BASE` defaults to `/v0/management`. The management secret is entered at `/admin/connect`. Home must allow requests from the UI origin. Never put the management secret in a public runtime environment variable.
+Configure `NUXT_PUBLIC_API_URL` to reach Home from the browser. Prefer an origin-only value such as `http://127.0.0.1:8327`; a full URL ending in `/v8/management` is normalized to its origin. The Management UI always uses `/v8/management`. The management secret is entered at `/admin/connect`. Home must allow requests from the UI origin. Never put the management secret in a public runtime environment variable.
 
 ## Setup
 

@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] app-surface px-4 py-3">
       <div><p class="text-sm font-semibold">Request records</p><p class="text-xs text-[var(--ui-text-muted)]">Search persisted requests and inspect redacted routing, billing, and log details.</p></div>
-      <div class="flex flex-wrap items-center gap-2"><div class="flex items-center gap-2 rounded-md border border-[var(--ui-border)] px-2.5 py-1.5"><USwitch v-model="liveRefresh" size="sm" /><span class="text-xs">Live refresh</span><USelect v-if="liveRefresh" v-model="refreshSeconds" :items="refreshOptions" value-key="value" label-key="label" size="sm" class="w-24" /></div><UButton color="neutral" variant="outline" size="sm" icon="i-tabler-download" @click="exportOpen = true">Export CSV</UButton></div>
+      <div class="flex flex-wrap items-center gap-2"><div class="flex items-center gap-2 rounded-md border border-[var(--ui-border)] px-2.5 py-1.5"><USwitch v-model="liveRefresh" size="sm" /><span class="text-xs">Live refresh</span><USelect v-if="liveRefresh" v-model="refreshSeconds" :items="refreshOptions" value-key="value" label-key="label" size="sm" class="w-24" /></div><AppButton color="neutral" variant="outline" size="sm" icon="i-tabler-download" @click="exportOpen = true">Export CSV</AppButton></div>
     </div>
 
     <UAlert
@@ -35,11 +35,11 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-2 border-t border-[var(--ui-border)] pt-3">
-          <UButton type="submit" color="primary" :loading="loading">Apply filters</UButton>
-          <UButton type="button" color="neutral" variant="ghost" @click="resetFilters">Reset</UButton>
-          <UButton type="button" color="neutral" variant="ghost" :icon="advancedOpen ? 'i-tabler-chevron-up' : 'i-tabler-adjustments-horizontal'" :aria-expanded="advancedOpen" @click="advancedOpen = !advancedOpen">
+          <AppButton type="submit" color="primary" :loading="loading">Apply filters</AppButton>
+          <AppButton type="button" color="neutral" variant="ghost" @click="resetFilters">Reset</AppButton>
+          <AppButton type="button" color="neutral" variant="ghost" :icon="advancedOpen ? 'i-tabler-chevron-up' : 'i-tabler-adjustments-horizontal'" :aria-expanded="advancedOpen" @click="advancedOpen = !advancedOpen">
             {{ advancedOpen ? 'Hide advanced' : 'Advanced filters' }}
-          </UButton>
+          </AppButton>
           <span class="ml-auto text-xs text-[var(--ui-text-muted)]">Times are interpreted in {{ timezone }}.</span>
         </div>
       </form>
@@ -51,9 +51,9 @@
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div><h2 class="font-semibold">Events</h2><p class="text-xs text-[var(--ui-text-muted)]">Showing {{ pageStart }}–{{ pageEnd }} of {{ formatNumber(total) }}</p></div>
           <div class="flex items-center gap-2">
-            <UButton v-if="pendingNewEvents" size="sm" color="primary" variant="soft" :loading="loading" @click="refreshEvents">
+            <AppButton v-if="pendingNewEvents" size="sm" color="primary" variant="soft" :loading="loading" @click="refreshEvents">
               Show {{ formatNumber(pendingNewEvents) }} new {{ pendingNewEvents === 1 ? 'event' : 'events' }}
-            </UButton>
+            </AppButton>
             <UBadge v-if="liveRefresh" color="success" variant="subtle"><span class="mr-1 inline-block size-1.5 rounded-full bg-current" />Live</UBadge>
           </div>
         </div>
@@ -74,17 +74,17 @@
       </AppTable>
       <div class="flex flex-col gap-3 border-t border-[var(--ui-border)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <p class="text-xs text-[var(--ui-text-muted)]">Page {{ page }} of {{ totalPages }}</p>
-        <div class="flex items-center gap-2"><UButton size="sm" color="neutral" variant="outline" :disabled="page <= 1 || loading" @click="changePage(-1)">Previous</UButton><UButton size="sm" color="neutral" variant="outline" :disabled="page >= totalPages || loading" @click="changePage(1)">Next</UButton></div>
+        <div class="flex items-center gap-2"><AppButton size="sm" color="neutral" variant="outline" :disabled="page <= 1 || loading" @click="changePage(-1)">Previous</AppButton><AppButton size="sm" color="neutral" variant="outline" :disabled="page >= totalPages || loading" @click="changePage(1)">Next</AppButton></div>
       </div>
     </AppCard>
 
-    <UModal v-model:open="detailOpen" title="Request event details" description="Redacted request, routing, token, performance, billing, and log metadata.">
+    <AppModal v-model:open="detailOpen" title="Request event details" description="Redacted request, routing, token, performance, billing, and log metadata.">
       <template #body>
         <div v-if="detailLoading" class="py-12 text-center text-sm text-[var(--ui-text-muted)]">Loading event details…</div>
         <div v-else-if="selectedDetail" class="space-y-5">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="flex flex-wrap gap-2"><UBadge :color="selectedDetail.event?.failed ? 'error' : 'success'" variant="subtle">{{ selectedDetail.event?.failed ? 'Failed' : 'Success' }}</UBadge><UBadge color="neutral" variant="subtle">{{ selectedDetail.event?.event_type || 'completion' }}</UBadge></div>
-            <UButton v-if="selectedDetail.event?.related?.request_log?.download_url" color="neutral" variant="outline" icon="i-tabler-download" :loading="downloadingId === selectedDetail.event.request_id" @click="downloadRequestLog(selectedDetail.event.related.request_log.download_url, selectedDetail.event.request_id)">Download log</UButton>
+            <AppButton v-if="selectedDetail.event?.related?.request_log?.download_url" color="neutral" variant="outline" icon="i-tabler-download" :loading="downloadingId === selectedDetail.event.request_id" @click="downloadRequestLog(selectedDetail.event.related.request_log.download_url, selectedDetail.event.request_id)">Download log</AppButton>
           </div>
           <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <DetailItem label="Event ID" :value="selectedDetail.event?.id" mono />
@@ -115,17 +115,17 @@
           <div v-if="selectedDetail.log_excerpt?.length" class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] p-4"><p class="mb-3 text-sm font-semibold">Redacted request log excerpt</p><pre class="max-h-72 overflow-auto whitespace-pre-wrap break-words text-xs">{{ selectedDetail.log_excerpt.join('\n') }}</pre></div>
         </div>
       </template>
-    </UModal>
+    </AppModal>
 
-    <UModal v-model:open="exportOpen" title="Export request events" description="Exports up to 10,000 events matching the currently applied filters.">
+    <AppModal v-model:open="exportOpen" title="Export request events" description="Exports up to 10,000 events matching the currently applied filters.">
       <template #body>
         <div class="space-y-5">
           <UFormField label="Format"><USelect v-model="exportFormat" :items="exportOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
           <UAlert color="info" variant="subtle" icon="i-tabler-shield-check" title="Secrets remain redacted" description="The server export uses flattened event fields and does not include raw client API keys or payload bodies." />
-          <div class="flex justify-end gap-3"><UButton color="neutral" variant="ghost" @click="exportOpen = false">Cancel</UButton><UButton icon="i-tabler-download" :loading="exporting" @click="exportEvents">Download {{ exportFormat.toUpperCase() }}</UButton></div>
+          <div class="flex justify-end gap-3"><AppButton color="neutral" variant="ghost" @click="exportOpen = false">Cancel</AppButton><AppButton icon="i-tabler-download" :loading="exporting" @click="exportEvents">Download {{ exportFormat.toUpperCase() }}</AppButton></div>
         </div>
       </template>
-    </UModal>
+    </AppModal>
   </div>
 </template>
 

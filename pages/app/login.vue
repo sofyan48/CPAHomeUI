@@ -17,9 +17,9 @@
         <UAlert v-if="passkeyRequired" color="warning" variant="subtle" title="Passkey required" description="This account requires one of its registered passkeys to sign in." />
         <div v-if="!needsTOTP && !passkeyRequired" class="flex justify-end"><NuxtLink to="/app/forgot-password" class="text-sm font-medium text-primary-500">Forgot password?</NuxtLink></div>
         <p class="text-xs leading-5 text-[var(--ui-text-muted)]">Your session stays signed in on this browser until it expires or you log out.</p>
-        <UButton v-if="passkeyRequired" type="button" color="primary" block icon="i-tabler-fingerprint" :loading="passkeyLoading" :disabled="!passkeysSupported" @click="passkeyLogin">Use passkey</UButton>
-        <UButton v-else type="submit" color="primary" block :loading="loading">{{ needsTOTP ? 'Verify and sign in' : 'Sign in' }}</UButton>
-        <UButton v-if="!needsTOTP && !passkeyRequired && passkeysSupported" type="button" color="neutral" variant="outline" block icon="i-tabler-fingerprint" :loading="passkeyLoading" @click="passkeyLogin">Sign in with passkey</UButton>
+        <AppButton v-if="passkeyRequired" type="button" color="primary" block icon="i-tabler-fingerprint" :loading="passkeyLoading" :disabled="!passkeysSupported" @click="passkeyLogin">Use passkey</AppButton>
+        <AppButton v-else type="submit" color="primary" block :loading="loading">{{ needsTOTP ? 'Verify and sign in' : 'Sign in' }}</AppButton>
+        <AppButton v-if="!needsTOTP && !passkeyRequired && passkeysSupported" type="button" color="neutral" variant="outline" block icon="i-tabler-fingerprint" :loading="passkeyLoading" @click="passkeyLogin">Sign in with passkey</AppButton>
 
       </form>
       <template #footer><p class="text-center text-sm text-[var(--ui-text-muted)]">Need an account? <NuxtLink to="/app/register" class="font-medium text-primary-500">Create account</NuxtLink></p></template>
@@ -31,7 +31,7 @@
 definePageMeta({ layout: 'app' })
 const route = useRoute()
 const router = useRouter()
-const { token, login, loginWithPasskey, hydrateSession, loadCurrentUser } = useUserApi()
+const { token, login, loginWithPasskey, hydrateSession, loadCurrentUser, clearSession } = useUserApi()
 const form = reactive({ username: '', password: '', totp: '' })
 const needsTOTP = ref(false)
 const passkeyRequired = ref(false)
@@ -74,8 +74,8 @@ onMounted(async () => {
   try {
     await loadCurrentUser()
     await router.replace(destination.value)
-  } catch {
-    // Invalid or expired sessions are cleared by the API composable.
+  } catch (cause: any) {
+    if (cause?.statusCode === 401) clearSession()
   }
 })
 </script>

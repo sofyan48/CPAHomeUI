@@ -5,9 +5,9 @@
         <h1 class="text-2xl font-bold text-[var(--ui-text-highlighted)]">Billing & Reports</h1>
       </div>
       <div class="flex flex-wrap gap-2">
-        <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" @click="refreshCurrent">
+        <AppButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" @click="refreshCurrent">
           Refresh
-        </UButton>
+        </AppButton>
 
       </div>
     </div>
@@ -44,8 +44,8 @@
           </UFormField>
 
           <div class="flex flex-wrap items-center gap-2 md:col-span-2 xl:col-span-6">
-            <UButton type="submit" color="primary" :loading="overviewLoading">Apply filters</UButton>
-            <UButton color="neutral" variant="ghost" @click="resetOverviewFilters">Reset</UButton>
+            <AppButton type="submit" color="primary" :loading="overviewLoading">Apply filters</AppButton>
+            <AppButton color="neutral" variant="ghost" @click="resetOverviewFilters">Reset</AppButton>
           </div>
         </form>
       </AppCard>
@@ -153,8 +153,8 @@
           <UFormField label="Provider"><UInputMenu v-model="chargeFilters.provider" :items="providerSearchOptions" create-item @create="chargeFilters.provider = $event.trim()" placeholder="Search providers..." class="w-full" /></UFormField>
           <UFormField label="Model"><UInputMenu v-model="chargeFilters.model" :items="modelSearchOptions" create-item @create="chargeFilters.model = $event.trim()" placeholder="Search models..." class="w-full" /></UFormField>
           <div class="flex gap-2 md:col-span-2 xl:col-span-5">
-            <UButton type="submit" :loading="chargesLoading">Apply filters</UButton>
-            <UButton color="neutral" variant="ghost" @click="resetChargeFilters">Reset</UButton>
+            <AppButton type="submit" :loading="chargesLoading">Apply filters</AppButton>
+            <AppButton color="neutral" variant="ghost" @click="resetChargeFilters">Reset</AppButton>
           </div>
         </form>
       </AppCard>
@@ -169,7 +169,7 @@
           <template #actions-cell="{ row }"><div class="flex justify-end"><AdminTableAction action="view" label="View charge details" @click="openChargeDetail(rowValue(row))" /></div></template>
           <template #empty><div class="py-12 text-center text-sm text-[var(--ui-text-muted)]">No charges match these filters.</div></template>
         </AppTable>
-        <template v-if="chargesTotal > 0" #footer><div class="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"><p class="text-sm text-[var(--ui-text-muted)]">{{ chargeRangeStart }}–{{ chargeRangeEnd }} / {{ formatNumber(chargesTotal) }} total</p><div class="flex flex-wrap items-center gap-2"><span class="text-xs text-[var(--ui-text-muted)]">Rows per page</span><USelect v-model="chargePageSize" :items="pageSizeOptions" value-key="value" label-key="label" class="w-24" @update:model-value="changePageSize('charges')" /><UButton size="sm" color="neutral" variant="outline" :disabled="chargePage <= 1 || chargesLoading" @click="changeChargePage(-1)">Previous</UButton><UButton size="sm" color="neutral" variant="outline" :disabled="chargePage >= chargePageCount || chargesLoading" @click="changeChargePage(1)">Next</UButton></div></div></template>
+        <template v-if="chargesTotal > 0" #footer><div class="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"><p class="text-sm text-[var(--ui-text-muted)]">{{ chargeRangeStart }}–{{ chargeRangeEnd }} / {{ formatNumber(chargesTotal) }} total</p><div class="flex flex-wrap items-center gap-2"><span class="text-xs text-[var(--ui-text-muted)]">Rows per page</span><USelect v-model="chargePageSize" :items="pageSizeOptions" value-key="value" label-key="label" class="w-24" @update:model-value="changePageSize('charges')" /><AppButton size="sm" color="neutral" variant="outline" :disabled="chargePage <= 1 || chargesLoading" @click="changeChargePage(-1)">Previous</AppButton><AppButton size="sm" color="neutral" variant="outline" :disabled="chargePage >= chargePageCount || chargesLoading" @click="changeChargePage(1)">Next</AppButton></div></div></template>
       </AdminDataPanel>
     </template>
 
@@ -181,7 +181,7 @@
           <UFormField label="From"><UInput v-model="balanceFilters.from" type="date" class="w-full" @update:model-value="balancePreset = 'custom'" /></UFormField>
           <UFormField label="To"><UInput v-model="balanceFilters.to" type="date" class="w-full" @update:model-value="balancePreset = 'custom'" /></UFormField>
           <UFormField label="User"><UInputMenu v-model="balanceFilters.user" :items="userSearchOptions" create-item @create="balanceFilters.user = $event.trim()" placeholder="Search users..." class="w-full" /></UFormField>
-          <div class="flex items-end gap-2"><UButton type="submit" :loading="balancesLoading">Apply</UButton><UButton color="neutral" variant="ghost" @click="resetBalanceFilters">Reset</UButton></div>
+          <div class="flex items-end gap-2"><AppButton type="submit" :loading="balancesLoading">Apply</AppButton><AppButton color="neutral" variant="ghost" @click="resetBalanceFilters">Reset</AppButton></div>
         </form>
       </AppCard>
       <AdminDataPanel title="Balance records" :description="`${formatNumber(balancesTotal)} matching adjustments`">
@@ -200,7 +200,7 @@
     </template>
 
     <template v-else-if="activeSection === 'prices'">
-      <section class="overflow-hidden rounded-lg border border-blue-500/30 bg-blue-500/5" aria-labelledby="tier-policy-title"><div class="flex flex-wrap items-center justify-between gap-4 p-4"><div class="flex items-start gap-3"><span class="flex size-9 items-center justify-center rounded-md bg-blue-500/10 text-blue-500"><UIcon name="i-tabler-arrows-exchange" class="size-5" /></span><div><div class="flex flex-wrap items-center gap-2"><h2 id="tier-policy-title" class="font-semibold">Runtime billing context</h2><UBadge color="info" variant="subtle">Global</UBadge><UBadge v-if="priceSchemaVersion >= 2" color="success" variant="subtle">Tier and context pricing supported</UBadge></div><p class="mt-1 text-sm text-[var(--ui-text-muted)]">{{ settingsForm.service_tier_source === 'response' ? 'Rules match the provider response tier, falling back to the requested tier when absent.' : 'Rules match the service tier requested by the client.' }}</p><p v-if="priceSchemaVersion < 2" class="mt-1 text-xs text-[var(--ui-text-muted)]">This Home instance supports flat-price compatibility rules only.</p></div></div><UButton v-if="priceSchemaVersion >= 2" color="neutral" variant="outline" icon="i-tabler-settings" @click="openMatchingSettings">Configure matching</UButton></div></section>
+      <section class="overflow-hidden rounded-lg border border-blue-500/30 bg-blue-500/5" aria-labelledby="tier-policy-title"><div class="flex flex-wrap items-center justify-between gap-4 p-4"><div class="flex items-start gap-3"><span class="flex size-9 items-center justify-center rounded-md bg-blue-500/10 text-blue-500"><UIcon name="i-tabler-arrows-exchange" class="size-5" /></span><div><div class="flex flex-wrap items-center gap-2"><h2 id="tier-policy-title" class="font-semibold">Runtime billing context</h2><UBadge color="info" variant="subtle">Global</UBadge><UBadge v-if="priceSchemaVersion >= 2" color="success" variant="subtle">Tier and context pricing supported</UBadge></div><p class="mt-1 text-sm text-[var(--ui-text-muted)]">{{ settingsForm.service_tier_source === 'response' ? 'Rules match the provider response tier, falling back to the requested tier when absent.' : 'Rules match the service tier requested by the client.' }}</p><p v-if="priceSchemaVersion < 2" class="mt-1 text-xs text-[var(--ui-text-muted)]">This Home instance supports flat-price compatibility rules only.</p></div></div><AppButton v-if="priceSchemaVersion >= 2" color="neutral" variant="outline" icon="i-tabler-settings" @click="openMatchingSettings">Configure matching</AppButton></div></section>
       <BillingPriceImport :providers="providerSearchOptions" :models="modelSearchOptions" @applied="loadPrices" />
       <AdminTablePanel title="Model prices" :description="`${filteredPriceRules.length} rules`">
         <template #filters>
@@ -211,10 +211,10 @@
             <UFormField label="Source"><USelect :model-value="priceFilters.source || allOptionValue" @update:model-value="priceFilters.source = $event === allOptionValue ? '' : $event" :items="priceSourceOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
           </div>
         </template>
-        <template #actions><UButton v-if="hasPriceFilters" color="neutral" variant="ghost" @click="clearPriceFilters">Clear filters</UButton><UButton color="primary" icon="i-tabler-plus" @click="openPriceForm()">New price</UButton></template>
+        <template #actions><AppButton v-if="hasPriceFilters" color="neutral" variant="ghost" @click="clearPriceFilters">Clear filters</AppButton><AppButton color="primary" icon="i-tabler-plus" @click="openPriceForm()">New price</AppButton></template>
         <AppTable :columns="priceColumns" :data="filteredPriceRules" :loading="pricesLoading" class="min-w-[1260px]">
           <template #provider-cell="{ row }"><span class="font-medium">{{ rowValue(row).provider }}</span></template>
-          <template #model-cell="{ row }"><div class="flex min-w-52 items-center gap-1"><span class="truncate font-mono">{{ rowValue(row).model }}</span><UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-clipboard" aria-label="Copy model ID" @click="copyText(rowValue(row).model)" /></div></template>
+          <template #model-cell="{ row }"><div class="flex min-w-52 items-center gap-1"><span class="truncate font-mono">{{ rowValue(row).model }}</span><AppButton size="xs" color="neutral" variant="ghost" icon="i-tabler-clipboard" aria-label="Copy model ID" @click="copyText(rowValue(row).model)" /></div></template>
           <template #scope-cell="{ row }"><div class="min-w-36"><template v-if="priceSchemaVersion >= 2"><UBadge color="neutral" variant="subtle">{{ rowValue(row).service_tier || '*' }}</UBadge><p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ contextBandLabel(rowValue(row).min_input_tokens) }}</p></template><span v-else class="text-xs text-[var(--ui-text-muted)]">Flat price compatibility rule</span></div></template>
           <template #input-cell="{ row }"><span class="font-mono text-xs">{{ formatCredits(rowValue(row).input_price_per_million) }}</span></template>
           <template #output-cell="{ row }"><span class="font-mono text-xs">{{ formatCredits(rowValue(row).output_price_per_million) }}</span></template>
@@ -232,35 +232,35 @@
 
 
 
-    <UModal v-model:open="matchingSettingsOpen" title="Configure global tier matching" description="Choose which service tier Home uses when matching future model-price rules.">
-      <template #body><form class="space-y-5" @submit.prevent="saveSettings"><UFormField label="Tier matching source"><div class="grid gap-2"><button v-for="option in tierSourceOptions" :key="option.value" type="button" class="rounded-lg border border-[var(--ui-border)] p-3 text-left" :class="settingsForm.service_tier_source === option.value ? 'border-[var(--ui-primary)] bg-[var(--ui-primary)]/10' : ''" @click="settingsForm.service_tier_source = option.value"><span class="font-medium">{{ option.label }}</span><UBadge v-if="option.value === 'request'" class="ml-2" color="neutral" variant="subtle">Default</UBadge><p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ option.value === 'request' ? 'Match the tier requested by the client.' : 'Match the provider response tier and fall back to the requested tier when absent.' }}</p></button></div></UFormField><UAlert v-if="diagnosticsError" color="warning" variant="subtle" title="Tier diagnostics unavailable" :description="diagnosticsError" /><div v-else-if="settingsForm.service_tier_source === 'response' && tierDiagnostics" class="rounded-lg border border-[var(--ui-border)] p-4 text-sm"><p>{{ formatNumber(tierDiagnostics.fallback_requests) }} of {{ formatNumber(tierDiagnostics.eligible_requests) }} recent eligible requests would fall back to the requested tier.</p></div><div class="flex justify-end gap-2 border-t border-[var(--ui-border)] pt-4"><UButton type="button" color="neutral" variant="ghost" @click="matchingSettingsOpen = false">Cancel</UButton><UButton type="submit" :loading="settingsSaving || diagnosticsLoading">Save matching</UButton></div></form></template>
-    </UModal>
+    <AppModal v-model:open="matchingSettingsOpen" title="Configure global tier matching" description="Choose which service tier Home uses when matching future model-price rules.">
+      <template #body><form class="space-y-5" @submit.prevent="saveSettings"><UFormField label="Tier matching source"><div class="grid gap-2"><button v-for="option in tierSourceOptions" :key="option.value" type="button" class="rounded-lg border border-[var(--ui-border)] p-3 text-left" :class="settingsForm.service_tier_source === option.value ? 'border-[var(--ui-primary)] bg-[var(--ui-primary)]/10' : ''" @click="settingsForm.service_tier_source = option.value"><span class="font-medium">{{ option.label }}</span><UBadge v-if="option.value === 'request'" class="ml-2" color="neutral" variant="subtle">Default</UBadge><p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ option.value === 'request' ? 'Match the tier requested by the client.' : 'Match the provider response tier and fall back to the requested tier when absent.' }}</p></button></div></UFormField><UAlert v-if="diagnosticsError" color="warning" variant="subtle" title="Tier diagnostics unavailable" :description="diagnosticsError" /><div v-else-if="settingsForm.service_tier_source === 'response' && tierDiagnostics" class="rounded-lg border border-[var(--ui-border)] p-4 text-sm"><p>{{ formatNumber(tierDiagnostics.fallback_requests) }} of {{ formatNumber(tierDiagnostics.eligible_requests) }} recent eligible requests would fall back to the requested tier.</p></div><div class="flex justify-end gap-2 border-t border-[var(--ui-border)] pt-4"><AppButton type="button" color="neutral" variant="ghost" @click="matchingSettingsOpen = false">Cancel</AppButton><AppButton type="submit" :loading="settingsSaving || diagnosticsLoading">Save matching</AppButton></div></form></template>
+    </AppModal>
 
-    <UModal v-model:open="adjustmentOpen" :title="adjustmentForm.type === 'recharge' ? 'Recharge user balance' : 'Deduct user balance'" description="Creates an immutable billing balance record.">
+    <AppModal v-model:open="adjustmentOpen" :title="adjustmentForm.type === 'recharge' ? 'Recharge user balance' : 'Deduct user balance'" description="Creates an immutable billing balance record.">
       <template #body>
         <form class="space-y-5" @submit.prevent="submitBalanceAdjustment">
           <UAlert v-if="modalError" color="error" variant="subtle" icon="i-tabler-alert-circle" title="Could not adjust balance" :description="modalError" />
           <div class="grid grid-cols-2 gap-2">
-            <UButton type="button" :color="adjustmentForm.type === 'recharge' ? 'success' : 'neutral'" :variant="adjustmentForm.type === 'recharge' ? 'soft' : 'outline'" @click="adjustmentForm.type = 'recharge'">Recharge</UButton>
-            <UButton type="button" :color="adjustmentForm.type === 'deduct' ? 'warning' : 'neutral'" :variant="adjustmentForm.type === 'deduct' ? 'soft' : 'outline'" @click="adjustmentForm.type = 'deduct'">Deduct</UButton>
+            <AppButton type="button" :color="adjustmentForm.type === 'recharge' ? 'success' : 'neutral'" :variant="adjustmentForm.type === 'recharge' ? 'soft' : 'outline'" @click="adjustmentForm.type = 'recharge'">Recharge</AppButton>
+            <AppButton type="button" :color="adjustmentForm.type === 'deduct' ? 'warning' : 'neutral'" :variant="adjustmentForm.type === 'deduct' ? 'soft' : 'outline'" @click="adjustmentForm.type = 'deduct'">Deduct</AppButton>
           </div>
           <UFormField label="User" required>
             <USelectMenu v-model="adjustmentForm.user_id" :items="userOptions" value-key="value" label-key="label" placeholder="Search users..." :search-input="{ placeholder: 'Search username or ID...' }" class="w-full" />
           </UFormField>
           <UFormField label="Amount" required><UInput v-model="adjustmentForm.amount" type="number" min="0.000001" step="0.000001" class="w-full" /></UFormField>
           <UFormField label="Note" :required="adjustmentForm.type === 'deduct'" :hint="adjustmentForm.type === 'deduct' ? 'Required for deductions' : 'Optional'"><UTextarea v-model="adjustmentForm.note" :rows="3" class="w-full" /></UFormField>
-          <div class="flex justify-end gap-3 border-t border-[var(--ui-border)] pt-4"><UButton type="button" color="neutral" variant="ghost" @click="adjustmentOpen = false">Cancel</UButton><UButton type="submit" :color="adjustmentForm.type === 'recharge' ? 'success' : 'warning'" :loading="adjustmentSaving">{{ adjustmentForm.type === 'recharge' ? 'Recharge' : 'Deduct' }}</UButton></div>
+          <div class="flex justify-end gap-3 border-t border-[var(--ui-border)] pt-4"><AppButton type="button" color="neutral" variant="ghost" @click="adjustmentOpen = false">Cancel</AppButton><AppButton type="submit" :color="adjustmentForm.type === 'recharge' ? 'success' : 'warning'" :loading="adjustmentSaving">{{ adjustmentForm.type === 'recharge' ? 'Recharge' : 'Deduct' }}</AppButton></div>
         </form>
       </template>
-    </UModal>
+    </AppModal>
 
-    <UModal v-model:open="priceFormOpen" :title="editingPrice ? 'Edit model price' : 'New model price'" description="Prices affect future charges only; historical charges retain their snapshots." :ui="{ content: 'sm:max-w-4xl' }">
+    <AppModal v-model:open="priceFormOpen" :title="editingPrice ? 'Edit model price' : 'New model price'" description="Prices affect future charges only; historical charges retain their snapshots." :ui="{ content: 'sm:max-w-4xl' }">
       <template #body>
         <form class="space-y-5" @submit.prevent="submitPrice">
           <UAlert v-if="modalError" color="error" variant="subtle" icon="i-tabler-alert-circle" title="Could not save price rule" :description="modalError" />
           <UAlert v-if="modelCandidatesError" color="warning" variant="subtle" title="Model candidates unavailable" :description="modelCandidatesError" />
           <fieldset class="space-y-3 rounded-lg border border-[var(--ui-border)] p-4">
-            <div class="flex flex-wrap items-center justify-between gap-2"><div><legend class="font-medium">Models</legend><p class="text-xs text-[var(--ui-text-muted)]">{{ editingPrice ? 'Select one provider/model identity.' : 'Select one or more models. The same pricing is created sequentially for each selection.' }}</p></div><UButton v-if="selectedPriceCandidates.length" type="button" size="sm" color="neutral" variant="ghost" @click="clearPriceCandidateSelection">Clear selection</UButton></div>
+            <div class="flex flex-wrap items-center justify-between gap-2"><div><legend class="font-medium">Models</legend><p class="text-xs text-[var(--ui-text-muted)]">{{ editingPrice ? 'Select one provider/model identity.' : 'Select one or more models. The same pricing is created sequentially for each selection.' }}</p></div><AppButton v-if="selectedPriceCandidates.length" type="button" size="sm" color="neutral" variant="ghost" @click="clearPriceCandidateSelection">Clear selection</AppButton></div>
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center"><UInput v-model="modelCandidateSearch" icon="i-tabler-search" placeholder="Search model ID, label, description, provider, owner, or type..." class="w-full" /><UCheckbox v-model="availableModelsOnly" label="Available only" class="shrink-0" /></div>
             <div v-if="selectedPriceCandidates.length" class="flex flex-wrap gap-2"><UBadge v-for="candidate in selectedPriceCandidates" :key="candidate.key" color="primary" variant="subtle">{{ candidate.provider }} / {{ candidate.model }}</UBadge></div>
             <div class="max-h-72 overflow-y-auto rounded-md border border-[var(--ui-border)]">
@@ -285,24 +285,24 @@
           </div>
           <UFormField label="Note"><UTextarea v-model="priceForm.note" :rows="3" class="w-full" /></UFormField>
           <div class="flex items-center justify-between rounded-lg border border-[var(--ui-border)] p-4"><div><p class="font-medium">Enabled</p><p class="text-xs text-[var(--ui-text-muted)]">Allow this rule to match new usage.</p></div><USwitch v-model="priceForm.enabled" /></div>
-          <div class="flex justify-end gap-3 border-t border-[var(--ui-border)] pt-4"><UButton type="button" color="neutral" variant="ghost" :disabled="priceSaving" @click="priceFormOpen = false">Cancel</UButton><UButton type="submit" :loading="priceSaving">{{ editingPrice ? 'Save changes' : `Create ${selectedPriceCandidates.length || ''} price${selectedPriceCandidates.length === 1 ? '' : 's'}` }}</UButton></div>
+          <div class="flex justify-end gap-3 border-t border-[var(--ui-border)] pt-4"><AppButton type="button" color="neutral" variant="ghost" :disabled="priceSaving" @click="priceFormOpen = false">Cancel</AppButton><AppButton type="submit" :loading="priceSaving">{{ editingPrice ? 'Save changes' : `Create ${selectedPriceCandidates.length || ''} price${selectedPriceCandidates.length === 1 ? '' : 's'}` }}</AppButton></div>
         </form>
       </template>
-    </UModal>
+    </AppModal>
 
-    <UModal v-model:open="deletePriceOpen" title="Delete price rule" description="Historical charges keep their stored price snapshots.">
-      <template #body><div class="space-y-5"><UAlert color="warning" variant="subtle" icon="i-tabler-alert-triangle" title="This rule will no longer match future usage" :description="deletePriceTarget ? `${deletePriceTarget.provider} / ${deletePriceTarget.model} / ${deletePriceTarget.service_tier || '*'}` : ''" /><div class="flex justify-end gap-3"><UButton color="neutral" variant="ghost" @click="deletePriceOpen = false">Cancel</UButton><UButton color="error" :loading="priceDeleting" @click="deletePrice">Delete rule</UButton></div></div></template>
-    </UModal>
+    <AppModal v-model:open="deletePriceOpen" title="Delete price rule" description="Historical charges keep their stored price snapshots.">
+      <template #body><div class="space-y-5"><UAlert color="warning" variant="subtle" icon="i-tabler-alert-triangle" title="This rule will no longer match future usage" :description="deletePriceTarget ? `${deletePriceTarget.provider} / ${deletePriceTarget.model} / ${deletePriceTarget.service_tier || '*'}` : ''" /><div class="flex justify-end gap-3"><AppButton color="neutral" variant="ghost" @click="deletePriceOpen = false">Cancel</AppButton><AppButton color="error" :loading="priceDeleting" @click="deletePrice">Delete rule</AppButton></div></div></template>
+    </AppModal>
 
-    <UModal v-model:open="balanceDetailOpen" title="Balance record details" description="Immutable ledger adjustment and balance transition.">
+    <AppModal v-model:open="balanceDetailOpen" title="Balance record details" description="Immutable ledger adjustment and balance transition.">
           <template #body><dl v-if="selectedBalance" class="grid grid-cols-1 gap-4 sm:grid-cols-2"><div v-for="item in balanceDetailItems" :key="item.label" class="min-w-0"><dt class="text-xs font-medium text-[var(--ui-text-muted)]">{{ item.label }}</dt><dd class="mt-1 break-words text-sm" :class="item.mono ? 'font-mono text-xs' : ''">{{ item.value }}</dd></div></dl></template>
-        </UModal>
+        </AppModal>
 
-        <UModal v-model:open="tierConfirmOpen" title="Use provider response tiers?" description="Changing this setting affects future charges only.">
-          <template #body><div class="space-y-4"><p class="text-sm">{{ formatNumber(tierDiagnostics?.fallback_requests) }} of {{ formatNumber(tierDiagnostics?.eligible_requests) }} observed eligible requests lacked a response tier and would use the requested tier instead. This evidence does not guarantee future coverage. Continue?</p><div class="flex justify-end gap-2"><UButton color="neutral" variant="ghost" @click="tierConfirmOpen = false">Cancel</UButton><UButton :loading="settingsSaving" @click="persistSettings">Confirm and save</UButton></div></div></template>
-        </UModal>
+        <AppModal v-model:open="tierConfirmOpen" title="Use provider response tiers?" description="Changing this setting affects future charges only.">
+          <template #body><div class="space-y-4"><p class="text-sm">{{ formatNumber(tierDiagnostics?.fallback_requests) }} of {{ formatNumber(tierDiagnostics?.eligible_requests) }} observed eligible requests lacked a response tier and would use the requested tier instead. This evidence does not guarantee future coverage. Continue?</p><div class="flex justify-end gap-2"><AppButton color="neutral" variant="ghost" @click="tierConfirmOpen = false">Cancel</AppButton><AppButton :loading="settingsSaving" @click="persistSettings">Confirm and save</AppButton></div></div></template>
+        </AppModal>
 
-        <UModal v-model:open="chargeDetailOpen" title="Charge details" description="Price attribution and balance transition for this request.">
+        <AppModal v-model:open="chargeDetailOpen" title="Charge details" description="Price attribution and balance transition for this request.">
       <template #body>
         <div v-if="selectedCharge" class="space-y-5">
           <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -311,7 +311,7 @@
           <div class="space-y-3"><p class="text-sm font-semibold">Price snapshot</p><dl v-if="snapshotDetailItems.length" class="grid grid-cols-1 gap-4 sm:grid-cols-2"><div v-for="item in snapshotDetailItems" :key="item.label" class="min-w-0"><dt class="text-xs font-medium text-[var(--ui-text-muted)]">{{ item.label }}</dt><dd class="mt-1 break-words text-sm">{{ item.value }}</dd></div></dl><p v-else class="text-sm text-[var(--ui-text-muted)]">No price snapshot recorded.</p><details v-if="selectedCharge.price_snapshot"><summary class="cursor-pointer text-xs text-[var(--ui-text-muted)]">Raw snapshot</summary><pre class="mt-2 max-h-72 overflow-auto rounded-lg bg-[var(--ui-bg-muted)] p-4 text-xs">{{ prettyJSON(selectedCharge.price_snapshot) }}</pre></details></div>
         </div>
       </template>
-    </UModal>
+    </AppModal>
   </div>
 </template>
 
@@ -775,7 +775,7 @@ export default {
         start() { return this.total ? ((this.page - 1) * this.pageSize) + 1 : 0 },
         end() { return Math.min(this.page * this.pageSize, this.total || 0) }
       },
-      template: `<div class="flex flex-col gap-3 border-t border-[var(--ui-border)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"><p class="text-xs text-[var(--ui-text-muted)]">Showing {{ start }}–{{ end }} of {{ total || 0 }}</p><div class="flex items-center gap-2"><UButton size="sm" color="neutral" variant="outline" :disabled="page <= 1 || loading" @click="$emit('previous')">Previous</UButton><span class="min-w-20 text-center text-sm">Page {{ page }} of {{ pages }}</span><UButton size="sm" color="neutral" variant="outline" :disabled="page >= pages || loading" @click="$emit('next')">Next</UButton></div></div>`
+      template: `<div class="flex flex-col gap-3 border-t border-[var(--ui-border)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"><p class="text-xs text-[var(--ui-text-muted)]">Showing {{ start }}–{{ end }} of {{ total || 0 }}</p><div class="flex items-center gap-2"><AppButton size="sm" color="neutral" variant="outline" :disabled="page <= 1 || loading" @click="$emit('previous')">Previous</AppButton><span class="min-w-20 text-center text-sm">Page {{ page }} of {{ pages }}</span><AppButton size="sm" color="neutral" variant="outline" :disabled="page >= pages || loading" @click="$emit('next')">Next</AppButton></div></div>`
     }
   }
 }

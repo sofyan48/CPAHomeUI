@@ -1,6 +1,6 @@
 <template>
   <div role="tablist" :aria-label="label" class="app-panel-tabs">
-    <UButton
+    <AppButton
       v-for="item in items"
       :key="item.value"
       role="tab"
@@ -11,7 +11,7 @@
       @click="$emit('update:modelValue', item.value)"
     >
       {{ item.label }}
-    </UButton>
+    </AppButton>
   </div>
 </template>
 

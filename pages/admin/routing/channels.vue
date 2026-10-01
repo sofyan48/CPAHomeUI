@@ -7,14 +7,14 @@
           Group credential auth IDs into reusable routing scopes for client API keys and model-specific restrictions.
         </p>
       </div>
-      <UButton color="primary" icon="i-tabler-plus" @click="openCreateGroup">New channel group</UButton>
+      <AppButton color="primary" icon="i-tabler-plus" @click="openCreateGroup">New channel group</AppButton>
     </div>
 
     <UAlert v-if="pageError" color="error" variant="subtle" icon="i-tabler-alert-triangle" title="Unable to load channel groups" :description="pageError" />
 
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <UInput v-model="search" icon="i-tabler-search" placeholder="Search channel groups..." class="w-full sm:max-w-sm" />
-      <UButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="pending" @click="refreshWorkspace">Refresh</UButton>
+      <AppButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="pending" @click="refreshWorkspace">Refresh</AppButton>
     </div>
 
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.6fr)]">
@@ -37,8 +37,8 @@
           </template>
           <template #actions-cell="{ row }">
             <div class="flex justify-end gap-1">
-              <UButton color="neutral" variant="ghost" size="sm" icon="i-tabler-pencil" aria-label="Edit group" @click.stop="openEditGroup(rowValue(row))" />
-              <UButton color="error" variant="ghost" size="sm" icon="i-tabler-trash" aria-label="Delete group" @click.stop="confirmDelete('group', rowValue(row))" />
+              <AppButton color="neutral" variant="ghost" size="sm" icon="i-tabler-pencil" aria-label="Edit group" @click.stop="openEditGroup(rowValue(row))" />
+              <AppButton color="error" variant="ghost" size="sm" icon="i-tabler-trash" aria-label="Delete group" @click.stop="confirmDelete('group', rowValue(row))" />
             </div>
           </template>
           <template #empty>
@@ -57,7 +57,7 @@
               </div>
               <p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ details.length }} credential binding{{ details.length === 1 ? '' : 's' }}</p>
             </div>
-            <UButton color="primary" variant="soft" icon="i-tabler-plus" @click="openCreateDetail">Add credential</UButton>
+            <AppButton color="primary" variant="soft" icon="i-tabler-plus" @click="openCreateDetail">Add credential</AppButton>
           </div>
         </template>
         <AppTable :columns="detailColumns" :data="details" :loading="detailsPending">
@@ -72,8 +72,8 @@
           </template>
           <template #actions-cell="{ row }">
             <div class="flex justify-end gap-1">
-              <UButton color="neutral" variant="ghost" size="sm" icon="i-tabler-pencil" aria-label="Edit credential binding" @click="openEditDetail(rowValue(row))" />
-              <UButton color="error" variant="ghost" size="sm" icon="i-tabler-trash" aria-label="Delete credential binding" @click="confirmDelete('detail', rowValue(row))" />
+              <AppButton color="neutral" variant="ghost" size="sm" icon="i-tabler-pencil" aria-label="Edit credential binding" @click="openEditDetail(rowValue(row))" />
+              <AppButton color="error" variant="ghost" size="sm" icon="i-tabler-trash" aria-label="Delete credential binding" @click="confirmDelete('detail', rowValue(row))" />
             </div>
           </template>
           <template #empty>
@@ -93,7 +93,7 @@
       </div>
     </div>
 
-    <UModal v-model:open="groupFormOpen" :title="editingGroup ? 'Edit channel group' : 'Create channel group'" description="Channel groups are reusable credential routing scopes.">
+    <AppModal v-model:open="groupFormOpen" :title="editingGroup ? 'Edit channel group' : 'Create channel group'" description="Channel groups are reusable credential routing scopes.">
       <template #body>
         <form class="space-y-5" @submit.prevent="submitGroup">
           <UAlert v-if="formError" color="error" variant="subtle" icon="i-tabler-alert-circle" title="Could not save channel group" :description="formError" />
@@ -110,14 +110,14 @@
             </div>
           </UFormField>
           <div class="flex justify-end gap-3 border-t border-[var(--ui-border)] pt-4">
-            <UButton color="neutral" variant="ghost" type="button" @click="groupFormOpen = false">Cancel</UButton>
-            <UButton color="primary" type="submit" :loading="submitting">{{ editingGroup ? 'Save changes' : 'Create group' }}</UButton>
+            <AppButton color="neutral" variant="ghost" type="button" @click="groupFormOpen = false">Cancel</AppButton>
+            <AppButton color="primary" type="submit" :loading="submitting">{{ editingGroup ? 'Save changes' : 'Create group' }}</AppButton>
           </div>
         </form>
       </template>
-    </UModal>
+    </AppModal>
 
-    <UModal v-model:open="detailFormOpen" :title="editingDetail ? 'Edit credential binding' : 'Add credential binding'" description="The backend stores the credential's canonical auth_id.">
+    <AppModal v-model:open="detailFormOpen" :title="editingDetail ? 'Edit credential binding' : 'Add credential binding'" description="The backend stores the credential's canonical auth_id.">
       <template #body>
         <form class="space-y-5" @submit.prevent="submitDetail">
           <UAlert v-if="formError" color="error" variant="subtle" icon="i-tabler-alert-circle" title="Could not save credential binding" :description="formError" />
@@ -129,24 +129,24 @@
             <p class="mt-1 text-xs text-[var(--ui-text-muted)]">You may enter an ID manually when the credential is not present in the current auth-files response.</p>
           </UFormField>
           <div class="flex justify-end gap-3 border-t border-[var(--ui-border)] pt-4">
-            <UButton color="neutral" variant="ghost" type="button" @click="detailFormOpen = false">Cancel</UButton>
-            <UButton color="primary" type="submit" :loading="submitting">{{ editingDetail ? 'Save changes' : 'Add credential' }}</UButton>
+            <AppButton color="neutral" variant="ghost" type="button" @click="detailFormOpen = false">Cancel</AppButton>
+            <AppButton color="primary" type="submit" :loading="submitting">{{ editingDetail ? 'Save changes' : 'Add credential' }}</AppButton>
           </div>
         </form>
       </template>
-    </UModal>
+    </AppModal>
 
-    <UModal v-model:open="deleteOpen" :title="deleteKind === 'group' ? 'Delete channel group' : 'Remove credential binding'" description="This action soft-deletes the selected record.">
+    <AppModal v-model:open="deleteOpen" :title="deleteKind === 'group' ? 'Delete channel group' : 'Remove credential binding'" description="This action soft-deletes the selected record.">
       <template #body>
         <div class="space-y-5">
           <UAlert color="warning" variant="subtle" icon="i-tabler-alert-triangle" title="Confirm deletion" :description="deleteDescription" />
           <div class="flex justify-end gap-3">
-            <UButton color="neutral" variant="ghost" @click="deleteOpen = false">Cancel</UButton>
-            <UButton color="error" :loading="deleting" @click="performDelete">Delete</UButton>
+            <AppButton color="neutral" variant="ghost" @click="deleteOpen = false">Cancel</AppButton>
+            <AppButton color="error" :loading="deleting" @click="performDelete">Delete</AppButton>
           </div>
         </div>
       </template>
-    </UModal>
+    </AppModal>
   </div>
 </template>
 
@@ -184,7 +184,7 @@ const detailColumns = [
 async function loadWorkspace() {
   pageError.value = ''
   try {
-    const [groupsResponse, authResponse] = await Promise.all([fetchAPI('/channel-groups'), fetchAPI('/auth-files')])
+    const [groupsResponse, authResponse] = await Promise.all([fetchAPI('/channel-groups'), fetchAPI('/credentials')])
     return { groupsResponse, authResponse }
   } catch (error) {
     pageError.value = errorMessage(error)
@@ -193,7 +193,7 @@ async function loadWorkspace() {
 }
 const { data, pending, refresh: refreshWorkspace } = await useAsyncData('routing-channel-groups', loadWorkspace)
 const groups = computed(() => Array.isArray(data.value?.groupsResponse?.channel_groups) ? data.value.groupsResponse.channel_groups : [])
-const credentials = computed(() => Array.isArray(data.value?.authResponse?.files) ? data.value.authResponse.files : [])
+const credentials = computed(() => Array.isArray(data.value?.authResponse) ? data.value.authResponse : Array.isArray(data.value?.authResponse?.credentials) ? data.value.authResponse.credentials : Array.isArray(data.value?.authResponse?.files) ? data.value.authResponse.files : [])
 const selectedGroup = computed(() => groups.value.find(group => group.id === selectedGroupId.value) || null)
 const filteredGroups = computed(() => {
   const query = search.value.trim().toLowerCase()

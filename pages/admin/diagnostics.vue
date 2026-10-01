@@ -14,7 +14,7 @@
         <UFormField label="Realtime grouping">
           <USelect v-model="groupBy" :items="['model', 'provider', 'client_key', 'credential']" class="w-40" :disabled="loadingConsole" @update:model-value="refreshConsole" />
         </UFormField>
-        <UButton icon="i-tabler-refresh" :loading="loadingConsole" @click="refreshConsole">Refresh</UButton>
+        <AppButton icon="i-tabler-refresh" :loading="loadingConsole" @click="refreshConsole">Refresh</AppButton>
         <label class="flex items-center gap-2 text-sm"><input v-model="autoRefresh" type="checkbox" /> Auto-refresh every 30s</label>
         <span v-if="lastUpdated" class="text-xs text-[var(--ui-text-muted)]">Updated {{ formatTime(lastUpdated) }}</span>
       </div>
@@ -61,14 +61,14 @@
       <AppCard>
         <template #header>
           <div class="flex flex-wrap items-center justify-between gap-3"><div><h2 class="font-semibold">Request logs</h2><p class="text-xs text-[var(--ui-text-muted)]">{{ number(logs?.total) }} indexed requests · local availability or remote routability</p></div>
-            <form class="flex gap-2" @submit.prevent="applyLogSearch"><UInput v-model="logSearch" placeholder="Request ID, model, status or file" aria-label="Search request logs" /><UButton type="submit" color="neutral" variant="outline" :disabled="loadingConsole">Search</UButton></form>
+            <form class="flex gap-2" @submit.prevent="applyLogSearch"><UInput v-model="logSearch" placeholder="Request ID, model, status or file" aria-label="Search request logs" /><AppButton type="submit" color="neutral" variant="outline" :disabled="loadingConsole">Search</AppButton></form>
           </div>
         </template>
         <AppCard :ui="{ body: 'p-0' }"><AppTable native><table class="min-w-[42rem] text-left text-sm"><thead><tr><th>Request</th><th>Provider / model</th><th>Home</th><th>File</th><th>Status</th><th>Log</th></tr></thead><tbody>
-          <tr v-for="item in logItems" :key="item.id"><td><div>{{ formatTime(item.timestamp) }}</div><div class="font-mono text-xs">{{ item.request_id || '—' }}</div></td><td>{{ item.provider || '—' }} / {{ item.model || '—' }}</td><td>{{ item.home_ip || '—' }}{{ item.home_port ? `:${item.home_port}` : '' }}</td><td class="font-mono text-xs">{{ item.file_name || 'Remote / unavailable' }}</td><td>{{ item.status }}</td><td><UButton size="xs" color="neutral" variant="outline" :disabled="!item.download_url" :loading="downloadingId === item.id" @click="downloadLog(item)">Download</UButton></td></tr>
+          <tr v-for="item in logItems" :key="item.id"><td><div>{{ formatTime(item.timestamp) }}</div><div class="font-mono text-xs">{{ item.request_id || '—' }}</div></td><td>{{ item.provider || '—' }} / {{ item.model || '—' }}</td><td>{{ item.home_ip || '—' }}{{ item.home_port ? `:${item.home_port}` : '' }}</td><td class="font-mono text-xs">{{ item.file_name || 'Remote / unavailable' }}</td><td>{{ item.status }}</td><td><AppButton size="xs" color="neutral" variant="outline" :disabled="!item.download_url" :loading="downloadingId === item.id" @click="downloadLog(item)">Download</AppButton></td></tr>
         </tbody></table></AppTable></AppCard>
         <p v-if="!logItems.length" class="py-5 text-center text-sm text-[var(--ui-text-muted)]">No request logs match this window and search.</p>
-        <div class="mt-4 flex items-center justify-end gap-3 text-sm"><UButton size="sm" color="neutral" variant="outline" :disabled="logPage === 1 || loadingConsole" @click="changeLogPage(-1)">Previous</UButton><span>Page {{ logPage }} / {{ logPages }}</span><UButton size="sm" color="neutral" variant="outline" :disabled="logPage >= logPages || loadingConsole" @click="changeLogPage(1)">Next</UButton></div>
+        <div class="mt-4 flex items-center justify-end gap-3 text-sm"><AppButton size="sm" color="neutral" variant="outline" :disabled="logPage === 1 || loadingConsole" @click="changeLogPage(-1)">Previous</AppButton><span>Page {{ logPage }} / {{ logPages }}</span><AppButton size="sm" color="neutral" variant="outline" :disabled="logPage >= logPages || loadingConsole" @click="changeLogPage(1)">Next</AppButton></div>
       </AppCard>
     </section>
 
@@ -100,7 +100,7 @@
             <UTextarea v-model="form.data" :rows="10" class="w-full font-mono text-xs" spellcheck="false" />
           </UFormField>
           <div class="flex justify-end">
-            <UButton type="submit" icon="i-tabler-send" :loading="sending">Send request</UButton>
+            <AppButton type="submit" icon="i-tabler-send" :loading="sending">Send request</AppButton>
           </div>
         </form>
       </AppCard>
@@ -120,7 +120,7 @@
           <div>
             <div class="mb-2 flex items-center justify-between gap-3">
               <p class="text-xs font-semibold uppercase tracking-wide text-[var(--ui-text-muted)]">Body</p>
-              <UButton size="xs" color="neutral" variant="ghost" icon="i-tabler-clipboard" @click="copyBody">Copy</UButton>
+              <AppButton size="xs" color="neutral" variant="ghost" icon="i-tabler-clipboard" @click="copyBody">Copy</AppButton>
             </div>
             <pre class="max-h-[42rem] overflow-auto whitespace-pre-wrap break-words rounded-lg bg-[var(--ui-bg-muted)] p-4 text-xs">{{ formattedBody }}</pre>
           </div>
@@ -240,7 +240,7 @@ const authResponse = ref(null)
 const result = ref(null)
 const methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']
 const form = reactive({ method: 'GET', url: '', auth_index: '', headers: '{\n  "Accept": "application/json"\n}', data: '' })
-const credentials = computed(() => Array.isArray(authResponse.value?.files) ? authResponse.value.files : [])
+const credentials = computed(() => Array.isArray(authResponse.value) ? authResponse.value : Array.isArray(authResponse.value?.credentials) ? authResponse.value.credentials : Array.isArray(authResponse.value?.files) ? authResponse.value.files : [])
 const noCredentialValue = '__no_credential__'
 const credentialOptions = computed(() => [
   { label: 'No credential', value: noCredentialValue },
@@ -254,7 +254,7 @@ const formattedBody = computed(() => {
 const message = (error, fallback) => error?.data?.message || error?.data?.error || error?.message || fallback
 function statusColor(status) { if (status >= 200 && status < 300) return 'success'; if (status >= 400) return 'error'; return 'warning' }
 async function loadCredentials() {
-  try { authResponse.value = await fetchAPI('/auth-files') }
+  try { authResponse.value = await fetchAPI('/credentials') }
   catch { authResponse.value = { files: [] } }
 }
 async function sendRequest() {
@@ -267,7 +267,7 @@ async function sendRequest() {
   } catch { errorMessage.value = 'Headers must be a JSON object with string values.'; return }
   sending.value = true
   try {
-    result.value = await fetchAPI('/api-call', { method: 'POST', body: { auth_index: form.auth_index || undefined, method: form.method, url: form.url.trim(), header: headers, data: form.data } })
+    result.value = await fetchAPI('/requests/api-call', { method: 'POST', body: { auth_index: form.auth_index || undefined, method: form.method, url: form.url.trim(), header: headers, data: form.data } })
   } catch (error) { errorMessage.value = message(error, 'The diagnostic request failed.') }
   finally { sending.value = false }
 }
