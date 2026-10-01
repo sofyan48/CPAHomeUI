@@ -6,14 +6,7 @@
           Upstream
         </h1>
       </div>
-      <AppButton
-        color="neutral"
-        variant="outline"
-        icon="i-tabler-refresh"
-        :loading="syncing"
-        @click="syncData"
-        >Sync data</AppButton
-      >
+      <AppSyncButton :loading="syncing" @click="syncData" />
     </div>
 
     <p
@@ -156,12 +149,16 @@ async function loadSummary() {
   ]);
   if (auth.status === "rejected")
     summaryError.value = auth.reason?.message || "Could not load accounts.";
-  const accounts =
-    auth.status === "fulfilled"
-      ? Array.isArray(auth.value)
-        ? auth.value
-        : auth.value?.credentials || auth.value?.items || []
-      : [];
+  const authData = auth.status === "fulfilled" ? auth.value : null;
+  const accounts = Array.isArray(authData)
+    ? authData
+    : Array.isArray(authData?.files)
+      ? authData.files
+      : Array.isArray(authData?.credentials)
+        ? authData.credentials
+        : Array.isArray(authData?.items)
+          ? authData.items
+          : [];
   const groups = providerRoutes.map((name, index) => {
     const result = providers[index];
     const response = result.status === "fulfilled" ? result.value : null;

@@ -42,7 +42,7 @@
             </div>
           </div>
           <div class="flex shrink-0 flex-wrap gap-2 lg:justify-end">
-            <AppButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" @click="refreshSystem">{{ loading ? 'Syncing' : 'Sync data' }}</AppButton>
+            <AppSyncButton :loading="loading" @click="refreshSystem" />
             <AppButton color="neutral" variant="outline" icon="i-tabler-square-terminal" @click="openDiagnostics">Diagnostics</AppButton>
           </div>
         </div>

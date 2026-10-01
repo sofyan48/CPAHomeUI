@@ -35,15 +35,7 @@
                 {{ health.description }}
               </p>
             </div>
-            <AppButton
-              icon="i-tabler-refresh"
-              color="neutral"
-              variant="ghost"
-              size="sm"
-              :loading="loading"
-              @click="refreshDashboard"
-              >{{ loading ? "Syncing" : "Sync data" }}</AppButton
-            >
+            <AppSyncButton :loading="loading" @click="refreshDashboard" />
           </div>
         </template>
         <div class="flex flex-wrap gap-2">

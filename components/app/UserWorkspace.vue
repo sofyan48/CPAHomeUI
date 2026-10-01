@@ -4,18 +4,18 @@
     <UAlert v-if="pageError" color="error" variant="subtle" icon="i-tabler-alert-triangle" title="Some workspace data could not be loaded" :description="pageError" />
 
     <section v-if="section === 'dashboard'" class="dashboard-limit-grid grid grid-cols-1 gap-4" :style="dashboardGridStyle" aria-label="Account summary and period limits">
-      <AppCard>
+      <AppCard tinted accent="emerald">
         <div class="flex items-start justify-between gap-4">
           <div class="min-w-0">
             <p class="text-sm text-[var(--ui-text-muted)]">Credit balance</p>
             <p class="mt-2 truncate text-2xl font-bold tabular-nums text-[var(--ui-text-highlighted)]">{{ formatCredits(user?.credits ?? selectedOverview?.current_balance) }}</p>
           </div>
-          <span class="rounded-xl bg-primary-500/10 p-2.5 text-primary-500"><UIcon name="i-tabler-wallet" class="size-5" /></span>
+          <span class="dashboard-card-icon flex size-10 shrink-0 items-center justify-center rounded-xl"><UIcon name="i-tabler-wallet" class="size-5" /></span>
         </div>
       </AppCard>
-      <AppCard v-for="window in activePeriodWindows" :key="window.id">
+      <AppCard v-for="window in activePeriodWindows" :key="window.id" tinted>
         <div class="flex items-center justify-between gap-3"><p class="text-sm font-semibold">{{ periodWindowLabel(window.id) }}</p><span class="text-xs font-medium tabular-nums" :class="periodWindowColor(window)">{{ formatPercent(periodWindowRatio(window)) }}</span></div>
-        <div class="mt-3 h-2 overflow-hidden rounded-full bg-[var(--ui-bg-muted)]"><div class="h-full rounded-full transition-all" :class="periodWindowBarColor(window)" :style="{ width: `${Math.round(periodWindowRatio(window) * 100)}%` }" /></div>
+        <div class="period-progress-track mt-3 h-2.5 overflow-hidden rounded-full"><div class="h-full rounded-full transition-[width]" :class="periodWindowBarColor(window)" :style="{ width: `${periodWindowRatio(window) * 100}%`, minWidth: periodWindowRatio(window) > 0 ? '3px' : '0' }" /></div>
         <div class="mt-3 flex items-end justify-between gap-3"><div><p class="text-xs text-[var(--ui-text-muted)]">Used</p><p class="font-semibold tabular-nums">{{ formatCredits(window.used) }} / {{ formatCredits(window.limit) }}</p></div><div class="text-right"><p class="text-xs text-[var(--ui-text-muted)]">Remaining</p><p class="text-sm font-medium tabular-nums">{{ formatCredits(window.remaining) }}</p></div></div>
         <p v-if="window.reset_at" class="mt-2 text-xs text-[var(--ui-text-dimmed)]">Resets {{ formatDate(window.reset_at) }}</p>
       </AppCard>
@@ -30,7 +30,7 @@
         <AppButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="billingLoading" @click="loadBilling">Refresh report</AppButton>
       </div>
 
-      <AppCard class="workbench-filter-panel">
+      <div>
         <form class="flex flex-wrap items-end gap-3" @submit.prevent="applyBillingRange">
           <UFormField label="Time range">
             <USelect v-model="rangePreset" :items="rangeOptions" value-key="value" label-key="label" class="w-44" @update:model-value="selectRange" />
@@ -42,12 +42,12 @@
           </template>
         </form>
         <UAlert v-if="billingError" class="mt-4" color="error" variant="subtle" title="Billing request failed" :description="billingError" />
-      </AppCard>
+      </div>
 
       <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <AppCard v-for="metric in billingMetrics" :key="metric.label">
+        <AppCard v-for="metric in billingMetrics" :key="metric.label" tinted>
           <p class="text-sm text-[var(--ui-text-muted)]">{{ metric.label }}</p>
-          <p class="mt-2 text-2xl font-bold tabular-nums text-[var(--ui-text-highlighted)]">{{ metric.value }}</p>
+          <p class="mt-2 break-words text-2xl font-bold tabular-nums text-[var(--ui-text-highlighted)]">{{ metric.value }}</p>
           <p class="mt-1 text-xs text-[var(--ui-text-dimmed)]">{{ metric.detail }}</p>
         </AppCard>
       </div>
@@ -430,7 +430,7 @@ function errorMessage(error: any, fallback: string) { return error?.data?.messag
 function periodWindowLabel(id: string) { return id === '5h' ? '5 hours' : id === '1d' ? '1 day' : id === '7d' ? '7 days' : id === '30d' ? '1 month' : id }
 function periodWindowRatio(window: PeriodWindowStatus) { const limit = Number(window.limit); return limit > 0 ? Math.max(0, Math.min(1, Number(window.used || 0) / limit)) : 1 }
 function periodWindowColor(window: PeriodWindowStatus) { const ratio = periodWindowRatio(window); return ratio >= 1 ? 'text-red-500' : ratio >= 0.8 ? 'text-amber-500' : 'text-primary-500' }
-function periodWindowBarColor(window: PeriodWindowStatus) { const ratio = periodWindowRatio(window); return ratio >= 1 ? 'bg-red-500' : ratio >= 0.8 ? 'bg-amber-500' : 'bg-[var(--ui-primary)]' }
+function periodWindowBarColor(window: PeriodWindowStatus) { const ratio = periodWindowRatio(window); return ratio >= 1 ? 'bg-red-600 dark:bg-red-400' : ratio >= 0.8 ? 'bg-amber-600 dark:bg-amber-400' : 'bg-sky-600 dark:bg-sky-400' }
 function formatPercent(value: number) { return `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%` }
 
 async function loadPeriodLimits() {
@@ -754,6 +754,15 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.dashboard-card-icon {
+  color: color-mix(in oklch, var(--color-emerald-700) 70%, var(--ui-text-highlighted));
+}
+
+.period-progress-track {
+  background: color-mix(in oklch, var(--ui-text-muted) 24%, var(--ui-bg));
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 15%);
+}
+
 .dashboard-limit-grid > :deep(*) { min-width: 0; }
 @media (min-width: 768px) {
   .dashboard-limit-grid { grid-template-columns: var(--dashboard-columns); }

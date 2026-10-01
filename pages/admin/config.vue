@@ -1,15 +1,15 @@
 <template>
   <section class="grid gap-5">
-    <header
-      class="sticky top-0 z-30 -mx-2 border-b border-[var(--ui-border)] bg-[var(--ui-bg)] px-2 py-3 sm:-mx-5 sm:px-5 lg:-mx-6 lg:px-6"
-    >
-      <h1 class="text-xl font-bold text-[var(--ui-text-highlighted)]">
-        Configuration workspace
-      </h1>
-      <p class="mt-0.5 text-sm text-[var(--ui-text-muted)]">
-        Edit supported runtime settings through one visual workspace.
-      </p>
-    </header>
+    <AppCard>
+      <header>
+        <h1 class="text-xl font-bold text-[var(--ui-text-highlighted)]">
+          Configuration workspace
+        </h1>
+        <p class="mt-0.5 text-sm text-[var(--ui-text-muted)]">
+          Edit supported runtime settings through one visual workspace.
+        </p>
+      </header>
+    </AppCard>
 
     <UAlert
       v-if="pageError"

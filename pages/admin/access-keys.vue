@@ -14,15 +14,7 @@
         </div>
       </div>
       <div class="flex flex-wrap gap-2">
-        <AppButton
-          color="neutral"
-          variant="outline"
-          icon="i-tabler-refresh"
-          :loading="loading"
-          @click="syncData"
-        >
-          {{ loading ? "Syncing" : "Sync data" }}
-        </AppButton>
+        <AppSyncButton :loading="loading" @click="syncData" />
       </div>
     </header>
 

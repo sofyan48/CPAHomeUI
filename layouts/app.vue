@@ -57,6 +57,7 @@
 </template>
 
 <script setup lang="ts">
+provide(Symbol.for('cliproxy-user-card'), true)
 const route = useRoute()
 const router = useRouter()
 const { token, clearSession, loadCurrentUser, hydrateSession } = useUserApi()

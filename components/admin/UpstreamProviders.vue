@@ -9,7 +9,7 @@
       :description="pageError"
     />
 
-    <section class="grid gap-4 xl:grid-cols-[240px_minmax(0,1fr)]">
+    <section class="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
       <aside class="self-start max-xl:hidden" aria-label="Provider categories">
         <AppCard :ui="{ header: 'px-4 py-3', body: 'p-2' }">
           <template #header><h2 class="font-semibold">Provider categories</h2></template>

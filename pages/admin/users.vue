@@ -16,14 +16,7 @@
           >
         </div>
       </div>
-      <AppButton
-        color="neutral"
-        variant="outline"
-        icon="i-tabler-refresh"
-        :loading="loading"
-        @click="syncAll(true)"
-        >{{ loading ? "Syncing" : "Sync data" }}</AppButton
-      >
+      <AppSyncButton :loading="loading" @click="syncAll(true)" />
     </header>
 
     <UAlert
