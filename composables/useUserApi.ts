@@ -79,10 +79,26 @@ export interface BillingOverview {
   today_spend: number
   month_spend: number
   top_models: BillingTopItem[]
+  total_charge_amount?: number
+  total_recharge_amount?: number
+  total_deduct_amount?: number
+  request_count?: number
+  input_tokens?: number
+  output_tokens?: number
+  cache_tokens?: number
+}
+
+export interface BillingBalanceRecord {
+  id: string
+  type: 'recharge' | 'deduct'
+  amount: number
+  balance_before: number
+  balance_after: number
+  created_at: string
 }
 
 export interface BillingCharge {
-  id: number
+  id: string
   created_at: string
   provider: string
   model: string

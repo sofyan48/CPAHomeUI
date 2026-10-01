@@ -29,8 +29,8 @@
         </nav>
         <div class="flex shrink-0 items-center gap-1 border-t border-slate-200 p-2 dark:border-white/10" :class="sidebarHidden ? 'lg:flex-col' : ''">
           <AppButton to="/app/profile" icon="i-tabler-user-circle" color="neutral" variant="ghost" class="min-w-0 flex-1 rounded-lg" :class="sidebarHidden ? 'lg:w-full lg:justify-center' : 'justify-start'" aria-label="Profile" :title="sidebarHidden ? 'Profile' : undefined" :aria-current="route.path === '/app/profile' ? 'page' : undefined" @click="closeMobile"><span :class="sidebarHidden ? 'lg:hidden' : ''">Profile</span></AppButton>
-          <AppButton icon="i-tabler-logout" color="neutral" variant="ghost" aria-label="Log out" title="Log out" @click="logout" />
           <ThemeSwitcher />
+          <AppButton icon="i-tabler-logout" color="neutral" variant="ghost" aria-label="Log out" title="Log out" @click="logout" />
         </div>
       </aside>
       <div class="relative flex h-full min-w-0 flex-col transition-[padding] duration-200" :class="sidebarHidden ? 'lg:pl-16' : 'lg:pl-64'">
@@ -68,18 +68,21 @@ const closeMobile = () => { mobileOpen.value = false }
 const publicPaths = new Set(['/app/login', '/app/register', '/app/forgot-password', '/app/reset-password', '/app/verify-email', '/app/models'])
 const workspaceNavigation = [
   { label: 'Dashboard', to: '/app', icon: 'i-tabler-layout-dashboard' },
+    { label: 'Balance', to: '/app/balance', icon: 'i-tabler-wallet' },
   { label: 'Model Catalog', to: '/app/models', icon: 'i-tabler-box-multiple' },
   { label: 'API Key', to: '/app/api-keys', icon: 'i-tabler-key' },
   { label: 'Setting', to: '/app/settings', icon: 'i-tabler-settings' }
 ]
-const workspaceRoute = computed(() => ['/app', '/app/api-keys', '/app/settings', '/app/profile'].includes(route.path) || (route.path === '/app/models' && Boolean(token.value)))
-const pageTitles: Record<string, string> = { '/app': 'Dashboard', '/app/models': 'Model Catalog', '/app/api-keys': 'API Key', '/app/settings': 'Setting', '/app/profile': 'Profile' }
+const workspaceRoute = computed(() => ['/app', '/app/balance', '/app/api-keys', '/app/settings', '/app/profile'].includes(route.path) || (route.path === '/app/models' && Boolean(token.value)))
+const pageTitles: Record<string, string> = { '/app': 'Dashboard', '/app/balance': 'Balance', '/app/models': 'Model Catalog', '/app/api-keys': 'API Key', '/app/settings': 'Setting', '/app/profile': 'Profile' }
 const accessSubtitles: Record<string, string> = { '/app/login': 'User login', '/app/register': 'Create account', '/app/models': 'Model catalog', '/app/forgot-password': 'Password recovery', '/app/reset-password': 'Reset password', '/app/verify-email': 'Verify email' }
 const pageTitle = computed(() => pageTitles[route.path] || 'User workspace')
 const pageSubtitle = computed(() => workspaceRoute.value
   ? route.path === '/app'
     ? 'Billing and account overview'
-    : route.path === '/app/models'
+    : route.path === '/app/balance'
+      ? 'Recharge credits and track your balance'
+      : route.path === '/app/models'
       ? 'Browse models available through Home'
       : route.path === '/app/api-keys'
         ? 'Manage client access credentials'
