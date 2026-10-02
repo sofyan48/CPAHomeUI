@@ -305,6 +305,7 @@
 
 <script setup>
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
+import { useDataSync } from '~/composables/useDataSync'
 const { fetchAPI } = useApi()
 const allOptionValue = '__all__'
 const toast = useToast()
@@ -588,7 +589,7 @@ async function loadOverview() { overviewLoading.value = true; try { overview.val
 async function loadCharges() { chargesLoading.value = true; try { chargesResponse.value = await fetchAPI('/billing/charges', { query: { ...buildRangeQuery(appliedChargeFilters.value), limit: chargePageSize.value, offset: (chargePage.value - 1) * chargePageSize.value } }) } finally { chargesLoading.value = false } }
 async function loadBalances() { balancesLoading.value = true; try { balancesResponse.value = await fetchAPI('/billing/balance-records', { query: { ...buildRangeQuery(appliedBalanceFilters.value), limit: balancePageSize.value, offset: (balancePage.value - 1) * balancePageSize.value } }) } finally { balancesLoading.value = false } }
 async function loadPrices() { pricesLoading.value = true; try { priceResponse.value = await fetchAPI('/billing/model-prices') } finally { pricesLoading.value = false } }
-async function loadSettings() { settingsLoading.value = true; try { const settings = await fetchAPI('/billing/settings'); settingsForm.value = { service_tier_source: settings?.service_tier_source || 'request', report_timezone: settings?.report_timezone || deviceTimezone }; savedTierSource.value = settingsForm.value.service_tier_source } finally { settingsLoading.value = false } }
+async function loadSettings(preserveDraft = false) { settingsLoading.value = true; try { const settings = await fetchAPI('/billing/settings'); if (preserveDraft !== true) settingsForm.value = { service_tier_source: settings?.service_tier_source || 'request', report_timezone: settings?.report_timezone || deviceTimezone }; savedTierSource.value = settings?.service_tier_source || 'request' } finally { settingsLoading.value = false } }
 async function loadDiagnostics() {
   diagnosticsLoading.value = true
   diagnosticsError.value = ''
@@ -745,12 +746,14 @@ function formatDateTime(value) { return value ? new Intl.DateTimeFormat(undefine
 function prettyJSON(value) { return JSON.stringify(value || {}, null, 2) }
 function errorMessage(error, fallback = 'Unexpected request error.') { return error?.data?.message || error?.data?.error || error?.message || fallback }
 
-onMounted(async () => {
+async function loadBilling(preserveDraft = false) {
   await safely(async () => {
-    await loadSettings()
+    await loadSettings(preserveDraft)
     await Promise.all([loadOverview(), loadCharges(), loadBalances(), loadPrices(), loadUsers()])
   }, 'Failed to load billing data.')
-})
+}
+useDataSync('admin:billing:sync', () => loadBilling(true))
+onMounted(loadBilling)
 </script>
 
 <script>

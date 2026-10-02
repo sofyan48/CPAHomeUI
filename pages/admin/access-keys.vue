@@ -463,6 +463,7 @@
 
 <script setup>
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
+import { useDataSync } from '~/composables/useDataSync'
 const { fetchAPI, fetchRaw } = useApi();
 const { supports } = useCapabilities();
 const toast = useToast();
@@ -1225,6 +1226,7 @@ function showErrorToast(error) {
   toast.add({ title: errorMessage(error), color: "error" });
 }
 
+useDataSync('admin:access-keys:sync', syncData);
 await syncData();
 </script>
 

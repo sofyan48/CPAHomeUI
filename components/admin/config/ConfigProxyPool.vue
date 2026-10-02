@@ -132,6 +132,7 @@
 
 <script setup lang="ts">
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
+import { useDataSync } from '~/composables/useDataSync'
 interface ProxyPool {
   id: string
   name: string
@@ -364,5 +365,6 @@ async function deletePool() {
   }
 }
 
+useDataSync('admin:config-proxy-pool:sync', loadPools)
 onMounted(loadPools)
 </script>

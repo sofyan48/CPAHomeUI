@@ -434,6 +434,7 @@
 
 <script setup>
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
+import { useDataSync } from '~/composables/useDataSync'
 import { parseDocument } from "yaml";
 
 const { fetchAPI } = useApi();
@@ -766,7 +767,7 @@ function syncSpecialDrafts() {
     2,
   );
 }
-async function loadWorkspace() {
+async function loadWorkspace(preserveDraft = false) {
   if (loading.value) return;
   loading.value = true;
   pageError.value = "";
@@ -779,9 +780,11 @@ async function loadWorkspace() {
     yamlText.value = String(yaml || "");
     const root = parseDocument(yamlText.value).toJS() || {};
     const next = buildDraft(config, root);
-    draft.value = structuredClone(next);
     baseline.value = structuredClone(next);
-    syncEditors();
+    if (preserveDraft !== true) {
+      draft.value = structuredClone(next);
+      syncEditors();
+    }
     runtimeMode.value =
       String(config.mode || config["runtime-mode"] || "home").toLowerCase() ===
       "cpa"
@@ -1018,5 +1021,6 @@ async function saveWorkspace() {
   }
 }
 
+useDataSync('admin:config:sync', () => loadWorkspace(true));
 onMounted(loadWorkspace);
 </script>

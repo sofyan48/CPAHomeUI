@@ -91,6 +91,7 @@
 
 <script setup>
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
+import { useDataSync } from '~/composables/useDataSync'
 
 const { fetchAPI } = useApi()
 const toast = useToast()
@@ -115,12 +116,12 @@ const value = row => row?.original || row
 const formatDate = input => input ? new Date(input).toLocaleString() : '—'
 const message = (error, fallback) => error?.data?.message || error?.data?.error || error?.message || fallback
 
-async function loadAll() {
+async function loadAll(preserveDraft = false) {
   loading.value = true
   errorMessage.value = ''
   try {
     const [proxy, pool] = await Promise.all([fetchAPI('/proxy-url'), fetchAPI('/proxy/proxy-pools')])
-    globalProxy.value = proxy?.['proxy-url'] || ''
+    if (preserveDraft !== true) globalProxy.value = proxy?.['proxy-url'] || ''
     poolsResponse.value = pool
   } catch (error) { errorMessage.value = message(error, 'Unable to load proxy configuration.') }
   finally { loading.value = false }
@@ -167,5 +168,6 @@ async function removePool(pool) {
   try { await fetchAPI(`/proxy/proxy-pools/${encodeURIComponent(pool.id)}`, { method: 'DELETE' }); toast.add({ title: 'Proxy deleted', color: 'success' }); await loadAll() }
   catch (error) { errorMessage.value = message(error, 'Unable to delete proxy.') }
 }
+useDataSync('admin:proxy-network:sync', () => loadAll(true))
 onMounted(loadAll)
 </script>

@@ -191,6 +191,7 @@
 
 <script setup>
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
+import { useDataSync } from '~/composables/useDataSync'
 const { fetchAPI } = useApi()
 const route = useRoute()
 const router = useRouter()
@@ -555,5 +556,6 @@ const formatHost = (host, port) => host ? `${host}${port ? `:${port}` : ''}` : '
 
 const apiErrorMessage = (error, fallback) => error?.data?.message || error?.data?.error || error?.message || fallback
 
+useDataSync('admin:usage:sync', refreshAll)
 onMounted(refreshAll)
 </script>

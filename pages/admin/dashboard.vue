@@ -392,6 +392,7 @@
 
 <script setup lang="ts">
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
+import { useDataSync } from '~/composables/useDataSync'
 const { fetchAPI } = useApi();
 const { refreshCapabilities, supports } = useCapabilities();
 
@@ -969,5 +970,6 @@ async function refreshDashboard() {
     loading.value = false;
   }
 }
+useDataSync('admin:dashboard:sync', refreshDashboard);
 onMounted(refreshDashboard);
 </script>

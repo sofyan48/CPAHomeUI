@@ -134,6 +134,7 @@
 
 <script setup>
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
+import { useDataSync } from '~/composables/useDataSync'
 const { fetchAPI } = useApi()
 const allOptionValue = '__all__'
 const pageSize = 50
@@ -324,6 +325,7 @@ function errorMessage(error, fallback = 'Unexpected request error.') { return er
 
 watch([liveRefresh, refreshSeconds], scheduleRefresh)
 watch(sort, async () => { page.value = 1; pendingNewEvents.value = 0; await refreshEvents() })
+useDataSync('admin:request-records:sync', refreshEvents)
 onMounted(refreshEvents)
 onBeforeUnmount(() => { disposed = true; requestVersion++; loading.value = false; if (refreshTimer) clearInterval(refreshTimer) })
 </script>

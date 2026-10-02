@@ -373,6 +373,7 @@
 
 <script setup>
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
+import { useDataSync } from '~/composables/useDataSync'
 const { fetchAPI } = useApi()
 const allOptionValue = '__all__'
 
@@ -808,6 +809,7 @@ watch(liveRefresh, enabled => {
   if (liveRefreshTimer) clearInterval(liveRefreshTimer)
   liveRefreshTimer = enabled ? setInterval(() => { if (!loading.value) void refreshActive() }, 15_000) : null
 })
+useDataSync('admin:logs:sync', refreshActive)
 onMounted(refreshActive)
 onBeforeUnmount(() => { if (liveRefreshTimer) clearInterval(liveRefreshTimer) })
 </script>

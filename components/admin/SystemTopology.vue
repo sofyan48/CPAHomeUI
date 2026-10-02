@@ -218,6 +218,7 @@
 
 <script setup lang="ts">
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
+import { useDataSync } from '~/composables/useDataSync'
 const InfoField = defineComponent({
   props: { label: { type: String, required: true }, value: { type: String, required: true } },
   template: '<div class="min-w-0"><p class="text-xs font-medium text-[var(--ui-text-muted)]">{{ label }}</p><p class="mt-1 truncate font-mono text-xs" :title="value">{{ value }}</p></div>'
@@ -425,5 +426,6 @@ async function runDiagnostic() {
   finally { diagnosticLoading.value = false }
 }
 
+useDataSync('admin:system-topology:sync', refreshSystem)
 onMounted(refreshSystem)
 </script>

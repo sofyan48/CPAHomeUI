@@ -1264,6 +1264,7 @@
 
 <script setup>
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
+import { useDataSync } from '~/composables/useDataSync'
 import EmptyState from "@/components/admin/users/UsersEmptyState.vue";
 
 import UnsupportedScopes from "@/components/admin/users/UsersUnsupportedScopes.vue";
@@ -1526,6 +1527,7 @@ async function syncAll(notify = false) {
     loading.value = false;
   }
 }
+useDataSync('admin:users:sync', syncAll);
 await syncAll();
 
 function keyEntries(value) {

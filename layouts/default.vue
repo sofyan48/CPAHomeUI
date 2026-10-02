@@ -95,9 +95,11 @@
               icon="i-tabler-refresh"
               color="neutral"
               variant="ghost"
-              :loading="capabilitiesLoading"
-              aria-label="Refresh capabilities"
-              @click="refreshCapabilities(true)"
+              :loading="syncing"
+              :disabled="syncing"
+              aria-label="Sync data"
+              title="Sync data"
+              @click="syncData"
             />
 
           </div>
@@ -123,6 +125,8 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { useManagementSessionStore } from '~/stores/managementSession'
+import { useManagementConfigStore } from '~/stores/managementConfig'
+import { useWorkspaceStore } from '~/stores/workspace'
 
 interface NavigationItem {
   label: string
@@ -140,12 +144,32 @@ const { token, apiBase } = useApi()
 const { rememberSession: managementRemember } = storeToRefs(useManagementSessionStore())
 const {
 
-  loading: capabilitiesLoading,
+
   error: capabilitiesError,
   supports,
   refreshCapabilities,
   resetCapabilities
 } = useCapabilities()
+
+const workspace = useWorkspaceStore()
+const managementConfig = useManagementConfigStore()
+const syncing = ref(false)
+const toast = useToast()
+const syncData = async () => {
+  if (syncing.value) return
+  syncing.value = true
+  try {
+    managementConfig.invalidate()
+    const results = await Promise.allSettled([refreshCapabilities(true), workspace.sync('admin:')])
+    const failed = results.find(result => result.status === 'rejected')
+    if (failed?.status === 'rejected') throw failed.reason
+    toast.add({ title: 'Data sync completed', color: 'success' })
+  } catch (cause: any) {
+    toast.add({ title: 'Data sync failed', description: cause?.message || 'Unable to sync data.', color: 'error' })
+  } finally {
+    syncing.value = false
+  }
+}
 
 const mobileOpen = ref(false)
 const sidebarCollapsed = ref(false)

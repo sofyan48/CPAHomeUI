@@ -133,6 +133,7 @@
 
 <script setup>
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
+import { useDataSync } from '~/composables/useDataSync'
 const { fetchAPI } = useApi()
 const toast = useToast()
 const views = [{ value: 'console', label: 'Observability' }, { value: 'sender', label: 'API-call sender' }]
@@ -229,6 +230,7 @@ async function downloadLog(item) {
   finally { downloadingId.value = '' }
 }
 watch(activeView, view => { if (view === 'sender') loadCredentials(); else refreshConsole() })
+useDataSync('admin:diagnostics:sync', refreshConsole)
 onMounted(() => { refreshConsole(); refreshTimer = setInterval(() => { if (autoRefresh.value) refreshConsole() }, 30000) })
 onUnmounted(() => clearInterval(refreshTimer))
 const sending = useWorkspaceState('admin:diagnostics:sending', () => (false))

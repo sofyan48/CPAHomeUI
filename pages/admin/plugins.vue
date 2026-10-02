@@ -826,6 +826,7 @@
 
 <script setup>
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
+import { useDataSync } from '~/composables/useDataSync'
 import { useStoreData } from '~/composables/useStoreData'
 const { fetchAPI } = useApi();
 const toast = useToast();
@@ -991,6 +992,7 @@ function onVisibilityChange() {
         } else pollExpired.value = true;
     }
 }
+useDataSync('admin:plugins:sync', () => loadNodes(pollGeneration));
 onMounted(() => {
     document.addEventListener("visibilitychange", onVisibilityChange);
     startNodePolling();
