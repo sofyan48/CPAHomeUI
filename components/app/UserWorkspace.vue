@@ -22,13 +22,6 @@
     </section>
 
     <section v-if="section === 'dashboard'" class="space-y-5" aria-labelledby="billing-title">
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 id="billing-title" class="text-xl font-semibold text-[var(--ui-text-highlighted)]">Billing & usage report</h2>
-          <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Credit usage is reported as generic credits. Date-only ranges use UTC and include the full end date.</p>
-        </div>
-        <AppButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="billingLoading" @click="loadBilling">Refresh report</AppButton>
-      </div>
 
       <div>
         <form class="flex flex-wrap items-end gap-3" @submit.prevent="applyBillingRange">
@@ -40,6 +33,7 @@
             <UFormField label="To (UTC)"><UInput v-model="rangeTo" type="date" /></UFormField>
             <AppButton type="submit" :loading="billingLoading">Apply range</AppButton>
           </template>
+          <AppButton type="button" class="ml-auto shrink-0" color="neutral" variant="outline" icon="i-tabler-refresh" :loading="billingLoading" @click="loadBilling">Refresh report</AppButton>
         </form>
         <UAlert v-if="billingError" class="mt-4" color="error" variant="subtle" title="Billing request failed" :description="billingError" />
       </div>
@@ -108,38 +102,46 @@
     </section>
 
     <section v-if="section === 'api-keys'" class="space-y-4" aria-labelledby="keys-title">
-      <div class="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 id="keys-title" class="text-xl font-semibold text-[var(--ui-text-highlighted)]">Client access keys</h2>
-          <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Credentials owned by your account. Scopes are assigned by Home and shown read-only here.</p>
-        </div>
-        <AppButton icon="i-tabler-plus" @click="openKeyForm()">Create key</AppButton>
+      <div class="flex items-center justify-between gap-3">
+        <UInput v-model="keySearch" icon="i-tabler-search" placeholder="Search API keys..." aria-label="Search API keys" class="min-w-0 flex-1 sm:max-w-sm" />
+        <AppButton icon="i-tabler-plus" class="shrink-0" @click="openKeyForm()">Create key</AppButton>
       </div>
-      <AppCard :ui="{ body: 'p-0' }">
-        <div class="overflow-x-auto">
-          <AppTable :data="keys" :columns="keyColumns" :loading="keysLoading" empty="No client access keys. Create a key to authenticate client requests." class="min-w-[640px]">
-            <template #display_name-cell="{ row }"><span class="font-medium">{{ row.original.display_name || 'Unnamed key' }}</span></template>
-            <template #api_key-cell="{ row }"><code class="text-xs text-muted">{{ maskKey(row.original.api_key) }}</code></template>
-            <template #updated_at-cell="{ row }">{{ formatDate(row.original.updated_at || row.original.created_at) }}</template>
-            <template #created_at-cell="{ row }">{{ formatDate(row.original.created_at) }}</template>
-            <template #actions-cell="{ row }">
-              <div class="flex items-center justify-end gap-1">
-                <AdminTableAction action="copy" :label="`Copy ${maskKey(row.original.api_key)}`" @click="copyKey(row.original.api_key)" />
-                <AdminTableAction action="edit" :label="`Edit ${maskKey(row.original.api_key)}`" @click="openKeyForm(row.original)" />
-                <AdminTableAction action="delete" :label="`Delete ${maskKey(row.original.api_key)}`" destructive @click="confirmKeyDelete(row.original)" />
+      <div v-if="keysLoading" class="py-10 text-center text-sm text-[var(--ui-text-muted)]" role="status">Loading client access keys...</div>
+      <div v-else-if="filteredKeys.length" class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <AppCard v-for="key in filteredKeys" :key="key.api_key" class="min-w-0">
+          <div class="space-y-4">
+            <div class="flex items-start gap-3">
+              <UIcon name="i-tabler-key" class="size-5 shrink-0 text-primary" />
+              <h3 class="min-w-0 break-words font-semibold text-[var(--ui-text-highlighted)]">{{ key.display_name || 'Unnamed key' }}</h3>
+            </div>
+            <div class="flex items-center gap-2 rounded-md bg-[var(--ui-bg-muted)] px-3 py-2">
+              <code class="min-w-0 flex-1 break-all text-xs text-[var(--ui-text-muted)]">{{ maskKey(key.api_key) }}</code>
+              <AppButton type="button" size="xs" color="neutral" variant="ghost" icon="i-tabler-copy" class="shrink-0" :aria-label="`Copy ${maskKey(key.api_key)}`" @click="copyKey(key.api_key)" />
+            </div>
+            <dl class="space-y-2 text-xs">
+              <div class="flex justify-between gap-3">
+                <dt class="text-[var(--ui-text-muted)]">Created</dt>
+                <dd class="text-right">{{ formatDate(key.created_at) }}</dd>
               </div>
-            </template>
-          </AppTable>
-        </div>
+              <div class="flex justify-between gap-3">
+                <dt class="text-[var(--ui-text-muted)]">Updated</dt>
+                <dd class="text-right">{{ formatDate(key.updated_at || key.created_at) }}</dd>
+              </div>
+            </dl>
+            <div class="flex items-center justify-end gap-1 border-t border-[var(--ui-border)] pt-3">
+
+              <AdminTableAction action="edit" :label="`Edit ${maskKey(key.api_key)}`" @click="openKeyForm(key)" />
+              <AdminTableAction action="delete" :label="`Delete ${maskKey(key.api_key)}`" destructive @click="confirmKeyDelete(key)" />
+            </div>
+          </div>
+        </AppCard>
+      </div>
+      <AppCard v-else>
+        <p class="py-6 text-center text-sm text-[var(--ui-text-muted)]">{{ keys.length ? 'No API keys match your search.' : 'No client access keys. Create a key to authenticate client requests.' }}</p>
       </AppCard>
     </section>
 
     <section v-if="section === 'settings'" class="space-y-4" aria-labelledby="security-title">
-      <div>
-        <h2 id="security-title" class="text-xl font-semibold text-[var(--ui-text-highlighted)]">Account security</h2>
-        <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Manage account recovery and sign-in protections inline.</p>
-      </div>
-
       <div class="grid gap-5 lg:grid-cols-2">
         <AppCard>
           <template #header><div><h3 class="font-semibold">Password</h3><p class="text-xs text-[var(--ui-text-muted)]">Changing your password refreshes the active session.</p></div></template>
@@ -269,6 +271,15 @@ const { currentUser: user, tokenExpiresAt, fetchAPI, loadCurrentUser, saveSessio
 
 const pageError = ref('')
 const keys = ref<WorkspaceKey[]>([])
+const keySearch = ref('')
+const filteredKeys = computed(() => {
+  const query = keySearch.value.trim().toLowerCase()
+  if (!query) return keys.value
+  return keys.value.filter(key =>
+    (key.display_name || 'Unnamed key').toLowerCase().includes(query) ||
+    key.api_key.toLowerCase().includes(query)
+  )
+})
 const keysLoading = ref(false)
 const selectedOverview = ref<WorkspaceBillingOverview | null>(null)
 const todayOverview = ref<WorkspaceBillingOverview | null>(null)
@@ -334,13 +345,7 @@ const passkeyDeleteOpen = ref(false)
 const passkeyDeleteTarget = ref<UserPasskey | null>(null)
 const passkeyDeleting = ref(false)
 
-const keyColumns = [
-  { accessorKey: 'display_name', header: 'Name' },
-  { accessorKey: 'api_key', header: 'Key' },
-  { accessorKey: 'updated_at', header: 'Updated' },
-  { accessorKey: 'created_at', header: 'Created' },
-  { id: 'actions', header: 'Actions', meta: { class: { th: 'text-right', td: 'text-right' } } }
-]
+
 const passkeyColumns = [
   { accessorKey: 'name', header: 'Name' },
   { accessorKey: 'created_at', header: 'Created' },

@@ -1,9 +1,5 @@
 <template>
   <div class="space-y-6">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <div><h1 class="text-xl font-semibold">Balance</h1><p class="mt-1 text-sm text-[var(--ui-text-muted)]">Recharge and review your account credits. All totals below cover your full billing history.</p></div>
-      <AppButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" :disabled="saving" @click="refresh">Refresh</AppButton>
-    </div>
     <UAlert v-if="pageError" color="error" variant="subtle" title="Could not load balance information" :description="pageError" />
     <UAlert v-if="notice" color="success" variant="subtle" title="Recharge completed" :description="notice" />
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

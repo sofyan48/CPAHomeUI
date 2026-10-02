@@ -10,6 +10,8 @@
 
     <UAlert v-if="error" color="error" variant="subtle" title="Profile could not be loaded" :description="error" />
 
+    <AppCard v-if="activePeriods.length"><template #header><div><h2 class="font-semibold">Period limits</h2><p class="text-xs text-[var(--ui-text-muted)]">Active limits currently applied to your account.</p></div></template><div class="grid gap-3 sm:grid-cols-2"><div v-for="window in activePeriods" :key="window.id" class="rounded-md border border-[var(--ui-border)] p-3"><div class="flex items-center justify-between"><span class="font-medium">{{ periodLabel(window.id) }}</span><span class="text-xs font-semibold">{{ percent(window) }}%</span></div><div class="mt-2 h-2 overflow-hidden rounded-full bg-[var(--ui-bg-muted)]"><div class="h-full rounded-full bg-[var(--ui-primary)]" :style="{ width: `${percent(window)}%` }" /></div><p class="mt-2 text-xs text-[var(--ui-text-muted)]">{{ credits(window.used) }} used · {{ credits(window.remaining) }} remaining</p></div></div></AppCard>
+
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <AppCard v-for="stat in stats" :key="stat.label"><p class="text-xs font-medium uppercase tracking-wide text-[var(--ui-text-muted)]">{{ stat.label }}</p><p class="mt-2 text-xl font-semibold">{{ stat.value }}</p><p class="mt-1 text-xs text-[var(--ui-text-dimmed)]">{{ stat.detail }}</p></AppCard>
     </section>
@@ -19,7 +21,6 @@
       <AppCard><template #header><h2 class="font-semibold">Security status</h2></template><div class="space-y-3"><div v-for="item in securityDetails" :key="item.label" class="flex items-center justify-between gap-4 rounded-md border border-[var(--ui-border)] px-3 py-2.5"><div><p class="text-sm font-medium">{{ item.label }}</p><p class="text-xs text-[var(--ui-text-muted)]">{{ item.detail }}</p></div><UBadge :color="item.enabled ? 'success' : 'neutral'" variant="subtle">{{ item.enabled ? 'Enabled' : 'Not enabled' }}</UBadge></div></div><template #footer><div class="flex justify-end"><AppButton to="/app/settings" size="sm" color="neutral" variant="outline">Manage security</AppButton></div></template></AppCard>
     </div>
 
-    <AppCard v-if="activePeriods.length"><template #header><div><h2 class="font-semibold">Period limits</h2><p class="text-xs text-[var(--ui-text-muted)]">Active limits currently applied to your account.</p></div></template><div class="grid gap-3 sm:grid-cols-2"><div v-for="window in activePeriods" :key="window.id" class="rounded-md border border-[var(--ui-border)] p-3"><div class="flex items-center justify-between"><span class="font-medium">{{ periodLabel(window.id) }}</span><span class="text-xs font-semibold">{{ percent(window) }}%</span></div><div class="mt-2 h-2 overflow-hidden rounded-full bg-[var(--ui-bg-muted)]"><div class="h-full rounded-full bg-[var(--ui-primary)]" :style="{ width: `${percent(window)}%` }" /></div><p class="mt-2 text-xs text-[var(--ui-text-muted)]">{{ credits(window.used) }} used · {{ credits(window.remaining) }} remaining</p></div></div></AppCard>
 
     <AppCard :ui="{ body: 'p-0' }">
       <template #header><div><h2 class="font-semibold">Registered passkeys</h2><p class="text-xs text-[var(--ui-text-muted)]">Passkeys registered to this account.</p></div></template>
