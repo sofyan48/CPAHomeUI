@@ -503,6 +503,11 @@ const outline = [
     ],
   },
   {
+    id: "user-email",
+    short: "Mail Setup",
+    keys: ["userEmailEnabled", "userEmailPublicUrl", "userEmailFromAddress", "userEmailFromName", "userEmailSenderType", "userEmailSmtpHost", "userEmailSmtpPort", "userEmailSmtpUsername", "userEmailSmtpPasswordEnv", "userEmailSmtpStarttls", "userEmailVerificationTtl", "userEmailResetTtl"],
+  },
+  {
     id: "plugins",
     short: "Plugins",
     keys: ["pluginsEnabled", "pluginsDir", "pluginStoreSourcesJson"],
@@ -593,6 +598,27 @@ const validationErrors = computed(() => {
     )
   )
     errors.routingStrategy = "Select a supported strategy.";
+  if (draft.value.userEmailEnabled) {
+    const text = key => String(draft.value[key] || "").trim();
+    const isLoopback = host => host === "localhost" || host === "::1" || host === "[::1]" || /^127\.(?:\d{1,3}\.){2}\d{1,3}$/.test(host);
+    try {
+      const url = new URL(text("userEmailPublicUrl"));
+      if (url.username || url.password || !(url.protocol === "https:" || (url.protocol === "http:" && isLoopback(url.hostname)))) throw new Error();
+    } catch {
+      errors.userEmailPublicUrl = "Enter an absolute HTTPS URL (HTTP is allowed only for loopback).";
+    }
+    if (!/^[^\s<>@]+@[^\s<>@]+$/.test(text("userEmailFromAddress"))) errors.userEmailFromAddress = "Enter one mailbox without a display name.";
+    if (text("userEmailSenderType") !== "smtp") errors.userEmailSenderType = "Only SMTP is supported.";
+    if (!text("userEmailSmtpHost")) errors.userEmailSmtpHost = "Enter the SMTP host.";
+    const port = Number(draft.value.userEmailSmtpPort);
+    if (!Number.isInteger(port) || port < 1 || port > 65535 || port === 465) errors.userEmailSmtpPort = "Enter a port from 1 to 65535, excluding unsupported port 465.";
+    if (!draft.value.userEmailSmtpStarttls && !isLoopback(text("userEmailSmtpHost").toLowerCase())) errors.userEmailSmtpStarttls = "STARTTLS is required for non-loopback SMTP hosts.";
+    if (text("userEmailSmtpUsername") && !text("userEmailSmtpPasswordEnv")) errors.userEmailSmtpPasswordEnv = "Enter the environment variable name containing the SMTP password.";
+    for (const key of ["userEmailVerificationTtl", "userEmailResetTtl"]) {
+      const value = text(key);
+      if (!/^\+?(?:(?:\d+(?:\.\d*)?|\.\d+)(?:ns|us|µs|μs|ms|s|m|h))+$/.test(value) || !/[1-9]/.test(value)) errors[key] = "Enter a positive Go duration, for example 24h or 30m.";
+    }
+  }
   return errors;
 });
 const validationCount = computed(
@@ -679,6 +705,8 @@ function buildDraft(config, yamlRoot) {
   const usage = observability.usage || {};
   const oauth = config.oauth || yamlRoot.oauth || {};
   const antigravity = oauth.providers?.antigravity || {};
+  const email = config["user-email"] || yamlRoot["user-email"] || {};
+  const smtp = email.sender?.smtp || {};
   return {
     debug: Boolean(logs.debug),
     port: Number(server.port || 8317),
@@ -695,6 +723,18 @@ function buildDraft(config, yamlRoot) {
     ),
     remoteManagementPanelGithubRepository:
       remote["panel-github-repository"] || remote["panel-repo"] || "",
+    userEmailEnabled: Boolean(email.enabled),
+    userEmailPublicUrl: email["public-user-url"] || "",
+    userEmailFromAddress: email["from-address"] || "",
+    userEmailFromName: email["from-name"] || "",
+    userEmailSenderType: email.sender?.type || "smtp",
+    userEmailSmtpHost: smtp.host || "",
+    userEmailSmtpPort: Number(smtp.port ?? 587),
+    userEmailSmtpUsername: smtp.username || "",
+    userEmailSmtpPasswordEnv: smtp["password-env"] || "HOME_USER_EMAIL_SMTP_PASSWORD",
+    userEmailSmtpStarttls: smtp.starttls ?? true,
+    userEmailVerificationTtl: email["verification-token-ttl"] || "24h",
+    userEmailResetTtl: email["reset-token-ttl"] || "30m",
     pluginsEnabled: Boolean(plugins.enabled),
     pluginsDir: plugins.dir || "plugins",
     pluginStoreSourcesJson: (plugins["store-sources"] || []).join("\n"),
@@ -931,6 +971,18 @@ const v8YamlPaths = {
     "management",
     "panel-github-repository",
   ],
+  userEmailEnabled: ["user-email", "enabled"],
+  userEmailPublicUrl: ["user-email", "public-user-url"],
+  userEmailFromAddress: ["user-email", "from-address"],
+  userEmailFromName: ["user-email", "from-name"],
+  userEmailSenderType: ["user-email", "sender", "type"],
+  userEmailSmtpHost: ["user-email", "sender", "smtp", "host"],
+  userEmailSmtpPort: ["user-email", "sender", "smtp", "port"],
+  userEmailSmtpUsername: ["user-email", "sender", "smtp", "username"],
+  userEmailSmtpPasswordEnv: ["user-email", "sender", "smtp", "password-env"],
+  userEmailSmtpStarttls: ["user-email", "sender", "smtp", "starttls"],
+  userEmailVerificationTtl: ["user-email", "verification-token-ttl"],
+  userEmailResetTtl: ["user-email", "reset-token-ttl"],
   pluginsEnabled: ["plugins", "enabled"],
   pluginsDir: ["plugins", "dir"],
   pluginStoreSourcesJson: ["plugins", "store-sources"],
@@ -978,6 +1030,7 @@ async function saveWorkspace() {
       if (
         [
           "port",
+          "userEmailSmtpPort",
           "logsMaxTotalSizeMb",
           "errorLogsMaxFiles",
           "requestRetry",
@@ -1002,6 +1055,12 @@ async function saveWorkspace() {
         value = parseJSON(value, {});
       else if (key === "proxyUrl") value = String(value).trim();
       document.setIn(path, value);
+    }
+    if (changed.some(key => key.startsWith("userEmail"))) {
+      for (const key of outline.find(section => section.id === "user-email").keys) {
+        const value = key === "userEmailSmtpPort" ? Number(draft.value[key]) : draft.value[key];
+        document.setIn(v8YamlPaths[key], value);
+      }
     }
     await fetchAPI("/config.yaml", {
       method: "PUT",
