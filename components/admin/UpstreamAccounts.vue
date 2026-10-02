@@ -13,7 +13,7 @@
       <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--ui-border)] px-4 py-3">
         <h2 class="font-semibold">Upstream accounts</h2>
         <div class="flex items-center gap-2">
-          <AppButton color="neutral" variant="outline" size="sm" icon="i-tabler-refresh" :loading="pending" :disabled="bulkBusy" @click="refreshData">Refresh</AppButton>
+
           <AppButton size="sm" icon="i-tabler-plus" :disabled="busy" @click="createOpen = true">Add credential</AppButton>
         </div>
       </div>
