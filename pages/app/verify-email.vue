@@ -52,7 +52,7 @@ const title = computed(() => {
 async function scrubToken() {
   const query = { ...route.query }
   delete query.token
-  await router.replace({ path: route.path, query, hash: route.hash })
+  await router.replace({ path: route.path, query, hash: '' })
 }
 
 async function verifyEmail() {
@@ -80,7 +80,8 @@ async function verifyEmail() {
 }
 
 onMounted(() => {
-  verificationToken.value = typeof route.query.token === 'string' ? route.query.token.trim() : ''
+  const fragmentToken = new URLSearchParams(route.hash.slice(1)).get('token')
+    verificationToken.value = (fragmentToken || (typeof route.query.token === 'string' ? route.query.token : '')).trim()
   if (!verificationToken.value) message.value = 'Open the complete verification link from your email.'
   void scrubToken()
 })

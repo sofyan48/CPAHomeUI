@@ -55,7 +55,7 @@ const invalidTokenMessage = ref('Open a complete reset link from your recovery e
 async function scrubToken() {
   const query = { ...route.query }
   delete query.token
-  await router.replace({ path: route.path, query, hash: route.hash })
+  await router.replace({ path: route.path, query, hash: '' })
 }
 
 async function submit() {
@@ -81,7 +81,8 @@ async function submit() {
 }
 
 onMounted(async () => {
-  resetToken.value = typeof route.query.token === 'string' ? route.query.token.trim() : ''
+  const fragmentToken = new URLSearchParams(route.hash.slice(1)).get('token')
+    resetToken.value = (fragmentToken || (typeof route.query.token === 'string' ? route.query.token : '')).trim()
   invalidToken.value = !resetToken.value
   try {
     await scrubToken()
