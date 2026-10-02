@@ -1,21 +1,5 @@
 <template>
   <div class="space-y-6">
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold">Usage & Requests</h1>
-        <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Observe token usage, spend, request activity, and persisted request records.</p>
-      </div>
-      <AppButton
-        color="neutral"
-        variant="outline"
-        icon="i-tabler-refresh"
-        :loading="loading"
-        @click="refreshAll"
-      >
-        Refresh
-      </AppButton>
-    </div>
-
     <AppPanelTabs :model-value="activeView" :items="usageTabs" label="Usage & Requests" @update:model-value="setView" />
 
     <AdminRequestRecords v-if="activeView === 'requests'" />

@@ -1,9 +1,9 @@
 <template>
   <div class="space-y-6">
-    <div class="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] app-surface px-4 py-3">
+    <AppCard :ui="{ body: 'flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-4 sm:py-3' }">
       <div><p class="text-sm font-semibold">Request records</p><p class="text-xs text-[var(--ui-text-muted)]">Search persisted requests and inspect redacted routing, billing, and log details.</p></div>
       <div class="flex flex-wrap items-center gap-2"><div class="flex items-center gap-2 rounded-md border border-[var(--ui-border)] px-2.5 py-1.5"><USwitch v-model="liveRefresh" size="sm" /><span class="text-xs">Live refresh</span><USelect v-if="liveRefresh" v-model="refreshSeconds" :items="refreshOptions" value-key="value" label-key="label" size="sm" class="w-24" /></div><AppButton color="neutral" variant="outline" size="sm" icon="i-tabler-download" @click="exportOpen = true">Export CSV</AppButton></div>
-    </div>
+    </AppCard>
 
     <UAlert
       v-if="pageError || liveError"
@@ -14,7 +14,7 @@
       :description="pageError || liveError"
     />
 
-    <section class="rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] app-surface px-4 py-3">
+    <AppCard :ui="{ body: 'px-4 py-3 sm:px-4 sm:py-3' }">
       <form class="space-y-3" @submit.prevent="applyFilters">
         <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(18rem,1.5fr)_repeat(4,minmax(0,1fr))]">
           <UFormField label="Search"><div class="flex"><USelect v-model="searchField" :items="searchFieldOptions" value-key="value" label-key="label" class="w-36 shrink-0 [&_button]:rounded-r-none" /><UInput v-model="filters.search" icon="i-tabler-search" placeholder="Search requests..." class="min-w-0 flex-1 [&_input]:rounded-l-none" /></div></UFormField>
@@ -43,7 +43,7 @@
           <span class="ml-auto text-xs text-[var(--ui-text-muted)]">Times are interpreted in {{ timezone }}.</span>
         </div>
       </form>
-    </section>
+    </AppCard>
 
 
     <AppCard :ui="{ body: 'p-0' }">
@@ -78,15 +78,17 @@
       </div>
     </AppCard>
 
-    <AppModal v-model:open="detailOpen" title="Request event details" description="Redacted request, routing, token, performance, billing, and log metadata.">
+    <USlideover v-model:open="detailOpen" side="right" title="Request event details" description="Routing, usage, billing, and redacted logs for this request." :ui="{ content: 'w-full sm:max-w-3xl', body: 'min-h-0 overflow-y-auto p-4 sm:p-6', header: 'shrink-0 border-b border-[var(--ui-border)]' }">
       <template #body>
-        <div v-if="detailLoading" class="py-12 text-center text-sm text-[var(--ui-text-muted)]">Loading event details…</div>
+        <div v-if="detailLoading" class="flex items-center justify-center gap-2 py-16 text-sm text-[var(--ui-text-muted)]"><UIcon name="i-tabler-loader-2" class="size-5 animate-spin" />Loading event details…</div>
         <div v-else-if="selectedDetail" class="space-y-5">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="flex flex-wrap gap-2"><UBadge :color="selectedDetail.event?.failed ? 'error' : 'success'" variant="subtle">{{ selectedDetail.event?.failed ? 'Failed' : 'Success' }}</UBadge><UBadge color="neutral" variant="subtle">{{ selectedDetail.event?.event_type || 'completion' }}</UBadge></div>
             <AppButton v-if="selectedDetail.event?.related?.request_log?.download_url" color="neutral" variant="outline" icon="i-tabler-download" :loading="downloadingId === selectedDetail.event.request_id" @click="downloadRequestLog(selectedDetail.event.related.request_log.download_url, selectedDetail.event.request_id)">Download log</AppButton>
           </div>
-          <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <section class="rounded-lg border border-[var(--ui-border)] p-4">
+            <h3 class="mb-4 text-sm font-semibold">Request overview</h3>
+            <dl class="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
             <DetailItem label="Event ID" :value="selectedDetail.event?.id" mono />
             <DetailItem label="Request ID" :value="selectedDetail.event?.request_id" mono />
             <DetailItem label="Timestamp" :value="formatDateTime(selectedDetail.event?.timestamp)" />
@@ -99,23 +101,24 @@
             <DetailItem label="Reasoning effort" :value="selectedDetail.event?.reasoning_effort || '—'" />
             <DetailItem label="Session ID" :value="selectedDetail.event?.session_id || '—'" mono />
             <DetailItem label="Root session ID" :value="selectedDetail.event?.root_session_id || '—'" mono />
-          </dl>
-          <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            </dl>
+          </section>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <DetailSection title="Runtime" :items="runtimeDetails" />
             <DetailSection title="Credential" :items="credentialDetails" />
             <DetailSection title="Client" :items="clientDetails" />
           </div>
-          <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <DetailSection title="Tokens" :items="tokenDetails" />
             <DetailSection title="Performance" :items="performanceDetails" />
             <DetailSection title="Billing" :items="billingDetails" />
           </div>
           <UAlert v-if="hasEventError" color="error" variant="subtle" icon="i-tabler-alert-circle" title="Request error" :description="eventErrorText" />
-          <div v-if="selectedDetail.payload_summary" class="rounded-lg border border-[var(--ui-border)] p-4"><p class="mb-3 text-sm font-semibold">Payload summary</p><pre class="max-h-64 overflow-auto whitespace-pre-wrap text-xs">{{ prettyJSON(selectedDetail.payload_summary) }}</pre></div>
-          <div v-if="selectedDetail.log_excerpt?.length" class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] p-4"><p class="mb-3 text-sm font-semibold">Redacted request log excerpt</p><pre class="max-h-72 overflow-auto whitespace-pre-wrap break-words text-xs">{{ selectedDetail.log_excerpt.join('\n') }}</pre></div>
+          <div v-if="selectedDetail.payload_summary" class="rounded-lg border border-[var(--ui-border)] p-4"><p class="mb-3 text-sm font-semibold">Payload summary</p><pre class="max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-md bg-[var(--ui-bg-muted)] p-3 font-mono text-xs leading-5">{{ prettyJSON(selectedDetail.payload_summary) }}</pre></div>
+          <div v-if="selectedDetail.log_excerpt?.length" class="rounded-lg border border-[var(--ui-border)] p-4"><div class="mb-3 flex flex-wrap items-center justify-between gap-2"><h3 class="text-sm font-semibold">Request log excerpt</h3><UBadge color="neutral" variant="subtle" size="sm">Redacted</UBadge></div><pre class="max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-md bg-[var(--ui-bg-muted)] p-3 font-mono text-xs leading-5">{{ selectedDetail.log_excerpt.join('\n') }}</pre></div>
         </div>
       </template>
-    </AppModal>
+    </USlideover>
 
     <AppModal v-model:open="exportOpen" title="Export request events" description="Exports up to 10,000 events matching the currently applied filters.">
       <template #body>
@@ -323,4 +326,3 @@ watch(sort, async () => { page.value = 1; pendingNewEvents.value = 0; await refr
 onMounted(refreshEvents)
 onBeforeUnmount(() => { disposed = true; requestVersion++; if (refreshTimer) clearInterval(refreshTimer) })
 </script>
-

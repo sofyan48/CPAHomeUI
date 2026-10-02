@@ -3,7 +3,7 @@
     <div
       v-if="entries.length"
       ref="chartElement"
-      class="relative h-[22rem] w-full select-none overflow-hidden rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary sm:h-[26rem]"
+      class="relative h-[9.875rem] w-full select-none overflow-hidden rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary sm:h-[11.5rem]"
       role="group"
       tabindex="0"
       aria-label="Token usage over time. Use the left and right arrow keys to inspect buckets."
@@ -14,14 +14,9 @@
         <g class="text-[var(--ui-text-muted)]">
           <template v-for="tick in tokenTicks" :key="`token-${tick.value}`">
             <line :x1="plot.left" :x2="plot.right" :y1="tick.y" :y2="tick.y" stroke="currentColor" stroke-opacity="0.16" stroke-dasharray="4 6" vector-effect="non-scaling-stroke" />
-            <text :x="plot.left - 12" :y="tick.y + 4" text-anchor="end" fill="currentColor" font-size="13">{{ compact(tick.value) }}</text>
+
           </template>
-          <template v-for="tick in overlayTicks" :key="`overlay-${tick.value}`">
-            <text :x="plot.right + 12" :y="tick.y + 4" text-anchor="start" fill="currentColor" font-size="13">{{ overlayLabel(tick.value) }}</text>
-          </template>
-          <template v-for="label in xLabels" :key="label.index">
-            <text :x="label.x" :y="height - 10" :text-anchor="label.anchor" fill="currentColor" font-size="13">{{ formatBucket(label.point.bucket_start, true) }}</text>
-          </template>
+
         </g>
 
         <g v-for="(entry, index) in entries" :key="entry.key">
@@ -54,6 +49,24 @@
           @pointerenter="activeIndex = index"
         />
       </svg>
+
+      <div class="pointer-events-none absolute inset-0 text-[11px] leading-none tabular-nums text-[var(--ui-text-muted)]" aria-hidden="true">
+        <span
+          v-for="tick in tokenTicks" :key="`token-label-${tick.value}`"
+          class="absolute -translate-x-full -translate-y-1/2 whitespace-nowrap"
+          :style="{ left: `${(plot.left - 12) / width * 100}%`, top: `${tick.y / height * 100}%` }"
+        >{{ compact(tick.value) }}</span>
+        <span
+          v-for="tick in overlayTicks" :key="`overlay-label-${tick.value}`"
+          class="absolute -translate-y-1/2 whitespace-nowrap"
+          :style="{ left: `${(plot.right + 12) / width * 100}%`, top: `${tick.y / height * 100}%` }"
+        >{{ overlayLabel(tick.value) }}</span>
+        <span
+          v-for="label in xLabels" :key="label.index"
+          class="absolute bottom-1 whitespace-nowrap"
+          :style="{ left: `${label.x / width * 100}%`, transform: label.anchor === 'end' ? 'translateX(-100%)' : label.anchor === 'middle' ? 'translateX(-50%)' : undefined }"
+        >{{ formatBucket(label.point.bucket_start, true) }}</span>
+      </div>
 
       <div
         v-if="activeEntry"

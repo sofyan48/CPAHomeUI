@@ -1,12 +1,6 @@
 <template>
   <div class="space-y-6">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold">Logs</h1>
-        <p class="mt-1 text-sm text-[var(--ui-text-muted)]">
-          Inspect request events, download request and error log files, and search shared application logs.
-        </p>
-      </div>
       <div class="flex flex-wrap items-center gap-2">
         <USelect v-model="pageSize" :items="pageSizeOptions" value-key="value" label-key="label" class="w-32" aria-label="Page size" @update:model-value="resetPages" />
         <AppButton :color="liveRefresh ? 'primary' : 'neutral'" variant="outline" icon="i-tabler-refresh" @click="liveRefresh = !liveRefresh">

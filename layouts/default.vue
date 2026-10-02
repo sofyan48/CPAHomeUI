@@ -18,7 +18,7 @@
           </div>
           <div class="min-w-0 leading-tight">
             <p class="truncate text-sm font-bold text-[var(--ui-text-highlighted)]">CPAHome</p>
-            <p class="truncate text-[11px] text-[var(--ui-text-muted)]">AI Gateway Management Console</p>
+            <p class="truncate text-[11px] text-[var(--ui-text-muted)]">AI Gateway Management</p>
           </div>
         </NuxtLink>
         <AppButton
@@ -65,16 +65,17 @@
           to="/admin/connect"
           class="min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50 p-2.5 dark:border-white/10 dark:bg-neutral-900 lg:bg-white/50 lg:dark:bg-neutral-900/50"
           :class="sidebarCollapsed ? 'lg:flex lg:w-full lg:justify-center lg:p-2' : ''"
-          :title="sidebarCollapsed ? `${capabilitiesError ? 'Connection failed' : 'Connected'} · ${versionLabel}` : undefined"
+          :title="sidebarCollapsed ? (capabilitiesError ? 'Connection failed' : 'Connected') : undefined"
           @click="closeMobile"
         >
           <div class="flex items-center gap-2">
             <span class="size-2 shrink-0 rounded-full" :class="capabilitiesError ? 'bg-amber-500' : 'bg-emerald-500'" />
             <span class="truncate text-xs font-medium" :class="sidebarCollapsed ? 'lg:hidden' : ''">{{ capabilitiesError ? 'Connection failed' : 'Connected' }}</span>
           </div>
-          <p class="mt-1 truncate text-[11px] text-[var(--ui-text-muted)]" :class="sidebarCollapsed ? 'lg:hidden' : ''">{{ versionLabel }}</p>
+
         </NuxtLink>
         <ThemeSwitcher />
+        <AppButton icon="i-tabler-logout" color="neutral" variant="ghost" aria-label="Logout" title="Logout" @click="handleLogout" />
       </div>
     </aside>
 
@@ -98,9 +99,7 @@
               aria-label="Refresh capabilities"
               @click="refreshCapabilities(true)"
             />
-            <AppButton icon="i-tabler-logout" color="neutral" variant="soft" aria-label="Logout" @click="handleLogout">
-              <span class="hidden sm:inline">Logout</span>
-            </AppButton>
+
           </div>
         </header>
 
@@ -137,7 +136,7 @@ const router = useRouter()
 const { token, apiBase } = useApi()
 const managementRemember = useCookie<boolean>('management_remember')
 const {
-  serverInfo,
+
   loading: capabilitiesLoading,
   error: capabilitiesError,
   supports,
@@ -209,12 +208,6 @@ const currentNavigation = computed(() => navigationSections.flatMap(section => s
 const pageTitle = computed(() => currentNavigation.value?.label || 'Management')
 const pageSubtitle = computed(() => currentNavigation.value?.subtitle || '')
 
-const versionLabel = computed(() => {
-  const version = serverInfo.value.home_version
-  const commit = serverInfo.value.home_commit
-  if (version && commit) return `${version} · ${commit.slice(0, 8)}`
-  return version || 'CPAHome'
-})
 
 watch(() => route.fullPath, () => { mobileOpen.value = false })
 
