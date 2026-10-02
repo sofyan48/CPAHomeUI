@@ -37,12 +37,13 @@
 </template>
 
 <script setup lang="ts">
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
 definePageMeta({ layout: 'app' })
 const { currentUser: user, tokenExpiresAt, fetchAPI, loadCurrentUser } = useUserApi()
-const loading = ref(false)
-const error = ref('')
-const keys = ref<any[]>([])
-const periodLimits = ref<any>(null)
+const loading = useWorkspaceState('user:profile:loading', () => false)
+const error = useWorkspaceState('user:profile:error', () => '')
+const keys = useWorkspaceState<any[]>('user:profile:keys', () => [])
+const periodLimits = useWorkspaceState<any>('user:profile:period-limits', () => null)
 const activePeriods = computed(() => (periodLimits.value?.windows || []).filter((window: any) => window.enabled && window.limit != null))
 const passkeyColumns = [
   { accessorKey: 'name', header: 'Name' },

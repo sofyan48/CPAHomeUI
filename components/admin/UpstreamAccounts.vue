@@ -174,6 +174,8 @@
 </template>
 
 <script setup>
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
+import { useStoreData } from '~/composables/useStoreData'
 const props = defineProps({ attentionRequest: { type: Number, default: 0 }, syncRequest: { type: Number, default: 0 } })
 const { fetchAPI, resolveUrl, token } = useApi()
 const { supports } = useCapabilities()
@@ -197,14 +199,14 @@ const statusFilter = ref(ALL_FILTER)
 const websocketsFilter = ref(ALL_FILTER)
 const attentionOnly = ref(false)
 watch(() => props.attentionRequest, () => { attentionOnly.value = true })
-const pageError = ref('')
-const uploading = ref(false)
-const uploadResults = ref([])
+const pageError = useWorkspaceState('admin:upstream-accounts:pageError', () => (''))
+const uploading = useWorkspaceState('admin:upstream-accounts:uploading', () => (false))
+const uploadResults = useWorkspaceState('admin:upstream-accounts:uploadResults', () => ([]))
 const failedUploads = computed(() => uploadResults.value.filter(result => result.status === 'error'))
 const uploadActive = computed(() => uploadResults.value.some(result => result.status === 'queued' || result.status === 'uploading'))
 let uploadID = 0
-const changing = ref('')
-const inlineChanging = ref('')
+const changing = useWorkspaceState('admin:upstream-accounts:changing', () => (''))
+const inlineChanging = useWorkspaceState('admin:upstream-accounts:inlineChanging', () => (''))
 const busy = computed(() => bulkBusy.value || deleting.value || Boolean(changing.value) || Boolean(inlineChanging.value) || savingFields.value)
 const detailsOpen = ref(false)
 const detailsTarget = ref(null)
@@ -232,15 +234,15 @@ function overviewFields(item) {
   ].map(([label, value]) => ({ label, value: value == null || value === '' ? fallback : String(value) }))
 }
 const accountQuotaTarget = computed(() => detailsTarget.value)
-const accountQuotaDetail = ref(null)
-const accountQuotaError = ref('')
-const accountQuotaLoading = ref(false)
-const accountQuotaCollecting = ref(false)
+const accountQuotaDetail = useWorkspaceState('admin:upstream-accounts:accountQuotaDetail', () => (null))
+const accountQuotaError = useWorkspaceState('admin:upstream-accounts:accountQuotaError', () => (''))
+const accountQuotaLoading = useWorkspaceState('admin:upstream-accounts:accountQuotaLoading', () => (false))
+const accountQuotaCollecting = useWorkspaceState('admin:upstream-accounts:accountQuotaCollecting', () => (false))
 const resetCreditOpen = ref(false)
 const resetCreditTarget = ref(null)
-const resetCreditAttempts = ref({})
+const resetCreditAttempts = useWorkspaceState('admin:upstream-accounts:resetCreditAttempts', () => ({}))
 const resetCreditAttempt = computed(() => resetCreditAttempts.value[resetCreditTarget.value?.id] || null)
-const resetCreditSubmitting = ref(false)
+const resetCreditSubmitting = useWorkspaceState('admin:upstream-accounts:resetCreditSubmitting', () => (false))
 const resetCreditError = ref('')
 const resetCreditNotice = ref('')
 const resetCreditNoticeColor = ref('success')
@@ -263,22 +265,22 @@ const canConfirmResetCredit = computed(() => !resetCreditSubmitting.value && !ac
 const connectivityOpen = ref(false)
 const connectivityTarget = ref(null)
 const connectivityURL = ref('')
-const connectivityError = ref('')
-const connectivityResult = ref(null)
-const testingConnectivity = ref(false)
+const connectivityError = useWorkspaceState('admin:upstream-accounts:connectivityError', () => (''))
+const connectivityResult = useWorkspaceState('admin:upstream-accounts:connectivityResult', () => (null))
+const testingConnectivity = useWorkspaceState('admin:upstream-accounts:testingConnectivity', () => (false))
 const connectivityBody = computed(() => {
   const body = connectivityResult.value?.body || ''
   try { return JSON.stringify(JSON.parse(body), null, 2) } catch { return body }
 })
-const modelsError = ref('')
-const modelsLoading = ref(false)
-const credentialModels = ref([])
+const modelsError = useWorkspaceState('admin:upstream-accounts:modelsError', () => (''))
+const modelsLoading = useWorkspaceState('admin:upstream-accounts:modelsLoading', () => (false))
+const credentialModels = useWorkspaceState('admin:upstream-accounts:credentialModels', () => ([]))
 
 const deleteOpen = ref(false)
 const deleteTarget = ref(null)
-const deleting = ref(false)
+const deleting = useWorkspaceState('admin:upstream-accounts:deleting', () => (false))
 const selectedIDs = ref(new Set())
-const bulkBusy = ref(false)
+const bulkBusy = useWorkspaceState('admin:upstream-accounts:bulkBusy', () => (false))
 const bulkAction = ref('')
 const bulkDeleteOpen = ref(false)
 const fieldsTarget = computed(() => detailsTarget.value)
@@ -290,41 +292,41 @@ const coolingOptions = [
 ]
 const originalFields = ref({})
 const fieldsError = ref('')
-const savingFields = ref(false)
+const savingFields = useWorkspaceState('admin:upstream-accounts:savingFields', () => (false))
 const policyTarget = computed(() => detailsTarget.value)
-const policy = ref(null)
+const policy = useWorkspaceState('admin:upstream-accounts:policy', () => (null))
 const policyTotal = ref('')
 const policyModels = ref([])
-const policyError = ref('')
-const policyConflict = ref(false)
-const loadingPolicy = ref(false)
-const savingPolicy = ref(false)
+const policyError = useWorkspaceState('admin:upstream-accounts:policyError', () => (''))
+const policyConflict = useWorkspaceState('admin:upstream-accounts:policyConflict', () => (false))
+const loadingPolicy = useWorkspaceState('admin:upstream-accounts:loadingPolicy', () => (false))
+const savingPolicy = useWorkspaceState('admin:upstream-accounts:savingPolicy', () => (false))
 let policyRequest = 0
 let modelKey = 0
 const concurrencyTarget = computed(() => detailsTarget.value)
-const concurrencyState = ref(null)
-const flightDetails = ref(null)
-const concurrencyError = ref('')
-const loadingConcurrency = ref(false)
+const concurrencyState = useWorkspaceState('admin:upstream-accounts:concurrencyState', () => (null))
+const flightDetails = useWorkspaceState('admin:upstream-accounts:flightDetails', () => (null))
+const concurrencyError = useWorkspaceState('admin:upstream-accounts:concurrencyError', () => (''))
+const loadingConcurrency = useWorkspaceState('admin:upstream-accounts:loadingConcurrency', () => (false))
 let concurrencyRequest = 0
 const createOpen = ref(false)
 const createMode = ref('oauth')
 const createModes = [{ value: 'oauth', label: 'OAuth' }, { value: 'upload', label: 'Upload' }, { value: 'vertex', label: 'Vertex' }]
 const vertexFile = ref(null)
-const vertexResult = ref(null)
+const vertexResult = useWorkspaceState('admin:upstream-accounts:vertexResult', () => (null))
 const vertexLocation = ref('us-central1')
 const vertexError = ref('')
-const importingVertex = ref(false)
+const importingVertex = useWorkspaceState('admin:upstream-accounts:importingVertex', () => (false))
 
-const oauthError = ref('')
-const startingOAuth = ref('')
-const oauthSessions = ref({})
-const checkingOAuth = ref('')
+const oauthError = useWorkspaceState('admin:upstream-accounts:oauthError', () => (''))
+const startingOAuth = useWorkspaceState('admin:upstream-accounts:startingOAuth', () => (''))
+const oauthSessions = useWorkspaceState('admin:upstream-accounts:oauthSessions', () => ({}))
+const checkingOAuth = useWorkspaceState('admin:upstream-accounts:checkingOAuth', () => (''))
 let oauthGeneration = 0
 function stopOAuthPolling() { oauthGeneration++ }
 onBeforeUnmount(stopOAuthPolling)
 
-const submittingCallback = ref('')
+const submittingCallback = useWorkspaceState('admin:upstream-accounts:submittingCallback', () => (''))
 const oauthProviders = [
   { label: 'Claude', value: 'claude' }, { label: 'Codex', value: 'codex' },
   { label: 'Antigravity', value: 'antigravity' }, { label: 'Kimi', value: 'kimi' },
@@ -338,7 +340,7 @@ function handleCreateOpen(open) {
 
 const columns = [{ id: 'select', header: '' }, { accessorKey: 'identity', header: 'Credential' }, { accessorKey: 'provider', header: 'Provider' }, { accessorKey: 'status', header: 'Enabled' }, { accessorKey: 'quota', header: 'Quota / reset' }, { accessorKey: 'websockets', header: 'WS' }, { accessorKey: 'cooling', header: 'Cooling' }, { accessorKey: 'priority', header: 'Priority' }, { id: 'actions', header: 'Actions', meta: { class: { th: 'w-px whitespace-nowrap text-right', td: 'w-px whitespace-nowrap text-right' } } }]
 
-const flightError = ref('')
+const flightError = useWorkspaceState('admin:upstream-accounts:flightError', () => (''))
 async function loadData() {
   pageError.value = ''
   try {
@@ -348,13 +350,13 @@ async function loadData() {
     return { files: [] }
   }
 }
-const { data: authData, pending, refresh: refreshCredentialsData } = useAsyncData('management-credentials', loadData, { lazy: true, default: () => ({ files: [] }) })
+const { data: authData, pending, refresh: refreshCredentialsData } = useStoreData('admin:upstream-accounts:management-credentials', loadData, { lazy: true, default: () => ({ files: [] }) })
 async function loadFlight() {
   flightError.value = ''
   try { return await fetchAPI('/credentials/in-flight/summary') }
   catch (error) { flightError.value = message(error); return { items: [] } }
 }
-const { data: flightData, refresh: refreshFlightData } = useAsyncData('management-credentials-flight', loadFlight, { lazy: true, default: () => ({ items: [] }) })
+const { data: flightData, refresh: refreshFlightData } = useStoreData('admin:upstream-accounts:management-credentials-flight', loadFlight, { lazy: true, default: () => ({ items: [] }) })
 async function refreshData(notify = true) {
   try {
     await refreshCredentialsData()
@@ -372,7 +374,7 @@ const credentials = computed(() => {
   return Array.isArray(data?.items) ? data.items : []
 })
 const credentialIDs = computed(() => credentials.value.map(item => item.id).filter(Boolean).join(','))
-const quotaError = ref('')
+const quotaError = useWorkspaceState('admin:upstream-accounts:quotaError', () => (''))
 async function loadQuotaSummary() {
   quotaError.value = ''
   const ids = credentialIDs.value.split(',').filter(Boolean)
@@ -386,7 +388,7 @@ async function loadQuotaSummary() {
     return batches
   } catch (error) { quotaError.value = message(error); return [] }
 }
-const { data: quotaSummary, pending: quotaPending, refresh: refreshQuotaSummary } = useAsyncData('management-account-quota', loadQuotaSummary, { lazy: true, default: () => [], watch: [credentialIDs] })
+const { data: quotaSummary, pending: quotaPending, refresh: refreshQuotaSummary } = useStoreData('admin:upstream-accounts:management-account-quota', loadQuotaSummary, { lazy: true, default: () => [], watch: [credentialIDs] })
 const quotaByID = computed(() => new Map((quotaSummary.value || []).map(item => [item.credential_id, item])))
 function quotaColor(status) { return status === 'healthy' || status === 'available' ? 'success' : status === 'low' ? 'warning' : status === 'exhausted' || status === 'error' ? 'error' : 'neutral' }
 function quotaWindowRatio(window) {

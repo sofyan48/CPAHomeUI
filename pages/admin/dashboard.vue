@@ -391,6 +391,7 @@
 </template>
 
 <script setup lang="ts">
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
 const { fetchAPI } = useApi();
 const { refreshCapabilities, supports } = useCapabilities();
 
@@ -414,20 +415,20 @@ const providers = [
   },
   { label: "xAI", path: "/config/api-keys/xai" },
 ];
-const loading = ref(false);
-const loadError = ref("");
-const lastUpdated = ref<Date | null>(null);
-const snapshot = ref(false);
-const config = ref<Record<string, any>>({});
-const latestVersion = ref("");
-const clientKeys = ref<any[]>([]);
-const accountFiles = ref<any[]>([]);
-const providerRows = ref<ProviderRow[]>([]);
-const availableModels = ref<number | null>(null);
-const topology = ref<any>(null);
-const nodes = ref<any[]>([]);
-const usage = ref<any>(null);
-const dataIssues = ref<Issue[]>([]);
+const loading = useWorkspaceState('admin:dashboard:loading', () => (false));
+const loadError = useWorkspaceState('admin:dashboard:loadError', () => (""));
+const lastUpdated = useWorkspaceState<Date | null>('admin:dashboard:lastUpdated', () => (null));
+const snapshot = useWorkspaceState('admin:dashboard:snapshot', () => (false));
+const config = useWorkspaceState<Record<string, any>>('admin:dashboard:config', () => ({}));
+const latestVersion = useWorkspaceState('admin:dashboard:latestVersion', () => (""));
+const clientKeys = useWorkspaceState<any[]>('admin:dashboard:clientKeys', () => ([]));
+const accountFiles = useWorkspaceState<any[]>('admin:dashboard:accountFiles', () => ([]));
+const providerRows = useWorkspaceState<ProviderRow[]>('admin:dashboard:providerRows', () => ([]));
+const availableModels = useWorkspaceState<number | null>('admin:dashboard:availableModels', () => (null));
+const topology = useWorkspaceState<any>('admin:dashboard:topology', () => (null));
+const nodes = useWorkspaceState<any[]>('admin:dashboard:nodes', () => ([]));
+const usage = useWorkspaceState<any>('admin:dashboard:usage', () => (null));
+const dataIssues = useWorkspaceState<Issue[]>('admin:dashboard:dataIssues', () => ([]));
 const runtimeMode = computed(() =>
   String(
     config.value["mode"] || config.value["runtime-mode"] || "",
@@ -775,7 +776,7 @@ function keyLabel(item: any) {
     key?.display_name || key?.name || item.label || item.id || "Client key"
   );
 }
-const snapshotUsers = ref<any[]>([]);
+const snapshotUsers = useWorkspaceState<any[]>('admin:dashboard:snapshotUsers', () => ([]));
 
 async function refreshDashboard() {
   if (loading.value) return;

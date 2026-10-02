@@ -90,17 +90,18 @@
 </template>
 
 <script setup>
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
 
 const { fetchAPI } = useApi()
 const toast = useToast()
-const loading = ref(false)
-const savingGlobal = ref(false)
-const savingPool = ref(false)
-const testingId = ref('')
-const errorMessage = ref('')
+const loading = useWorkspaceState('admin:proxy-network:loading', () => (false))
+const savingGlobal = useWorkspaceState('admin:proxy-network:savingGlobal', () => (false))
+const savingPool = useWorkspaceState('admin:proxy-network:savingPool', () => (false))
+const testingId = useWorkspaceState('admin:proxy-network:testingId', () => (''))
+const errorMessage = useWorkspaceState('admin:proxy-network:errorMessage', () => (''))
 const formError = ref('')
 const globalProxy = ref('')
-const poolsResponse = ref(null)
+const poolsResponse = useWorkspaceState('admin:proxy-network:poolsResponse', () => (null))
 const formOpen = ref(false)
 const editing = ref(null)
 const emptyForm = () => ({ name: '', proxy_url: '', enabled: true, priority: 0, note: '' })

@@ -224,6 +224,8 @@
 </template>
 
 <script setup>
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
+import { useStoreData } from '~/composables/useStoreData'
 const props = defineProps({ syncRequest: { type: Number, default: 0 } })
 const emit = defineEmits(['changed'])
 const { fetchAPI } = useApi()
@@ -246,7 +248,7 @@ providerCategories.forEach((category, index) => { category.mark = providerMarks[
 
 const selectedProviderRoute = ref(providerCategories[0].value)
 const providerSearch = ref('')
-const pageError = ref('')
+const pageError = useWorkspaceState('admin:upstream-providers:pageError', () => (''))
 const providerEditorOpen = ref(false)
 const providerEditorMode = ref('create')
 const editingProviderEntry = ref(null)
@@ -270,19 +272,19 @@ const supportsWebsockets = computed(() => ['codex-api-key', 'xai-api-key'].inclu
 const supportsTest = computed(() => ['claude-api-key', 'openai-compatibility'].includes(selectedProviderRoute.value))
 const testModel = ref(automaticTestModel)
 const testModelOptions = computed(() => [{ label: 'Auto (first custom model)', value: automaticTestModel }, ...providerForm.value.models.filter(model => String(model.name || '').trim()).map(model => ({ label: model.alias?.trim() ? `${model.name} · ${model.alias}` : model.name, value: model.name }))])
-const testError = ref('')
-const testSuccess = ref(false)
-const testingConnection = ref(false)
+const testError = useWorkspaceState('admin:upstream-providers:testError', () => (''))
+const testSuccess = useWorkspaceState('admin:upstream-providers:testSuccess', () => (false))
+const testingConnection = useWorkspaceState('admin:upstream-providers:testingConnection', () => (false))
 const supportsModelMapping = computed(() => ['interactions-api-key', 'codex-api-key'].includes(selectedProviderRoute.value))
 const requiresBaseURL = computed(() => ['codex-api-key', 'xai-api-key', 'openai-compatibility'].includes(selectedProviderRoute.value))
 const supportsDiscovery = computed(() => ['gemini-api-key', 'interactions-api-key', 'claude-api-key', 'codex-api-key', 'openai-compatibility'].includes(selectedProviderRoute.value))
-const discoveredModels = ref([])
+const discoveredModels = useWorkspaceState('admin:upstream-providers:discoveredModels', () => ([]))
 const discoverySearch = ref('')
 const discoveryVisible = ref(false)
-const discoveryLoaded = ref(false)
+const discoveryLoaded = useWorkspaceState('admin:upstream-providers:discoveryLoaded', () => (false))
 const selectedDiscovered = ref([])
-const discoveryError = ref('')
-const discovering = ref(false)
+const discoveryError = useWorkspaceState('admin:upstream-providers:discoveryError', () => (''))
+const discovering = useWorkspaceState('admin:upstream-providers:discovering', () => (false))
 let discoveryGeneration = 0
 const discoveryAuthIndex = computed(() => {
   if (providerEditorMode.value !== 'edit') return ''
@@ -308,11 +310,11 @@ const defaultDiscoveryURL = computed(() => {
   return /\/models$/i.test(base) ? base : `${base}/models`
 })
 const editorError = ref('')
-const savingProvider = ref(false)
+const savingProvider = useWorkspaceState('admin:upstream-providers:savingProvider', () => (false))
 const deleteOpen = ref(false)
 const deleteTarget = ref(null)
 
-const deleting = ref(false)
+const deleting = useWorkspaceState('admin:upstream-providers:deleting', () => (false))
 
 
 const providerColumns = [
@@ -431,7 +433,7 @@ async function loadWorkspace() {
   }
 }
 
-const { data, pending, refresh: refreshWorkspace } = useAsyncData('management-provider-credentials', loadWorkspace, { lazy: true, default: () => ({ providerResponse: null, providerRoute: selectedProviderRoute.value }), watch: [selectedProviderRoute] })
+const { data, pending, refresh: refreshWorkspace } = useStoreData('admin:upstream-providers:management-provider-credentials', loadWorkspace, { lazy: true, default: () => ({ providerResponse: null, providerRoute: selectedProviderRoute.value }), watch: [selectedProviderRoute] })
 async function loadCategoryStats() {
   const results = await Promise.all(providerCategories.map(async category => {
     try {
@@ -442,8 +444,8 @@ async function loadCategoryStats() {
   }))
   return Object.fromEntries(results)
 }
-const { data: statsData, refresh: refreshCategoryStats } = useAsyncData('management-provider-stats', loadCategoryStats, { lazy: true, default: () => ({}) })
-const { data: modelData } = useAsyncData('management-provider-models', () => fetchAPI('/models?scope=static').catch(() => ({ models: {} })), { lazy: true, default: () => ({ models: {} }) })
+const { data: statsData, refresh: refreshCategoryStats } = useStoreData('admin:upstream-providers:management-provider-stats', loadCategoryStats, { lazy: true, default: () => ({}) })
+const { data: modelData } = useStoreData('admin:upstream-providers:management-provider-models', () => fetchAPI('/models?scope=static').catch(() => ({ models: {} })), { lazy: true, default: () => ({ models: {} }) })
 watch(() => props.syncRequest, () => { void refreshWorkspace(); void refreshCategoryStats() })
 
 const modelSuggestions = computed(() => {

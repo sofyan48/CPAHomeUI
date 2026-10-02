@@ -41,23 +41,24 @@
 </template>
 
 <script setup lang="ts">
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
 import type { BillingBalanceRecord, BillingOverview } from '~/composables/useUserApi'
 
 definePageMeta({ layout: 'app' })
 const { currentUser, token, hydrateSession, fetchAPI, loadCurrentUser } = useUserApi()
-const loading = ref(false)
-const saving = ref(false)
-const recordsLoading = ref(false)
+const loading = useWorkspaceState('user:balance:loading', () => false)
+const saving = useWorkspaceState('user:balance:saving', () => false)
+const recordsLoading = useWorkspaceState('user:balance:records-loading', () => false)
 const busy = computed(() => loading.value || saving.value || recordsLoading.value)
-const pageError = ref('')
-const rechargeError = ref('')
+const pageError = useWorkspaceState('user:balance:page-error', () => '')
+const rechargeError = useWorkspaceState('user:balance:recharge-error', () => '')
 const toast = useToast()
 const amount = ref('')
 const validAmount = computed(() => Number.isFinite(Number(amount.value)) && Number(amount.value) > 0)
-const overview = ref<BillingOverview | null>(null)
-const records = ref<BillingBalanceRecord[]>([])
+const overview = useWorkspaceState<BillingOverview | null>('user:balance:overview', () => null)
+const records = useWorkspaceState<BillingBalanceRecord[]>('user:balance:records', () => [])
 
-const recordsTotal = ref(0)
+const recordsTotal = useWorkspaceState('user:balance:records-total', () => 0)
 
 const recordPage = ref(1)
 

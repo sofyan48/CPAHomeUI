@@ -34,6 +34,8 @@
 </template>
 
 <script setup>
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
+import { useStoreData } from '~/composables/useStoreData'
 const { fetchAPI } = useApi()
 const toast = useToast()
 const value = row => row?.original ?? row
@@ -46,16 +48,16 @@ const quotaStatus = ref(ALL_FILTER)
 const appliedQuotaStatus = ref('')
 const offset = ref(0)
 const limit = 50
-const pageError = ref('')
-const collectingAll = ref(false)
-const collectingID = ref('')
+const pageError = useWorkspaceState('admin:credential-quota:pageError', () => (''))
+const collectingAll = useWorkspaceState('admin:credential-quota:collectingAll', () => (false))
+const collectingID = useWorkspaceState('admin:credential-quota:collectingID', () => (''))
 const detailOpen = ref(false)
-const detailLoading = ref(false)
-const detailError = ref('')
-const detail = ref(null)
+const detailLoading = useWorkspaceState('admin:credential-quota:detailLoading', () => (false))
+const detailError = useWorkspaceState('admin:credential-quota:detailError', () => (''))
+const detail = useWorkspaceState('admin:credential-quota:detail', () => (null))
 const columns = [{ accessorKey: 'identity', header: 'Credential' }, { accessorKey: 'provider', header: 'Provider' }, { accessorKey: 'quota', header: 'Quota' }, { accessorKey: 'collection', header: 'Collection' }, { accessorKey: 'observed', header: 'Observed / reset' }, { accessorKey: 'actions', header: '', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }]
 async function loadQuota() { pageError.value = ''; try { return await fetchAPI('/quota/credentials', { query: { limit, offset: offset.value, search: appliedSearch.value || undefined, provider: appliedProvider.value || undefined, quota_status: appliedQuotaStatus.value || undefined } }) } catch (error) { pageError.value = message(error); return { items: [], total: 0 } } }
-const { data, pending, refresh: refreshQuota } = await useAsyncData('management-quota', loadQuota, { watch: [offset] })
+const { data, pending, refresh: refreshQuota } = useStoreData('admin:credential-quota:management-quota', loadQuota, { watch: [offset] })
 const items = computed(() => Array.isArray(data.value?.items) ? data.value.items : [])
 const total = computed(() => Number(data.value?.total || 0))
 const summary = computed(() => data.value?.summary ?? data.value?.global_summary ?? {})

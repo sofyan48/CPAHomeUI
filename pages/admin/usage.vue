@@ -190,6 +190,7 @@
 </template>
 
 <script setup>
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
 const { fetchAPI } = useApi()
 const route = useRoute()
 const router = useRouter()
@@ -256,19 +257,19 @@ const filters = ref(defaultFilters())
 const appliedFilters = ref(defaultFilters())
 const sort = ref('timestamp_desc')
 const page = ref(1)
-const overview = ref(null)
-const recordsResponse = ref(null)
-const overviewLoading = ref(false)
-const recordsLoading = ref(false)
-const errorMessage = ref('')
+const overview = useWorkspaceState('admin:usage:overview', () => (null))
+const recordsResponse = useWorkspaceState('admin:usage:recordsResponse', () => (null))
+const overviewLoading = useWorkspaceState('admin:usage:overviewLoading', () => (false))
+const recordsLoading = useWorkspaceState('admin:usage:recordsLoading', () => (false))
+const errorMessage = useWorkspaceState('admin:usage:errorMessage', () => (''))
 const detailOpen = ref(false)
-const detailLoading = ref(false)
-const selectedDetail = ref(null)
-const downloadingLog = ref(false)
+const detailLoading = useWorkspaceState('admin:usage:detailLoading', () => (false))
+const selectedDetail = useWorkspaceState('admin:usage:selectedDetail', () => (null))
+const downloadingLog = useWorkspaceState('admin:usage:downloadingLog', () => (false))
 const chartOverlay = ref('requests')
 const chartOverlayOptions = [{ label: 'Requests', value: 'requests' }, { label: 'Spend', value: 'spend' }]
-const rankingOpen = ref(false), rankingLoading = ref(false), rankingItems = ref([]), rankingGroup = ref('user'), rankingMetric = ref('total_amount'), rankingLimit = ref(10)
-const credentialUsage = ref([]), credentialsLoading = ref(false)
+const rankingOpen = ref(false), rankingLoading = useWorkspaceState('admin:usage:rankingLoading', () => (false)), rankingItems = useWorkspaceState('admin:usage:rankingItems', () => ([])), rankingGroup = ref('user'), rankingMetric = ref('total_amount'), rankingLimit = ref(10)
+const credentialUsage = useWorkspaceState('admin:usage:credentialUsage', () => ([])), credentialsLoading = useWorkspaceState('admin:usage:credentialsLoading', () => (false))
 
 const statusOptions = [
   { label: 'All statuses', value: allOptionValue },

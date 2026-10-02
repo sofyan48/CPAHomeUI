@@ -249,6 +249,7 @@
 </template>
 
 <script setup lang="ts">
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
 const props = withDefaults(defineProps<{ section?: 'dashboard' | 'api-keys' | 'settings' }>(), { section: 'dashboard' })
 const section = computed(() => props.section)
 
@@ -269,8 +270,8 @@ type PeriodLimitsStatus = { windows?: PeriodWindowStatus[] }
 const toast = useToast()
 const { currentUser: user, tokenExpiresAt, fetchAPI, loadCurrentUser, saveSession, capabilities, loadCapabilities, registerPasskey } = useUserApi()
 
-const pageError = ref('')
-const keys = ref<WorkspaceKey[]>([])
+const pageError = useWorkspaceState('user:workspace:page-error', () => '')
+const keys = useWorkspaceState<WorkspaceKey[]>('user:workspace:keys', () => [])
 const keySearch = ref('')
 const filteredKeys = computed(() => {
   const query = keySearch.value.trim().toLowerCase()
@@ -280,15 +281,15 @@ const filteredKeys = computed(() => {
     key.api_key.toLowerCase().includes(query)
   )
 })
-const keysLoading = ref(false)
-const selectedOverview = ref<WorkspaceBillingOverview | null>(null)
-const todayOverview = ref<WorkspaceBillingOverview | null>(null)
-const monthOverview = ref<WorkspaceBillingOverview | null>(null)
-const charges = ref<BillingCharge[]>([])
-const chargesTotal = ref(0)
-const billingLoading = ref(false)
-const billingError = ref('')
-const periodLimits = ref<PeriodLimitsStatus | null>(null)
+const keysLoading = useWorkspaceState('user:workspace:keys-loading', () => false)
+const selectedOverview = useWorkspaceState<WorkspaceBillingOverview | null>('user:workspace:selected-overview', () => null)
+const todayOverview = useWorkspaceState<WorkspaceBillingOverview | null>('user:workspace:today-overview', () => null)
+const monthOverview = useWorkspaceState<WorkspaceBillingOverview | null>('user:workspace:month-overview', () => null)
+const charges = useWorkspaceState<BillingCharge[]>('user:workspace:charges', () => [])
+const chargesTotal = useWorkspaceState('user:workspace:charges-total', () => 0)
+const billingLoading = useWorkspaceState('user:workspace:billing-loading', () => false)
+const billingError = useWorkspaceState('user:workspace:billing-error', () => '')
+const periodLimits = useWorkspaceState<PeriodLimitsStatus | null>('user:workspace:period-limits', () => null)
 let billingRequest = 0
 
 const rangeOptions = [
@@ -316,34 +317,34 @@ const dashboardGridStyle = computed(() => ({
 }))
 
 const keyFormOpen = ref(false)
-const keyFormError = ref('')
-const keySaving = ref(false)
+const keyFormError = useWorkspaceState('user:workspace:key-form-error', () => '')
+const keySaving = useWorkspaceState('user:workspace:key-saving', () => false)
 const editingKey = ref<WorkspaceKey | null>(null)
 const keyValue = ref('')
 const keyName = ref('')
 const keyDeleteOpen = ref(false)
 const keyDeleteTarget = ref<WorkspaceKey | null>(null)
-const keyDeleting = ref(false)
+const keyDeleting = useWorkspaceState('user:workspace:key-deleting', () => false)
 
 const passwordForm = reactive({ password: '', confirm: '' })
-const passwordError = ref('')
-const passwordSaving = ref(false)
+const passwordError = useWorkspaceState('user:workspace:password-error', () => '')
+const passwordSaving = useWorkspaceState('user:workspace:password-saving', () => false)
 const email = ref('')
-const emailError = ref('')
-const emailSaving = ref(false)
-const totpSetup = ref<TOTPSetup | null>(null)
+const emailError = useWorkspaceState('user:workspace:email-error', () => '')
+const emailSaving = useWorkspaceState('user:workspace:email-saving', () => false)
+const totpSetup = useWorkspaceState<TOTPSetup | null>('user:workspace:totp-setup', () => null)
 const totpCode = ref('')
-const totpError = ref('')
-const totpLoading = ref(false)
-const totpSaving = ref(false)
+const totpError = useWorkspaceState('user:workspace:totp-error', () => '')
+const totpLoading = useWorkspaceState('user:workspace:totp-loading', () => false)
+const totpSaving = useWorkspaceState('user:workspace:totp-saving', () => false)
 const totpDeleteOpen = ref(false)
-const totpDeleting = ref(false)
+const totpDeleting = useWorkspaceState('user:workspace:totp-deleting', () => false)
 const passkeyName = ref('')
-const passkeyError = ref('')
-const passkeySaving = ref(false)
+const passkeyError = useWorkspaceState('user:workspace:passkey-error', () => '')
+const passkeySaving = useWorkspaceState('user:workspace:passkey-saving', () => false)
 const passkeyDeleteOpen = ref(false)
 const passkeyDeleteTarget = ref<UserPasskey | null>(null)
-const passkeyDeleting = ref(false)
+const passkeyDeleting = useWorkspaceState('user:workspace:passkey-deleting', () => false)
 
 
 const passkeyColumns = [

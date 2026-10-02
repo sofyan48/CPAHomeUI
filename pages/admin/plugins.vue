@@ -825,6 +825,8 @@
 </template>
 
 <script setup>
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
+import { useStoreData } from '~/composables/useStoreData'
 const { fetchAPI } = useApi();
 const toast = useToast();
 const value = (row) => row?.original ?? row;
@@ -834,19 +836,19 @@ const sections = [
     { label: "Store", value: "store" },
     { label: "Store authentication", value: "auth" },
 ];
-const pageError = ref("");
+const pageError = useWorkspaceState('admin:plugins:pageError', () => (""));
 const storeSearch = ref("");
 const sourceFilter = ref("all");
 const statusFilter = ref("all");
 const installFilter = ref("all");
 const selectedInstalled = ref("");
 const selectedStore = ref("");
-const operation = ref(null);
-const busyPlugin = ref("");
+const operation = useWorkspaceState('admin:plugins:operation', () => (null));
+const busyPlugin = useWorkspaceState('admin:plugins:busyPlugin', () => (""));
 const authOpen = ref(false);
 const editingAuth = ref(null);
 const authError = ref("");
-const savingAuth = ref(false);
+const savingAuth = useWorkspaceState('admin:plugins:savingAuth', () => (false));
 const emptyAuth = () => ({
     name: "",
     match: "",
@@ -904,11 +906,11 @@ const {
     data,
     pending,
     refresh: refreshData,
-} = await useAsyncData("management-plugins", loadAll);
-const nodesResponse = ref(null);
-const nodesError = ref("");
-const nodesLoading = ref(false);
-const pollExpired = ref(false);
+} = useStoreData('admin:plugins:management-plugins', loadAll);
+const nodesResponse = useWorkspaceState('admin:plugins:nodesResponse', () => (null));
+const nodesError = useWorkspaceState('admin:plugins:nodesError', () => (""));
+const nodesLoading = useWorkspaceState('admin:plugins:nodesLoading', () => (false));
+const pollExpired = useWorkspaceState('admin:plugins:pollExpired', () => (false));
 const activeNodes = computed(() =>
     Array.isArray(nodesResponse.value?.nodes) ? nodesResponse.value.nodes : [],
 );

@@ -372,6 +372,7 @@
 </template>
 
 <script setup>
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
 const { fetchAPI } = useApi()
 const allOptionValue = '__all__'
 
@@ -425,17 +426,17 @@ const appliedRequestFilters = ref(defaultRequestFilters())
 const applicationFilters = ref(defaultApplicationFilters())
 const appliedApplicationFilters = ref(defaultApplicationFilters())
 const eventSort = ref('timestamp_desc')
-const errorMessage = ref('')
-const downloadingId = ref('')
+const errorMessage = useWorkspaceState('admin:logs:errorMessage', () => (''))
+const downloadingId = useWorkspaceState('admin:logs:downloadingId', () => (''))
 
-const eventsResponse = ref(null)
-const requestLogsResponse = ref(null)
-const applicationResponse = ref(null)
-const errorLogsResponse = ref(null)
-const eventsLoading = ref(false)
-const requestLogsLoading = ref(false)
-const applicationLoading = ref(false)
-const errorLogsLoading = ref(false)
+const eventsResponse = useWorkspaceState('admin:logs:eventsResponse', () => (null))
+const requestLogsResponse = useWorkspaceState('admin:logs:requestLogsResponse', () => (null))
+const applicationResponse = useWorkspaceState('admin:logs:applicationResponse', () => (null))
+const errorLogsResponse = useWorkspaceState('admin:logs:errorLogsResponse', () => (null))
+const eventsLoading = useWorkspaceState('admin:logs:eventsLoading', () => (false))
+const requestLogsLoading = useWorkspaceState('admin:logs:requestLogsLoading', () => (false))
+const applicationLoading = useWorkspaceState('admin:logs:applicationLoading', () => (false))
+const errorLogsLoading = useWorkspaceState('admin:logs:errorLogsLoading', () => (false))
 const eventsPage = ref(1)
 const requestLogsPage = ref(1)
 const applicationPage = ref(1)
@@ -443,11 +444,11 @@ const errorLogsPage = ref(1)
 const errorLogSearch = ref('')
 
 const eventDetailOpen = ref(false)
-const eventDetailLoading = ref(false)
-const selectedEvent = ref(null)
+const eventDetailLoading = useWorkspaceState('admin:logs:eventDetailLoading', () => (false))
+const selectedEvent = useWorkspaceState('admin:logs:selectedEvent', () => (null))
 const selectedApplicationLog = ref(null)
 const clearConfirmOpen = ref(false)
-const clearingLogs = ref(false)
+const clearingLogs = useWorkspaceState('admin:logs:clearingLogs', () => (false))
 
 const requestStatusOptions = [
   { label: 'All statuses', value: allOptionValue },

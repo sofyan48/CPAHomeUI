@@ -133,6 +133,7 @@
 </template>
 
 <script setup>
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
 const { fetchAPI } = useApi()
 const allOptionValue = '__all__'
 const pageSize = 50
@@ -152,27 +153,27 @@ const searchField = ref('all')
 const timeRange = ref('24h')
 const sort = ref('timestamp_desc')
 const page = ref(1)
-const response = ref(null)
-const filterOptions = ref(null)
-const loading = ref(false)
-const pageError = ref('')
-const liveError = ref('')
-const pendingNewEvents = ref(0)
+const response = useWorkspaceState('admin:request-records:response', () => (null))
+const filterOptions = useWorkspaceState('admin:request-records:filterOptions', () => (null))
+const loading = useWorkspaceState('admin:request-records:loading', () => (false))
+const pageError = useWorkspaceState('admin:request-records:pageError', () => (''))
+const liveError = useWorkspaceState('admin:request-records:liveError', () => (''))
+const pendingNewEvents = useWorkspaceState('admin:request-records:pendingNewEvents', () => (0))
 let requestVersion = 0
 let polling = false
 let disposed = false
 const advancedOpen = ref(false)
-const lastUpdated = ref(null)
+const lastUpdated = useWorkspaceState('admin:request-records:lastUpdated', () => (null))
 const liveRefresh = ref(false)
 const refreshSeconds = ref('15')
 let refreshTimer = null
 const detailOpen = ref(false)
-const detailLoading = ref(false)
-const selectedDetail = ref(null)
-const downloadingId = ref('')
+const detailLoading = useWorkspaceState('admin:request-records:detailLoading', () => (false))
+const selectedDetail = useWorkspaceState('admin:request-records:selectedDetail', () => (null))
+const downloadingId = useWorkspaceState('admin:request-records:downloadingId', () => (''))
 const exportOpen = ref(false)
 const exportFormat = ref('csv')
-const exporting = ref(false)
+const exporting = useWorkspaceState('admin:request-records:exporting', () => (false))
 
 const statusOptions = [{ label: 'All statuses', value: allOptionValue }, { label: 'Success', value: 'success' }, { label: 'Failed', value: 'failed' }]
 const searchFieldOptions = [{ label: 'All fields', value: 'all' }, { label: 'Request ID', value: 'request_id' }, { label: 'User', value: 'user' }, { label: 'Client key', value: 'client_key' }, { label: 'Credential', value: 'credential' }]
@@ -324,5 +325,5 @@ function errorMessage(error, fallback = 'Unexpected request error.') { return er
 watch([liveRefresh, refreshSeconds], scheduleRefresh)
 watch(sort, async () => { page.value = 1; pendingNewEvents.value = 0; await refreshEvents() })
 onMounted(refreshEvents)
-onBeforeUnmount(() => { disposed = true; requestVersion++; if (refreshTimer) clearInterval(refreshTimer) })
+onBeforeUnmount(() => { disposed = true; requestVersion++; loading.value = false; if (refreshTimer) clearInterval(refreshTimer) })
 </script>

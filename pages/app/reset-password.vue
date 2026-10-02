@@ -37,6 +37,7 @@
 </template>
 
 <script setup lang="ts">
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
 definePageMeta({ layout: 'app' })
 const route = useRoute()
 const router = useRouter()
@@ -45,8 +46,8 @@ const resetToken = ref('')
 const password = ref('')
 const confirmPassword = ref('')
 const securing = ref(true)
-const loading = ref(false)
-const error = ref('')
+const loading = useWorkspaceState('user:reset-password:loading', () => false)
+const error = useWorkspaceState('user:reset-password:error', () => '')
 const complete = ref(false)
 const invalidToken = ref(false)
 const invalidTokenMessage = ref('Open a complete reset link from your recovery email, or request a new one.')

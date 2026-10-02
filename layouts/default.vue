@@ -121,6 +121,9 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
+import { useManagementSessionStore } from '~/stores/managementSession'
+
 interface NavigationItem {
   label: string
   to: string
@@ -134,7 +137,7 @@ function toggleSidebar() { sidebarCollapsed.value = !sidebarCollapsed.value }
 const route = useRoute()
 const router = useRouter()
 const { token, apiBase } = useApi()
-const managementRemember = useCookie<boolean>('management_remember')
+const { rememberSession: managementRemember } = storeToRefs(useManagementSessionStore())
 const {
 
   loading: capabilitiesLoading,

@@ -217,6 +217,7 @@
 </template>
 
 <script setup lang="ts">
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
 const InfoField = defineComponent({
   props: { label: { type: String, required: true }, value: { type: String, required: true } },
   template: '<div class="min-w-0"><p class="text-xs font-medium text-[var(--ui-text-muted)]">{{ label }}</p><p class="mt-1 truncate font-mono text-xs" :title="value">{{ value }}</p></div>'
@@ -231,31 +232,31 @@ const { fetchAPI, apiBase } = useApi()
 const { capabilities, serverInfo, supports, refreshCapabilities } = useCapabilities()
 const toast = useToast()
 
-const topology = ref<any>(null)
-const nodesResponse = ref<any>(null)
-const configSnapshot = ref<any>(null)
-const latestVersion = ref('')
-const loading = ref(false)
-const loaded = ref(false)
-const fatalError = ref('')
-const issues = ref<Array<{ scope: string, message: string }>>([])
-const fetchedAt = ref<Date | null>(null)
-const probedAt = ref<Date | null>(null)
+const topology = useWorkspaceState<any>('admin:system-topology:topology', () => (null))
+const nodesResponse = useWorkspaceState<any>('admin:system-topology:nodesResponse', () => (null))
+const configSnapshot = useWorkspaceState<any>('admin:system-topology:configSnapshot', () => (null))
+const latestVersion = useWorkspaceState('admin:system-topology:latestVersion', () => (''))
+const loading = useWorkspaceState('admin:system-topology:loading', () => (false))
+const loaded = useWorkspaceState('admin:system-topology:loaded', () => (false))
+const fatalError = useWorkspaceState('admin:system-topology:fatalError', () => (''))
+const issues = useWorkspaceState<Array<{ scope: string, message: string }>>('admin:system-topology:issues', () => ([]))
+const fetchedAt = useWorkspaceState<Date | null>('admin:system-topology:fetchedAt', () => (null))
+const probedAt = useWorkspaceState<Date | null>('admin:system-topology:probedAt', () => (null))
 const diagnosticsOpen = ref(false)
-const diagnosticLoading = ref(false)
-const diagnosticError = ref('')
-const diagnosticResult = ref<any>(null)
+const diagnosticLoading = useWorkspaceState('admin:system-topology:diagnosticLoading', () => (false))
+const diagnosticError = useWorkspaceState('admin:system-topology:diagnosticError', () => (''))
+const diagnosticResult = useWorkspaceState<any>('admin:system-topology:diagnosticResult', () => (null))
 const methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
 const diagnostic = reactive({ method: 'GET', url: '', authIndex: '', headers: '{}', data: '' })
 const enrollmentOpen = ref(false)
-const enrollment = ref<any>(null)
+const enrollment = useWorkspaceState<any>('admin:system-topology:enrollment', () => (null))
 const nodeName = ref('')
-const generating = ref(false)
-const enrollmentError = ref('')
+const generating = useWorkspaceState('admin:system-topology:generating', () => (false))
+const enrollmentError = useWorkspaceState('admin:system-topology:enrollmentError', () => (''))
 const renameOpen = ref(false)
 const renameTarget = ref<any>(null)
 const renameValue = ref('')
-const renaming = ref(false)
+const renaming = useWorkspaceState('admin:system-topology:renaming', () => (false))
 const renameError = ref('')
 
 const homes = computed<any[]>(() => Array.isArray(topology.value?.homes) ? topology.value.homes : [])

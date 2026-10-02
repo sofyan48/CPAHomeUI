@@ -26,17 +26,18 @@
 </template>
 
 <script setup lang="ts">
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
 definePageMeta({ layout: 'app' })
 const route = useRoute()
 const router = useRouter()
 const { token: sessionToken, fetchAPI, loadCurrentUser } = useUserApi()
 const verificationToken = ref('')
-const verifying = ref(false)
+const verifying = useWorkspaceState('user:verify-email:verifying', () => false)
 const verified = ref(false)
-const failed = ref(false)
+const failed = useWorkspaceState('user:verify-email:failed', () => false)
 const invalidToken = ref(false)
 const confirmed = ref(false)
-const message = ref('Confirm that you want to verify the email address associated with this link.')
+const message = useWorkspaceState('user:verify-email:message', () => 'Confirm that you want to verify the email address associated with this link.')
 const authenticated = computed(() => Boolean(sessionToken.value))
 const returnRoute = computed(() => authenticated.value ? '/app' : '/app/login')
 const ready = computed(() => Boolean(verificationToken.value) && !verified.value && !failed.value && !invalidToken.value && !verifying.value)

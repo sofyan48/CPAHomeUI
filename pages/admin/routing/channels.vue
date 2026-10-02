@@ -151,22 +151,24 @@
 </template>
 
 <script setup>
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
+import { useStoreData } from '~/composables/useStoreData'
 const { fetchAPI } = useApi()
 const toast = useToast()
 const rowValue = (row) => row?.original ?? row
 const search = ref('')
-const pageError = ref('')
+const pageError = useWorkspaceState('admin:routing:channels:pageError', () => (''))
 const selectedGroupId = ref(null)
 const groupFormOpen = ref(false)
 const detailFormOpen = ref(false)
 const formError = ref('')
-const submitting = ref(false)
+const submitting = useWorkspaceState('admin:routing:channels:submitting', () => (false))
 const editingGroup = ref(null)
 const editingDetail = ref(null)
 const deleteOpen = ref(false)
 const deleteKind = ref('')
 const deleteTarget = ref(null)
-const deleting = ref(false)
+const deleting = useWorkspaceState('admin:routing:channels:deleting', () => (false))
 const groupForm = ref({ channel_name: '', enabled: true })
 const detailForm = ref({ auth_id: '', suggested_auth_id: '' })
 
@@ -191,7 +193,7 @@ async function loadWorkspace() {
     return { groupsResponse: { channel_groups: [] }, authResponse: { files: [] } }
   }
 }
-const { data, pending, refresh: refreshWorkspace } = await useAsyncData('routing-channel-groups', loadWorkspace)
+const { data, pending, refresh: refreshWorkspace } = useStoreData('admin:routing:channels:routing-channel-groups', loadWorkspace)
 const groups = computed(() => Array.isArray(data.value?.groupsResponse?.channel_groups) ? data.value.groupsResponse.channel_groups : [])
 const credentials = computed(() => Array.isArray(data.value?.authResponse) ? data.value.authResponse : Array.isArray(data.value?.authResponse?.credentials) ? data.value.authResponse.credentials : Array.isArray(data.value?.authResponse?.files) ? data.value.authResponse.files : [])
 const selectedGroup = computed(() => groups.value.find(group => group.id === selectedGroupId.value) || null)
@@ -214,7 +216,7 @@ async function loadDetails() {
     return { channel_group_details: [] }
   }
 }
-const { data: detailsData, pending: detailsPending, refresh: refreshDetails } = await useAsyncData('routing-channel-group-details', loadDetails, { immediate: false })
+const { data: detailsData, pending: detailsPending, refresh: refreshDetails } = useStoreData('admin:routing:channels:routing-channel-group-details', loadDetails, { immediate: false })
 const details = computed(() => Array.isArray(detailsData.value?.channel_group_details) ? detailsData.value.channel_group_details : [])
 const deleteDescription = computed(() => {
   if (!deleteTarget.value) return ''

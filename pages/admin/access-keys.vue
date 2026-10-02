@@ -462,6 +462,7 @@
 </template>
 
 <script setup>
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
 const { fetchAPI, fetchRaw } = useApi();
 const { supports } = useCapabilities();
 const toast = useToast();
@@ -470,15 +471,15 @@ const MAX_DISPLAY_NAME_LENGTH = 128;
 const rowValue = (row) => row?.original ?? row;
 
 const search = ref("");
-const loading = ref(false);
-const hasLoaded = ref(false);
-const primaryError = ref("");
-const resources = ref([]);
-const users = ref([]);
-const channelGroups = ref([]);
-const modelGroups = ref([]);
+const loading = useWorkspaceState('admin:access-keys:loading', () => (false));
+const hasLoaded = useWorkspaceState('admin:access-keys:hasLoaded', () => (false));
+const primaryError = useWorkspaceState('admin:access-keys:primaryError', () => (""));
+const resources = useWorkspaceState('admin:access-keys:resources', () => ([]));
+const users = useWorkspaceState('admin:access-keys:users', () => ([]));
+const channelGroups = useWorkspaceState('admin:access-keys:channelGroups', () => ([]));
+const modelGroups = useWorkspaceState('admin:access-keys:modelGroups', () => ([]));
 
-const supportsDisplayNames = ref(true);
+const supportsDisplayNames = useWorkspaceState('admin:access-keys:supportsDisplayNames', () => (true));
 const selectedIDs = ref(new Set());
 const wideTable = ref(false);
 
@@ -487,7 +488,7 @@ const sheetMode = ref("detail");
 const selectedResource = ref(null);
 const detailSecretVisible = ref(false);
 const formSecretVisible = ref(false);
-const submitting = ref(false);
+const submitting = useWorkspaceState('admin:access-keys:submitting', () => (false));
 const keyValueError = ref("");
 const displayNameError = ref("");
 const form = reactive({ value: "", displayName: "" });
@@ -495,8 +496,8 @@ const form = reactive({ value: "", displayName: "" });
 const confirmationOpen = ref(false);
 const confirmationType = ref(null);
 const confirmationResources = ref([]);
-const deleting = ref(false);
-const bulkDeleting = ref(false);
+const deleting = useWorkspaceState('admin:access-keys:deleting', () => (false));
+const bulkDeleting = useWorkspaceState('admin:access-keys:bulkDeleting', () => (false));
 
 const compactColumns = [
   { accessorKey: "select", header: "" },

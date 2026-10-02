@@ -1263,6 +1263,7 @@
 </template>
 
 <script setup>
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
 import EmptyState from "@/components/admin/users/UsersEmptyState.vue";
 
 import UnsupportedScopes from "@/components/admin/users/UsersUnsupportedScopes.vue";
@@ -1289,21 +1290,21 @@ const tabs = [
   { label: "Model scopes", value: "modelGroups" },
 ];
 const search = ref(""),
-  loading = ref(false),
-  saving = ref(false),
-  pageErrors = ref([]),
+  loading = useWorkspaceState('admin:users:loading', () => (false)),
+  saving = useWorkspaceState('admin:users:saving', () => (false)),
+  pageErrors = useWorkspaceState('admin:users:pageErrors', () => ([])),
   formError = ref(""),
   formFieldErrors = ref([]);
-const usersData = ref([]),
-  keysData = ref([]),
-  channelGroupsData = ref([]),
-  channelDetailsData = ref([]),
-  modelGroupsData = ref([]),
-  modelDetailsData = ref([]),
-  credentialsData = ref([]),
-  providerCredentialsData = ref([]),
-  runtimeModelsData = ref([]),
-  staticModelsData = ref([]);
+const usersData = useWorkspaceState('admin:users:usersData', () => ([])),
+  keysData = useWorkspaceState('admin:users:keysData', () => ([])),
+  channelGroupsData = useWorkspaceState('admin:users:channelGroupsData', () => ([])),
+  channelDetailsData = useWorkspaceState('admin:users:channelDetailsData', () => ([])),
+  modelGroupsData = useWorkspaceState('admin:users:modelGroupsData', () => ([])),
+  modelDetailsData = useWorkspaceState('admin:users:modelDetailsData', () => ([])),
+  credentialsData = useWorkspaceState('admin:users:credentialsData', () => ([])),
+  providerCredentialsData = useWorkspaceState('admin:users:providerCredentialsData', () => ([])),
+  runtimeModelsData = useWorkspaceState('admin:users:runtimeModelsData', () => ([])),
+  staticModelsData = useWorkspaceState('admin:users:staticModelsData', () => ([]));
 const users = computed(() => usersData.value),
   keys = computed(() => keysData.value),
   channelGroups = computed(() => channelGroupsData.value),
@@ -2027,10 +2028,10 @@ async function submitUser() {
 }
 
 const userDetailOpen = ref(false),
-  userDetail = ref(null),
-  detailPeriods = ref(null),
-  detailPeriodLoading = ref(false),
-  detailPeriodError = ref("");
+  userDetail = useWorkspaceState('admin:users:userDetail', () => (null)),
+  detailPeriods = useWorkspaceState('admin:users:detailPeriods', () => (null)),
+  detailPeriodLoading = useWorkspaceState('admin:users:detailPeriodLoading', () => (false)),
+  detailPeriodError = useWorkspaceState('admin:users:detailPeriodError', () => (""));
 async function openUserDetail(user) {
   userDetailOpen.value = true;
   userDetail.value = user;
@@ -2344,12 +2345,12 @@ const bindingOpen = ref(false),
   bindingSelection = ref([]),
   bindingChannels = ref([]),
   modelSourceFilter = ref("all");
-const credentialCandidatesPending = ref(false),
-  credentialCandidatesIssue = ref(""),
-  credentialCandidatesError = ref("");
-const modelCandidatesPending = ref(false),
-  modelCandidatesIssue = ref(""),
-  modelCandidatesError = ref("");
+const credentialCandidatesPending = useWorkspaceState('admin:users:credentialCandidatesPending', () => (false)),
+  credentialCandidatesIssue = useWorkspaceState('admin:users:credentialCandidatesIssue', () => ("")),
+  credentialCandidatesError = useWorkspaceState('admin:users:credentialCandidatesError', () => (""));
+const modelCandidatesPending = useWorkspaceState('admin:users:modelCandidatesPending', () => (false)),
+  modelCandidatesIssue = useWorkspaceState('admin:users:modelCandidatesIssue', () => ("")),
+  modelCandidatesError = useWorkspaceState('admin:users:modelCandidatesError', () => (""));
 const bindingGroupName = computed(() =>
   bindingGroup.value
     ? bindingKind.value === "credential"

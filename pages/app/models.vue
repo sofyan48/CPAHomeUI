@@ -97,6 +97,7 @@
 </template>
 
 <script setup lang="ts">
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
 definePageMeta({ layout: 'app' })
 const route = useRoute()
 const router = useRouter()
@@ -119,17 +120,17 @@ const capabilityOrder: CapabilityFilter[] = ['tools', 'structuredOutput', 'reaso
 const validSorts = new Set(['name', 'price-asc', 'price-desc'])
 const queryKeys = ['q', 'provider', 'modality', 'caps', 'mine', 'sort'] as const
 const noFilterValue = '__no_filter__'
-const publicCatalog = ref<CatalogModel[]>([])
-const models = ref<CatalogModel[]>([])
-const loading = ref(false)
-const capabilityLoading = ref(true)
-const catalogReady = ref(false)
-const catalogUnsupported = ref(false)
-const error = ref('')
-const capabilityError = ref('')
-const accessibleWarning = ref('')
-const access = ref<AccessSummary | null>(null)
-const accessLoaded = ref(false)
+const publicCatalog = useWorkspaceState<CatalogModel[]>('user:models:public-catalog', () => [])
+const models = useWorkspaceState<CatalogModel[]>('user:models:models', () => [])
+const loading = useWorkspaceState('user:models:loading', () => false)
+const capabilityLoading = useWorkspaceState('user:models:capability-loading', () => true)
+const catalogReady = useWorkspaceState('user:models:catalog-ready', () => false)
+const catalogUnsupported = useWorkspaceState('user:models:catalog-unsupported', () => false)
+const error = useWorkspaceState('user:models:error', () => '')
+const capabilityError = useWorkspaceState('user:models:capability-error', () => '')
+const accessibleWarning = useWorkspaceState('user:models:accessible-warning', () => '')
+const access = useWorkspaceState<AccessSummary | null>('user:models:access', () => null)
+const accessLoaded = useWorkspaceState('user:models:access-loaded', () => false)
 const search = ref(validQueryString(route.query.q))
 
 const inputModality = ref(validQueryString(route.query.modality))

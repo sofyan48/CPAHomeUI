@@ -119,12 +119,14 @@
 </template>
 
 <script setup>
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
+import { useStoreData } from '~/composables/useStoreData'
 const { fetchAPI } = useApi()
 
 const scope = ref('available')
 const channel = ref('')
 const search = ref('')
-const pageError = ref('')
+const pageError = useWorkspaceState('admin:routing:models:pageError', () => (''))
 const detailsOpen = ref(false)
 const selectedModel = ref(null)
 
@@ -144,7 +146,7 @@ async function loadModels() {
   }
 }
 
-const { data, pending, refresh } = await useAsyncData('routing-models', loadModels, { watch: [scope] })
+const { data, pending, refresh } = useStoreData('admin:routing:models:routing-models', loadModels, { watch: [scope] })
 
 const rawModels = computed(() => data.value?.models)
 const modelsList = computed(() => {

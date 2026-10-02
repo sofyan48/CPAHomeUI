@@ -83,6 +83,9 @@
 </template>
 
 <script setup lang="ts">
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
+import { storeToRefs } from 'pinia'
+import { useManagementSessionStore } from '~/stores/managementSession'
 import { useCapabilities as useManagementCapabilities } from '~/composables/useCapabilities'
 
 definePageMeta({ layout: false })
@@ -97,12 +100,12 @@ const highlights = [
 const router = useRouter()
 const route = useRoute()
 const { fetchAPI, token: storedToken, apiBase } = useApi()
-const remembered = useCookie<boolean>('management_remember', { sameSite: 'strict', secure: import.meta.client && window.location.protocol === 'https:', default: () => false })
+const { rememberSession: remembered } = storeToRefs(useManagementSessionStore())
 const { resetCapabilities } = useManagementCapabilities()
 const token = ref('')
 const remember = ref(false)
-const loading = ref(false)
-const errorMessage = ref('')
+const loading = useWorkspaceState('admin:connect:loading', () => (false))
+const errorMessage = useWorkspaceState('admin:connect:errorMessage', () => (''))
 
 onMounted(() => {
   if (storedToken.value) token.value = storedToken.value

@@ -433,26 +433,27 @@
 </template>
 
 <script setup>
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
 import { parseDocument } from "yaml";
 
 const { fetchAPI } = useApi();
 const toast = useToast();
-const loading = ref(false);
-const loaded = ref(false);
-const saving = ref(false);
-const pageError = ref("");
-const updatedAt = ref(null);
-const runtimeMode = ref("home");
+const loading = useWorkspaceState('admin:config:loading', () => (false));
+const loaded = useWorkspaceState('admin:config:loaded', () => (false));
+const saving = useWorkspaceState('admin:config:saving', () => (false));
+const pageError = useWorkspaceState('admin:config:pageError', () => (""));
+const updatedAt = useWorkspaceState('admin:config:updatedAt', () => (null));
+const runtimeMode = useWorkspaceState('admin:config:runtimeMode', () => ("home"));
 const draft = ref({});
-const baseline = ref({});
-const yamlText = ref("");
-const configSnapshot = ref({});
+const baseline = useWorkspaceState('admin:config:baseline', () => ({}));
+const yamlText = useWorkspaceState('admin:config:yamlText', () => (""));
+const configSnapshot = useWorkspaceState('admin:config:configSnapshot', () => ({}));
 const changesOpen = ref(false);
 const reloadConfirmOpen = ref(false);
 const modelSearch = ref("");
 const exclusionChannel = ref("claude");
-const channelModels = ref([]);
-const modelsLoading = ref(false);
+const channelModels = useWorkspaceState('admin:config:channelModels', () => ([]));
+const modelsLoading = useWorkspaceState('admin:config:modelsLoading', () => (false));
 const aliasRows = ref([]);
 let aliasKey = 0;
 const payloadDraft = reactive({

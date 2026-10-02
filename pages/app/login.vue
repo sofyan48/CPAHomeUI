@@ -28,6 +28,7 @@
 </template>
 
 <script setup lang="ts">
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
 definePageMeta({ layout: 'app' })
 const route = useRoute()
 const router = useRouter()
@@ -35,9 +36,9 @@ const { token, login, loginWithPasskey, hydrateSession, loadCurrentUser, clearSe
 const form = reactive({ username: '', password: '', totp: '' })
 const needsTOTP = ref(false)
 const passkeyRequired = ref(false)
-const loading = ref(false)
-const passkeyLoading = ref(false)
-const error = ref('')
+const loading = useWorkspaceState('user:login:loading', () => false)
+const passkeyLoading = useWorkspaceState('user:login:passkey-loading', () => false)
+const error = useWorkspaceState('user:login:error', () => '')
 const errorAlert = ref<HTMLElement | null>(null)
 const passkeysSupported = ref(false)
 const title = computed(() => needsTOTP.value ? 'Authenticator verification' : passkeyRequired.value ? 'Passkey sign in' : 'User login')

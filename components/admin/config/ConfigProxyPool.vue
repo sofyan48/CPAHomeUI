@@ -131,6 +131,7 @@
 </template>
 
 <script setup lang="ts">
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
 interface ProxyPool {
   id: string
   name: string
@@ -165,19 +166,19 @@ const columns = [
   { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'table-action-head', td: 'table-action-cell' } } }
 ]
 
-const pools = ref<ProxyPool[]>([])
-const loading = ref(false)
-const unsupported = ref(false)
-const loadError = ref('')
-const testingId = ref('')
-const togglingId = ref('')
+const pools = useWorkspaceState<ProxyPool[]>('admin:config:-config-proxy-pool:pools', () => ([]))
+const loading = useWorkspaceState('admin:config:-config-proxy-pool:loading', () => (false))
+const unsupported = useWorkspaceState('admin:config:-config-proxy-pool:unsupported', () => (false))
+const loadError = useWorkspaceState('admin:config:-config-proxy-pool:loadError', () => (''))
+const testingId = useWorkspaceState('admin:config:-config-proxy-pool:testingId', () => (''))
+const togglingId = useWorkspaceState('admin:config:-config-proxy-pool:togglingId', () => (''))
 const formOpen = ref(false)
-const saving = ref(false)
+const saving = useWorkspaceState('admin:config:-config-proxy-pool:saving', () => (false))
 const editingId = ref('')
 const formError = ref('')
 const formErrors = reactive({ name: '', proxy_url: '', priority: '' })
 const deleteOpen = ref(false)
-const deleting = ref(false)
+const deleting = useWorkspaceState('admin:config:-config-proxy-pool:deleting', () => (false))
 const deleteTarget = ref<ProxyPool | null>(null)
 const emptyForm = () => ({ name: '', proxy_url: '', enabled: true, priority: '0', note: '' })
 const form = reactive(emptyForm())

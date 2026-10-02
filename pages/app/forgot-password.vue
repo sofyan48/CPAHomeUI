@@ -45,14 +45,15 @@
 </template>
 
 <script setup lang="ts">
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
 definePageMeta({ layout: 'app' })
 const { fetchAPI, capabilities, loadCapabilities } = useUserApi()
 const email = ref('')
-const loading = ref(false)
-const capabilityLoading = ref(false)
-const capabilityState = ref<'loading' | 'failure' | 'unsupported' | 'disabled' | 'enabled'>('loading')
-const capabilityError = ref('Unable to contact the Home server.')
-const error = ref('')
+const loading = useWorkspaceState('user:forgot-password:loading', () => false)
+const capabilityLoading = useWorkspaceState('user:forgot-password:capability-loading', () => false)
+const capabilityState = useWorkspaceState<'loading' | 'failure' | 'unsupported' | 'disabled' | 'enabled'>('user:forgot-password:capability-state', () => 'loading')
+const capabilityError = useWorkspaceState('user:forgot-password:capability-error', () => 'Unable to contact the Home server.')
+const error = useWorkspaceState('user:forgot-password:error', () => '')
 const sent = ref(false)
 const acceptedMessage = 'If an eligible account matches, password reset instructions will be sent.'
 
