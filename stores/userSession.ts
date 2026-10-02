@@ -55,6 +55,7 @@ export interface UserCapabilities {
 }
 
 export interface UserServerInfo {
+  cpa_public_url?: string
   home_version?: string
   home_commit?: string
   home_build_date?: string

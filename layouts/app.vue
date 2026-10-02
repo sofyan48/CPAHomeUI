@@ -39,6 +39,20 @@
             <AppButton class="lg:hidden" icon="i-tabler-menu-2" color="neutral" variant="ghost" aria-label="Open navigation" aria-controls="workspace-sidebar" :aria-expanded="mobileOpen" @click="openMobile" />
             <div class="min-w-0"><p class="truncate text-sm font-semibold text-[var(--ui-text-highlighted)]">{{ pageTitle }}</p><p class="truncate text-xs text-[var(--ui-text-muted)]">{{ pageSubtitle }}</p></div>
           </div>
+          <NuxtLink
+            to="/app/balance"
+            class="group ml-auto flex shrink-0 items-center gap-2.5 rounded-xl px-2.5 py-2 transition-colors hover:bg-emerald-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 dark:hover:bg-emerald-500/10"
+            :aria-label="`Total credit: ${creditBalance}, rounded up. Open balance`"
+            title="Open balance · rounded up"
+          >
+            <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
+              <UIcon name="i-tabler-wallet" class="size-4" />
+            </span>
+            <div class="text-right leading-tight">
+              <p class="text-[11px] font-medium text-[var(--ui-text-muted)]">Total credit</p>
+              <p class="mt-0.5 text-base font-semibold tabular-nums tracking-tight text-[var(--ui-text-highlighted)]">{{ creditBalance }}</p>
+            </div>
+          </NuxtLink>
         </header>
         <main class="min-h-0 w-full flex-1 overflow-y-auto px-4 py-5 sm:p-5 lg:p-6"><slot /></main>
       </div>
@@ -60,7 +74,12 @@
 provide(Symbol.for('cliproxy-user-card'), true)
 const route = useRoute()
 const router = useRouter()
-const { token, clearSession, loadCurrentUser, hydrateSession } = useUserApi()
+const { token, currentUser, clearSession, loadCurrentUser, hydrateSession } = useUserApi()
+const creditBalance = computed(() => {
+  if (!currentUser.value) return '—'
+  const credits = Number(currentUser.value.credits)
+  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(Number.isFinite(credits) ? Math.ceil(credits) : 0)
+})
 const mobileOpen = ref(false)
 const sidebarHidden = ref(false)
 const openMobile = () => { mobileOpen.value = true }

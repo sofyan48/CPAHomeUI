@@ -179,7 +179,8 @@ const sections: Section[] = [
     description: 'Core CPA listener and diagnostic settings.',
     fields: [
       { key: 'debug', label: 'Debug mode', type: 'switch', description: 'Enable verbose runtime diagnostics.' },
-      { key: 'port', label: 'CPA port', type: 'number', min: 1, max: 65535, step: 1, hint: 'Valid range: 1–65535' }
+      { key: 'port', label: 'CPA port', type: 'number', min: 1, max: 65535, step: 1, hint: 'Valid range: 1–65535' },
+            { key: 'cpaPublicUrl', label: 'CPA Public URL', type: 'url', placeholder: 'https://api.example.com/v1', hint: 'Display only in the user dashboard. Does not change listener, routing, or cluster settings. Leave empty to hide.' }
     ]
   },
   {

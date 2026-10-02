@@ -489,7 +489,7 @@ const channelOptions = [
   ["xai", "xAI"],
 ].map(([value, label]) => ({ value, label }));
 const outline = [
-  { id: "server", short: "Server", keys: ["debug", "port"] },
+  { id: "server", short: "Server", keys: ["debug", "port", "cpaPublicUrl"] },
   { id: "tls", short: "TLS", keys: ["tlsEnable", "tlsCert", "tlsKey"] },
   {
     id: "remote-management",
@@ -598,6 +598,14 @@ const validationErrors = computed(() => {
     )
   )
     errors.routingStrategy = "Select a supported strategy.";
+  if (String(draft.value.cpaPublicUrl || "").trim()) {
+    try {
+      const url = new URL(String(draft.value.cpaPublicUrl).trim());
+      if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) throw new Error();
+    } catch {
+      errors.cpaPublicUrl = "Enter an absolute HTTP or HTTPS URL without credentials.";
+    }
+  }
   if (draft.value.userEmailEnabled) {
     const text = key => String(draft.value[key] || "").trim();
     const isLoopback = host => host === "localhost" || host === "::1" || host === "[::1]" || /^127\.(?:\d{1,3}\.){2}\d{1,3}$/.test(host);
@@ -710,6 +718,7 @@ function buildDraft(config, yamlRoot) {
   return {
     debug: Boolean(logs.debug),
     port: Number(server.port || 8317),
+    cpaPublicUrl: (config["user-panel"] || yamlRoot["user-panel"])?.["cpa-public-url"] || "",
     tlsEnable: Boolean(server.tls?.enable),
     tlsCert: server.tls?.cert || "",
     tlsKey: server.tls?.key || "",
@@ -957,6 +966,7 @@ function savePayloadEditor() {
 const v8YamlPaths = {
   debug: ["observability", "logs", "debug"],
   port: ["server", "port"],
+  cpaPublicUrl: ["user-panel", "cpa-public-url"],
   tlsEnable: ["server", "tls", "enable"],
   tlsCert: ["server", "tls", "cert"],
   tlsKey: ["server", "tls", "key"],
@@ -1053,7 +1063,7 @@ async function saveWorkspace() {
         ].includes(key)
       )
         value = parseJSON(value, {});
-      else if (key === "proxyUrl") value = String(value).trim();
+      else if (key === "proxyUrl" || key === "cpaPublicUrl") value = String(value).trim();
       document.setIn(path, value);
     }
     if (changed.some(key => key.startsWith("userEmail"))) {

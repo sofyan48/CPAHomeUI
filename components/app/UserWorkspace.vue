@@ -3,27 +3,62 @@
 
     <UAlert v-if="pageError" color="error" variant="subtle" icon="i-tabler-alert-triangle" title="Some workspace data could not be loaded" :description="pageError" />
 
-    <section v-if="section === 'dashboard'" class="dashboard-limit-grid grid grid-cols-1 gap-4" :style="dashboardGridStyle" aria-label="Account summary and period limits">
-      <AppCard tinted accent="emerald">
-        <div class="flex items-start justify-between gap-4">
-          <div class="min-w-0">
-            <p class="text-sm text-[var(--ui-text-muted)]">Credit balance</p>
-            <p class="mt-2 truncate text-2xl font-bold tabular-nums text-[var(--ui-text-highlighted)]">{{ formatCredits(user?.credits ?? selectedOverview?.current_balance) }}</p>
-          </div>
-          <span class="dashboard-card-icon flex size-10 shrink-0 items-center justify-center rounded-xl"><UIcon name="i-tabler-wallet" class="size-5" /></span>
+    <section v-if="section === 'dashboard'" class="grid min-w-0 gap-5" :class="serverInfo.cpa_public_url ? 'lg:grid-cols-2' : ''" aria-label="CPA endpoint and usage summary">
+    <AppCard v-if="serverInfo.cpa_public_url" class="min-w-0" :ui="{ body: 'space-y-4' }">
+      <template #header><h2 class="text-sm font-semibold">Endpoint</h2></template>
+      <div class="flex min-w-0 items-start gap-3 rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] p-4 shadow-inner">
+        <code class="min-w-0 flex-1 break-all font-mono text-sm leading-6 text-[var(--ui-text-highlighted)]">{{ serverInfo.cpa_public_url }}</code>
+        <AppButton type="button" size="xs" class="shrink-0" color="neutral" variant="ghost" icon="i-tabler-copy" aria-label="Copy CPA endpoint" title="Copy endpoint" @click="copyText(serverInfo.cpa_public_url, 'CPA endpoint copied')" />
+      </div>
+      <div class="space-y-2">
+        <div class="flex items-center justify-between gap-3">
+          <h3 class="text-sm font-semibold">Example</h3>
+          <AppButton type="button" size="xs" color="neutral" variant="ghost" icon="i-tabler-copy" aria-label="Copy curl example" title="Copy example" @click="copyText(curlExample, 'Example copied')" />
         </div>
+        <pre class="overflow-x-auto rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] p-4 text-xs leading-6 text-[var(--ui-text-highlighted)] shadow-inner"><code class="font-mono">{{ curlExample }}</code></pre>
+      </div>
+    </AppCard>
+    <AppCard class="min-w-0" :ui="{ body: 'space-y-4' }">
+      <template #header><h2 class="text-sm font-semibold">Usage summary</h2></template>
+      <form class="flex flex-wrap items-end gap-3" @submit.prevent="applyBillingRange">
+        <UFormField label="Time range">
+          <USelect v-model="rangePreset" :items="rangeOptions" value-key="value" label-key="label" class="w-44" @update:model-value="selectRange" />
+        </UFormField>
+        <template v-if="rangePreset === 'custom'">
+          <UFormField label="From (UTC)"><UInput v-model="rangeFrom" type="date" /></UFormField>
+          <UFormField label="To (UTC)"><UInput v-model="rangeTo" type="date" /></UFormField>
+          <AppButton type="submit" :loading="billingLoading">Apply range</AppButton>
+        </template>
+        <AppButton type="button" class="ml-auto" color="neutral" variant="outline" icon="i-tabler-refresh" :loading="billingLoading" @click="loadBilling">Refresh report</AppButton>
+      </form>
+    <div class="grid min-w-0 gap-4 sm:grid-cols-2" aria-label="Usage summary" :aria-busy="billingLoading">
+      <AppCard v-for="metric in billingMetrics" :key="metric.label" class="min-w-0" tinted>
+        <p class="text-sm text-[var(--ui-text-muted)]">{{ metric.label }}</p>
+        <p class="mt-2 break-words text-2xl font-bold tabular-nums text-[var(--ui-text-highlighted)]">{{ billingLoading ? '—' : metric.value }}</p>
+        <p class="mt-1 text-xs text-[var(--ui-text-dimmed)]">{{ metric.detail }}</p>
       </AppCard>
+    </div>
+    </AppCard>
+    </section>
+    <UAlert v-if="section === 'dashboard' && billingError" color="error" variant="subtle" title="Usage summary could not be loaded" :description="billingError" />
+
+    <section v-if="section === 'dashboard' && activePeriodWindows.length" class="dashboard-limit-grid grid grid-cols-1 gap-4" :style="dashboardGridStyle" aria-label="Account period limits">
       <AppCard v-for="window in activePeriodWindows" :key="window.id" tinted>
-        <div class="flex items-center justify-between gap-3"><p class="text-sm font-semibold">{{ periodWindowLabel(window.id) }}</p><span class="text-xs font-medium tabular-nums" :class="periodWindowColor(window)">{{ formatPercent(periodWindowRatio(window)) }}</span></div>
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
+            <p class="shrink-0 text-sm font-semibold">{{ periodWindowLabel(window.id) }}</p>
+            <p v-if="window.reset_at" class="text-xs text-[var(--ui-text-dimmed)]">Resets {{ formatDate(window.reset_at) }}</p>
+          </div>
+          <span class="shrink-0 text-xs font-medium tabular-nums" :class="periodWindowColor(window)">{{ formatPercent(periodWindowRatio(window)) }}</span>
+        </div>
         <div class="period-progress-track mt-3 h-2.5 overflow-hidden rounded-full"><div class="h-full rounded-full transition-[width]" :class="periodWindowBarColor(window)" :style="{ width: `${periodWindowRatio(window) * 100}%`, minWidth: periodWindowRatio(window) > 0 ? '3px' : '0' }" /></div>
         <div class="mt-3 flex items-end justify-between gap-3"><div><p class="text-xs text-[var(--ui-text-muted)]">Used</p><p class="font-semibold tabular-nums">{{ formatCredits(window.used) }} / {{ formatCredits(window.limit) }}</p></div><div class="text-right"><p class="text-xs text-[var(--ui-text-muted)]">Remaining</p><p class="text-sm font-medium tabular-nums">{{ formatCredits(window.remaining) }}</p></div></div>
-        <p v-if="window.reset_at" class="mt-2 text-xs text-[var(--ui-text-dimmed)]">Resets {{ formatDate(window.reset_at) }}</p>
+
       </AppCard>
     </section>
 
-    <section v-if="section === 'dashboard'" class="space-y-5" aria-labelledby="billing-title">
-
-      <div>
+    <section v-if="section === 'billing'" class="space-y-5" aria-labelledby="billing-title">
+       <div>
         <form class="flex flex-wrap items-end gap-3" @submit.prevent="applyBillingRange">
           <UFormField label="Time range">
             <USelect v-model="rangePreset" :items="rangeOptions" value-key="value" label-key="label" class="w-44" @update:model-value="selectRange" />
@@ -38,15 +73,14 @@
         <UAlert v-if="billingError" class="mt-4" color="error" variant="subtle" title="Billing request failed" :description="billingError" />
       </div>
 
-      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <AppCard v-for="metric in billingMetrics" :key="metric.label" tinted>
-          <p class="text-sm text-[var(--ui-text-muted)]">{{ metric.label }}</p>
-          <p class="mt-2 break-words text-2xl font-bold tabular-nums text-[var(--ui-text-highlighted)]">{{ metric.value }}</p>
-          <p class="mt-1 text-xs text-[var(--ui-text-dimmed)]">{{ metric.detail }}</p>
-        </AppCard>
-      </div>
-
-      <div class="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
+      <div class="grid min-w-0 gap-5 lg:grid-cols-2">
+        <div class="grid min-w-0 gap-4 sm:grid-cols-2" aria-label="Usage summary">
+          <AppCard v-for="metric in billingMetrics" :key="metric.label" class="min-w-0" tinted>
+            <p class="text-sm text-[var(--ui-text-muted)]">{{ metric.label }}</p>
+            <p class="mt-2 break-words text-2xl font-bold tabular-nums text-[var(--ui-text-highlighted)]">{{ metric.value }}</p>
+            <p class="mt-1 text-xs text-[var(--ui-text-dimmed)]">{{ metric.detail }}</p>
+          </AppCard>
+        </div>
         <AppCard class="min-w-0">
           <template #header>
             <div>
@@ -65,8 +99,11 @@
           </div>
           <p v-else class="py-10 text-center text-sm text-[var(--ui-text-muted)]">No model charges in this range.</p>
         </AppCard>
+      </div>
 
-        <AppCard class="min-w-0" :ui="{ body: 'p-0' }">
+        <div class="grid min-w-0 grid-cols-1 items-stretch gap-5 xl:grid-cols-2">
+
+        <AppCard class="flex min-w-0 flex-col" :ui="{ header: 'min-h-24', body: 'flex-1 p-0' }">
           <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -78,7 +115,7 @@
               </UFormField>
             </div>
           </template>
-          <div class="overflow-x-auto">
+          <div class="min-h-80 overflow-x-auto">
             <AppTable :data="charges" :columns="chargeColumns" :loading="billingLoading" empty="No billing charges found." class="min-w-[800px]">
               <template #created_at-cell="{ row }"><span class="whitespace-nowrap text-sm">{{ formatDate(rowValue(row).created_at) }}</span></template>
               <template #provider-cell="{ row }"><span class="text-sm">{{ rowValue(row).provider || '—' }}</span></template>
@@ -89,7 +126,8 @@
               <template #balance_after-cell="{ row }"><span class="font-mono">{{ formatCredits(rowValue(row).balance_after) }}</span></template>
             </AppTable>
           </div>
-          <div class="flex flex-col gap-3 border-t border-[var(--ui-border)] px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <template #footer>
+          <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
             <span class="text-[var(--ui-text-muted)]">Showing {{ chargeRangeStart }}–{{ chargeRangeEnd }} of {{ formatNumber(chargesTotal) }}</span>
             <div class="flex items-center gap-2">
               <AppButton size="sm" color="neutral" variant="outline" :disabled="chargePage <= 1 || billingLoading" @click="changeChargePage(-1)">Previous</AppButton>
@@ -97,8 +135,10 @@
               <AppButton size="sm" color="neutral" variant="outline" :disabled="chargePage >= chargePages || billingLoading" @click="changeChargePage(1)">Next</AppButton>
             </div>
           </div>
+          </template>
         </AppCard>
-      </div>
+          <slot name="balance-history" />
+        </div>
     </section>
 
     <section v-if="section === 'api-keys'" class="space-y-4" aria-labelledby="keys-title">
@@ -250,7 +290,7 @@
 
 <script setup lang="ts">
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
-const props = withDefaults(defineProps<{ section?: 'dashboard' | 'api-keys' | 'settings' }>(), { section: 'dashboard' })
+const props = withDefaults(defineProps<{ section?: 'dashboard' | 'api-keys' | 'settings' | 'billing' }>(), { section: 'dashboard' })
 const section = computed(() => props.section)
 
 type BillingRange = { from: string; to: string }
@@ -268,7 +308,25 @@ type PeriodWindowStatus = { id: string; enabled: boolean; limit: number | null; 
 type PeriodLimitsStatus = { windows?: PeriodWindowStatus[] }
 
 const toast = useToast()
-const { currentUser: user, tokenExpiresAt, fetchAPI, loadCurrentUser, saveSession, capabilities, loadCapabilities, registerPasskey } = useUserApi()
+const { currentUser: user, tokenExpiresAt, fetchAPI, loadCurrentUser, saveSession, capabilities, serverInfo, loadCapabilities, registerPasskey } = useUserApi()
+
+const curlExample = computed(() => {
+  const url = new URL(serverInfo.value.cpa_public_url || 'https://api.gonkagate.com/v1')
+  const basePath = url.pathname.replace(/\/+$/, '')
+  url.pathname = `${basePath.endsWith('/v1') ? basePath : `${basePath}/v1`}/chat/completions`
+  url.search = ''
+  url.hash = ''
+  const endpoint = url.toString().replace(/'/g, "'\\''")
+  return [
+    `curl '${endpoint}' \\`,
+    '  -H "Authorization: Bearer gp-..." \\',
+    '  -H "Content-Type: application/json" \\',
+    "  -d '{",
+    '    "model": "<model-id>",',
+    '    "messages": [{"role": "user", "content": "Hello"}]',
+    "  }'"
+  ].join('\n')
+})
 
 const pageError = useWorkspaceState('user:workspace:page-error', () => '')
 const keys = useWorkspaceState<WorkspaceKey[]>('user:workspace:keys', () => [])
@@ -312,8 +370,8 @@ const topModels = computed(() => (selectedOverview.value?.top_models || []).slic
 const activePeriodWindows = computed(() => (periodLimits.value?.windows || []).filter(window => window.enabled && window.limit != null))
 const dashboardGridStyle = computed(() => ({
   '--dashboard-columns': activePeriodWindows.value.length
-    ? `minmax(9rem, 0.65fr) repeat(${activePeriodWindows.value.length}, minmax(0, 1fr))`
-    : 'minmax(9rem, 18rem)'
+    ? `repeat(${activePeriodWindows.value.length}, minmax(0, 1fr))`
+    : 'minmax(0, 1fr)'
 }))
 
 const keyFormOpen = ref(false)
@@ -453,7 +511,28 @@ async function loadKeys() {
     keysLoading.value = false
   }
 }
+async function loadDashboardBilling() {
+  billingLoading.value = true
+  billingError.value = ''
+  try {
+    const request = ++billingRequest
+    const [selectedResponse, todayResponse, monthResponse] = await Promise.all([
+      fetchAPI<any>('/billing/overview', { query: appliedRange.value }),
+      fetchAPI<any>('/billing/overview', { query: presetRange('today') }),
+      fetchAPI<any>('/billing/overview', { query: presetRange('month') })
+    ])
+    if (request !== billingRequest) return
+    todayOverview.value = overviewValue(todayResponse)
+    selectedOverview.value = overviewValue(selectedResponse)
+    monthOverview.value = overviewValue(monthResponse)
+  } catch (error: any) {
+    billingError.value = errorMessage(error, 'Unable to load usage summary.')
+  } finally {
+    billingLoading.value = false
+  }
+}
 async function loadBilling() {
+  if (section.value === 'dashboard') return loadDashboardBilling()
   const request = ++billingRequest
   const selected = appliedRange.value
   const today = presetRange('today')
@@ -483,8 +562,13 @@ async function loadBilling() {
 }
 async function loadWorkspace() {
   pageError.value = ''
-  const tasks = [loadCapabilities(), loadCurrentUser(), loadKeys(), loadBilling()]
-  if (section.value === 'dashboard') tasks.push(loadPeriodLimits())
+  const tasks: Promise<unknown>[] = []
+  if (section.value === 'billing') tasks.push(loadBilling())
+  else {
+    tasks.push(loadCapabilities(), loadCurrentUser())
+    if (section.value === 'api-keys') tasks.push(loadKeys())
+    if (section.value === 'dashboard') tasks.push(loadPeriodLimits(), loadDashboardBilling())
+  }
   const results = await Promise.allSettled(tasks)
   const failures = results.filter(result => result.status === 'rejected') as PromiseRejectedResult[]
   if (failures.length) pageError.value = failures.map(result => errorMessage(result.reason, 'Unable to load workspace data.')).join(' · ')
@@ -510,7 +594,7 @@ function applyBillingRange() {
   void loadBilling()
 }
 function changePageSize() {
-  if (import.meta.client) localStorage.setItem('hmc:user-billing:page-size', String(chargePageSize.value))
+
   chargePage.value = 1
   void loadBilling()
 }
@@ -740,7 +824,7 @@ function maskKey(value: string) {
 
 function formatCredits(value: unknown) {
   const number = Number(value)
-  return new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 }).format(Number.isFinite(number) ? number : 0)
+  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 2, roundingMode: 'ceil' } as Intl.NumberFormatOptions).format(Number.isFinite(number) ? number : 0)
 }
 function formatNumber(value: unknown) {
   const number = Number(value)
@@ -753,8 +837,7 @@ function formatDate(value?: string) {
 }
 
 onMounted(() => {
-  const stored = Number(localStorage.getItem('hmc:user-billing:page-size'))
-  if ([5, 20, 50, 100].includes(stored)) chargePageSize.value = stored
+
   void loadWorkspace()
 })
 </script>
