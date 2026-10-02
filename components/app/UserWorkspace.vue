@@ -3,6 +3,21 @@
 
     <UAlert v-if="pageError" color="error" variant="subtle" icon="i-tabler-alert-triangle" title="Some workspace data could not be loaded" :description="pageError" />
 
+    <section v-if="section === 'dashboard' && activePeriodWindows.length" class="dashboard-limit-grid grid grid-cols-1 gap-4" :style="dashboardGridStyle" aria-label="Account period limits">
+      <AppCard v-for="window in activePeriodWindows" :key="window.id" tinted>
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
+            <p class="shrink-0 text-sm font-semibold">{{ periodWindowLabel(window.id) }}</p>
+            <p v-if="window.reset_at" class="text-xs text-[var(--ui-text-dimmed)]">Resets {{ formatDate(window.reset_at) }}</p>
+          </div>
+          <span class="shrink-0 text-xs font-medium tabular-nums" :class="periodWindowColor(window)">{{ formatPercent(periodWindowRatio(window)) }}</span>
+        </div>
+        <div class="period-progress-track mt-3 h-2.5 overflow-hidden rounded-full"><div class="h-full rounded-full transition-[width]" :class="periodWindowBarColor(window)" :style="{ width: `${periodWindowRatio(window) * 100}%`, minWidth: periodWindowRatio(window) > 0 ? '3px' : '0' }" /></div>
+        <div class="mt-3 flex items-end justify-between gap-3"><div><p class="text-xs text-[var(--ui-text-muted)]">Used</p><p class="font-semibold tabular-nums">{{ formatCredits(window.used) }} / {{ formatCredits(window.limit) }}</p></div><div class="text-right"><p class="text-xs text-[var(--ui-text-muted)]">Remaining</p><p class="text-sm font-medium tabular-nums">{{ formatCredits(window.remaining) }}</p></div></div>
+
+      </AppCard>
+    </section>
+
     <section v-if="section === 'dashboard'" class="grid min-w-0 gap-5" :class="serverInfo.cpa_public_url ? 'lg:grid-cols-2' : ''" aria-label="CPA endpoint and usage summary">
     <AppCard v-if="serverInfo.cpa_public_url" class="min-w-0" :ui="{ body: 'space-y-4' }">
       <template #header><h2 class="text-sm font-semibold">Endpoint</h2></template>
@@ -11,11 +26,11 @@
         <AppButton type="button" size="xs" class="shrink-0" color="neutral" variant="ghost" icon="i-tabler-copy" aria-label="Copy CPA endpoint" title="Copy endpoint" @click="copyText(serverInfo.cpa_public_url, 'CPA endpoint copied')" />
       </div>
       <div class="space-y-2">
-        <div class="flex items-center justify-between gap-3">
-          <h3 class="text-sm font-semibold">Example</h3>
-          <AppButton type="button" size="xs" color="neutral" variant="ghost" icon="i-tabler-copy" aria-label="Copy curl example" title="Copy example" @click="copyText(curlExample, 'Example copied')" />
+        <h3 class="text-sm font-semibold">Example</h3>
+        <div class="relative rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] shadow-inner">
+          <AppButton type="button" size="xs" class="absolute right-3 top-3 z-10" color="neutral" variant="ghost" icon="i-tabler-copy" aria-label="Copy curl example" title="Copy example" @click="copyText(curlExample, 'Example copied')" />
+          <pre class="overflow-x-auto p-4 pr-14 text-xs leading-6 text-[var(--ui-text-highlighted)]"><code class="font-mono">{{ curlExample }}</code></pre>
         </div>
-        <pre class="overflow-x-auto rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] p-4 text-xs leading-6 text-[var(--ui-text-highlighted)] shadow-inner"><code class="font-mono">{{ curlExample }}</code></pre>
       </div>
     </AppCard>
     <AppCard class="min-w-0" :ui="{ body: 'space-y-4' }">
@@ -42,20 +57,6 @@
     </section>
     <UAlert v-if="section === 'dashboard' && billingError" color="error" variant="subtle" title="Usage summary could not be loaded" :description="billingError" />
 
-    <section v-if="section === 'dashboard' && activePeriodWindows.length" class="dashboard-limit-grid grid grid-cols-1 gap-4" :style="dashboardGridStyle" aria-label="Account period limits">
-      <AppCard v-for="window in activePeriodWindows" :key="window.id" tinted>
-        <div class="flex items-start justify-between gap-3">
-          <div class="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
-            <p class="shrink-0 text-sm font-semibold">{{ periodWindowLabel(window.id) }}</p>
-            <p v-if="window.reset_at" class="text-xs text-[var(--ui-text-dimmed)]">Resets {{ formatDate(window.reset_at) }}</p>
-          </div>
-          <span class="shrink-0 text-xs font-medium tabular-nums" :class="periodWindowColor(window)">{{ formatPercent(periodWindowRatio(window)) }}</span>
-        </div>
-        <div class="period-progress-track mt-3 h-2.5 overflow-hidden rounded-full"><div class="h-full rounded-full transition-[width]" :class="periodWindowBarColor(window)" :style="{ width: `${periodWindowRatio(window) * 100}%`, minWidth: periodWindowRatio(window) > 0 ? '3px' : '0' }" /></div>
-        <div class="mt-3 flex items-end justify-between gap-3"><div><p class="text-xs text-[var(--ui-text-muted)]">Used</p><p class="font-semibold tabular-nums">{{ formatCredits(window.used) }} / {{ formatCredits(window.limit) }}</p></div><div class="text-right"><p class="text-xs text-[var(--ui-text-muted)]">Remaining</p><p class="text-sm font-medium tabular-nums">{{ formatCredits(window.remaining) }}</p></div></div>
-
-      </AppCard>
-    </section>
 
     <section v-if="section === 'billing'" class="space-y-5" aria-labelledby="billing-title">
        <div>
