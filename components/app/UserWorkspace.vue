@@ -23,7 +23,7 @@
       <template #header><h2 class="text-sm font-semibold">Endpoint</h2></template>
       <div class="flex min-w-0 items-start gap-3 rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] p-4 shadow-inner">
         <code class="min-w-0 flex-1 break-all font-mono text-sm leading-6 text-[var(--ui-text-highlighted)]">{{ serverInfo.cpa_public_url }}</code>
-        <AppButton type="button" size="xs" class="shrink-0" color="neutral" variant="ghost" icon="i-tabler-copy" aria-label="Copy CPA endpoint" title="Copy endpoint" @click="copyText(serverInfo.cpa_public_url, 'CPA endpoint copied')" />
+        <AppButton type="button" size="xs" class="shrink-0" color="neutral" variant="ghost" icon="i-tabler-copy" aria-label="Copy endpoint" title="Copy endpoint" @click="copyText(serverInfo.cpa_public_url, 'Endpoint copied')" />
       </div>
       <div class="space-y-2">
         <h3 class="text-sm font-semibold">Example</h3>
