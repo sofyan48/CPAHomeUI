@@ -1,4 +1,7 @@
-import { useCookie, useRuntimeConfig } from '#imports'
+import { useRuntimeConfig } from '#imports'
+import { storeToRefs } from 'pinia'
+import { useManagementConfigStore } from '~/stores/managementConfig'
+import { useManagementSessionStore } from '~/stores/managementSession'
 
 export type ApiQueryValue = string | number | boolean | null | undefined | Array<string | number | boolean>
 export type ApiQuery = Record<string, ApiQueryValue>
@@ -41,16 +44,6 @@ const providerPaths = new Set([
   '/config/api-keys/openai-compatibility'
 ])
 
-const configCache = new Map<string, { value: any, cachedAt: number }>()
-const configRequests = new Map<string, Promise<any>>()
-let configGeneration = 0
-
-const invalidateConfigCache = () => {
-  configGeneration++
-  configCache.clear()
-  configRequests.clear()
-}
-
 const errorMessage = (error: any) => {
   const data = error?.data
   if (typeof data === 'string' && data.trim()) return data
@@ -64,10 +57,8 @@ const errorMessage = (error: any) => {
 
 export const useApi = () => {
   const config = useRuntimeConfig()
-  const token = useCookie<string | null>('management_token', {
-    sameSite: 'strict',
-    secure: import.meta.client && window.location.protocol === 'https:'
-  })
+  const { token } = storeToRefs(useManagementSessionStore())
+  const managementConfig = useManagementConfigStore()
 
   // Home often listens on IPv4 only; localhost may resolve to ::1 in browsers.
   const configuredURL = String(config.public.apiUrl || '').trim().replace(/\/+$/, '').replace(/^(https?:\/\/)localhost(?=:\d+|\/|$)/i, (_, scheme: string) => `${scheme}127.0.0.1`)
@@ -110,27 +101,12 @@ export const useApi = () => {
 
   const fetchConfig = (options: ApiRequestOptions, activeToken: string) => {
     const cacheKey = `${apiBase}\n${activeToken}`
-    const cached = configCache.get(cacheKey)
-    const now = Date.now()
-    if (cached && now - cached.cachedAt < 1000) return Promise.resolve(cached.value)
-
-    const pendingRequest = configRequests.get(cacheKey)
-    if (pendingRequest) return pendingRequest
-
-    const generation = configGeneration
-    const request = $fetch<any>(resolveUrl('/config'), {
+    return managementConfig.fetchConfig(cacheKey, () => $fetch<any>(resolveUrl('/config'), {
       method: 'GET',
       headers: requestHeaders(options, activeToken),
       responseType: 'json',
       signal: options.signal
-    }).then((configRoot) => {
-      if (generation === configGeneration) configCache.set(cacheKey, { value: configRoot, cachedAt: Date.now() })
-      return configRoot
-    }).finally(() => {
-      if (configRequests.get(cacheKey) === request) configRequests.delete(cacheKey)
-    })
-    configRequests.set(cacheKey, request)
-    return request
+    }))
   }
 
   const providerGroupsFromConfig = (configRoot: any, path: string) => {
@@ -151,7 +127,7 @@ export const useApi = () => {
         return providerGroupsFromConfig(configRoot, providerPath) as T
       }
 
-      if (method !== 'GET') invalidateConfigCache()
+      if (method !== 'GET') managementConfig.invalidate()
       const response = await $fetch<T>(resolveUrl(path), {
         method,
         query: options.query,
@@ -160,7 +136,7 @@ export const useApi = () => {
         responseType: options.responseType || 'json',
         signal: options.signal
       })
-      if (method !== 'GET') invalidateConfigCache()
+      if (method !== 'GET') managementConfig.invalidate()
       return response
     } catch (error: any) {
       throw new ManagementApiError(errorMessage(error), error?.statusCode || error?.status, error?.data)

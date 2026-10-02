@@ -22,6 +22,22 @@ yarn install
 bun install
 ```
 
+## State management
+
+Application state is managed by Pinia:
+
+- `stores/userSession.ts`: user session, capabilities, account, and authentication actions.
+- `stores/managementSession.ts`: management token and remember preference.
+- `stores/managementCapabilities.ts`: management capabilities and server metadata.
+- `stores/managementConfig.ts`: short-lived configuration cache and request deduplication.
+- `stores/workspace.ts`: namespaced admin/user data and request status.
+
+The existing API/capability composables remain compatible wrappers. Pages use `useWorkspaceState` for writable store-backed refs and `useStoreData` for asynchronous data loading. Workspace owners initialize fresh state on mount, and obsolete owners cannot overwrite replacement state. Token changes clear the corresponding workspace domain. Workspace data is not persisted; existing session cookies and browser storage formats are unchanged.
+
+Transient forms, modal visibility, filters, and pagination remain component-local. Request timers and lifecycle cleanup remain with their components.
+
+Run focused store checks with `node scripts/test-state.mjs`, and verify the production build with `npm run build`.
+
 ## Development Server
 
 Start the development server on `http://localhost:3000`:

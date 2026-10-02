@@ -132,6 +132,8 @@
 </template>
 
 <script setup>
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
+import { useDataSync } from '~/composables/useDataSync'
 const { fetchAPI } = useApi()
 const toast = useToast()
 const views = [{ value: 'console', label: 'Observability' }, { value: 'sender', label: 'API-call sender' }]
@@ -140,19 +142,19 @@ const windowOptions = [{ label: 'Last hour', value: 3600 }, { label: 'Last 24 ho
 const windowSeconds = ref(86400)
 const groupBy = ref('model')
 const autoRefresh = ref(true)
-const loadingConsole = ref(false)
-const consoleError = ref('')
-const lastUpdated = ref('')
-const overview = ref(null)
-const realtime = ref(null)
-const providerHealth = ref(null)
-const credentialHealth = ref(null)
-const logs = ref(null)
+const loadingConsole = useWorkspaceState('admin:diagnostics:loadingConsole', () => (false))
+const consoleError = useWorkspaceState('admin:diagnostics:consoleError', () => (''))
+const lastUpdated = useWorkspaceState('admin:diagnostics:lastUpdated', () => (''))
+const overview = useWorkspaceState('admin:diagnostics:overview', () => (null))
+const realtime = useWorkspaceState('admin:diagnostics:realtime', () => (null))
+const providerHealth = useWorkspaceState('admin:diagnostics:providerHealth', () => (null))
+const credentialHealth = useWorkspaceState('admin:diagnostics:credentialHealth', () => (null))
+const logs = useWorkspaceState('admin:diagnostics:logs', () => (null))
 const logSearch = ref('')
 const appliedLogSearch = ref('')
 const logPage = ref(1)
 const logPageSize = 20
-const downloadingId = ref('')
+const downloadingId = useWorkspaceState('admin:diagnostics:downloadingId', () => (''))
 let refreshTimer
 const number = value => value == null ? '—' : Number(value).toLocaleString()
 const decimal = value => value == null ? '—' : Number(value).toFixed(1)
@@ -228,12 +230,13 @@ async function downloadLog(item) {
   finally { downloadingId.value = '' }
 }
 watch(activeView, view => { if (view === 'sender') loadCredentials(); else refreshConsole() })
+useDataSync('admin:diagnostics:sync', refreshConsole)
 onMounted(() => { refreshConsole(); refreshTimer = setInterval(() => { if (autoRefresh.value) refreshConsole() }, 30000) })
 onUnmounted(() => clearInterval(refreshTimer))
-const sending = ref(false)
-const errorMessage = ref('')
-const authResponse = ref(null)
-const result = ref(null)
+const sending = useWorkspaceState('admin:diagnostics:sending', () => (false))
+const errorMessage = useWorkspaceState('admin:diagnostics:errorMessage', () => (''))
+const authResponse = useWorkspaceState('admin:diagnostics:authResponse', () => (null))
+const result = useWorkspaceState('admin:diagnostics:result', () => (null))
 const methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']
 const form = reactive({ method: 'GET', url: '', auth_index: '', headers: '{\n  "Accept": "application/json"\n}', data: '' })
 const credentials = computed(() => Array.isArray(authResponse.value) ? authResponse.value : Array.isArray(authResponse.value?.credentials) ? authResponse.value.credentials : Array.isArray(authResponse.value?.files) ? authResponse.value.files : [])

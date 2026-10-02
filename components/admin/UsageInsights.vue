@@ -62,21 +62,22 @@
 </template>
 
 <script setup lang="ts">
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
 const props = defineProps<{ commonQuery: string, recordQuery: string }>()
 const { fetchAPI } = useApi()
 const groupBy = ref('model')
 const metric = ref('request_count')
-const loading = ref(false)
-const exporting = ref(false)
-const loadingTree = ref(false)
-const error = ref('')
-const treeError = ref('')
+const loading = useWorkspaceState('admin:usage-insights:loading', () => (false))
+const exporting = useWorkspaceState('admin:usage-insights:exporting', () => (false))
+const loadingTree = useWorkspaceState('admin:usage-insights:loadingTree', () => (false))
+const error = useWorkspaceState('admin:usage-insights:error', () => (''))
+const treeError = useWorkspaceState('admin:usage-insights:treeError', () => (''))
 const sessionID = ref('')
-const aggregates = ref<any>(null)
-const realtime = ref<any>(null)
-const providerHealth = ref<any>(null)
-const credentialHealth = ref<any>(null)
-const tree = ref<any>(null)
+const aggregates = useWorkspaceState<any>('admin:usage-insights:aggregates', () => (null))
+const realtime = useWorkspaceState<any>('admin:usage-insights:realtime', () => (null))
+const providerHealth = useWorkspaceState<any>('admin:usage-insights:providerHealth', () => (null))
+const credentialHealth = useWorkspaceState<any>('admin:usage-insights:credentialHealth', () => (null))
+const tree = useWorkspaceState<any>('admin:usage-insights:tree', () => (null))
 const latestVelocity = computed(() => realtime.value?.velocity?.at(-1))
 const realtimeGroupBy = computed(() => ['model', 'provider', 'client_key', 'credential'].includes(groupBy.value) ? groupBy.value : 'model')
 const healthSections = computed(() => [

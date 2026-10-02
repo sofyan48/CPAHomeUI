@@ -1,23 +1,11 @@
 <template>
   <div class="space-y-7">
-    <section class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h1 class="text-4xl font-bold tracking-tight text-[var(--ui-text-highlighted)]">Find the right model</h1>
-        <p class="mt-2 max-w-2xl text-[var(--ui-text-muted)]">Browse models available to your API keys, including pricing and observed availability.</p>
-      </div>
-      <AppButton color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading || capabilityLoading" @click="refreshCatalog">Refresh</AppButton>
-    </section>
-
     <UAlert v-if="catalogUnsupported" color="warning" variant="subtle" title="Model catalog unavailable" description="This Home server does not support the public model catalog endpoint." />
 
     <template v-else>
       <UAlert v-if="capabilityError" color="warning" variant="subtle" title="Unable to check model catalog capabilities" :description="`${capabilityError} The catalog was requested directly instead.`" />
       <UAlert v-if="error" color="error" variant="subtle" title="Unable to load models" :description="error" />
       <UAlert v-if="accessibleWarning" color="warning" variant="subtle" title="Your key access could not be loaded" :description="accessibleWarning" />
-
-      <div v-if="token && accessLoaded && access" class="text-sm text-[var(--ui-text-muted)]">
-        {{ access.reason === 'no_api_keys' ? 'No API keys yet — create one to access models.' : access.restricted ? `Access limited to your model groups (${access.api_key_count} keys).` : `All served models accessible (${access.api_key_count} keys).` }}
-      </div>
 
       <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <UInput v-model="search" aria-label="Search models" icon="i-tabler-search" placeholder="Search models or capabilities..." />
@@ -109,6 +97,7 @@
 </template>
 
 <script setup lang="ts">
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
 definePageMeta({ layout: 'app' })
 const route = useRoute()
 const router = useRouter()
@@ -131,17 +120,17 @@ const capabilityOrder: CapabilityFilter[] = ['tools', 'structuredOutput', 'reaso
 const validSorts = new Set(['name', 'price-asc', 'price-desc'])
 const queryKeys = ['q', 'provider', 'modality', 'caps', 'mine', 'sort'] as const
 const noFilterValue = '__no_filter__'
-const publicCatalog = ref<CatalogModel[]>([])
-const models = ref<CatalogModel[]>([])
-const loading = ref(false)
-const capabilityLoading = ref(true)
-const catalogReady = ref(false)
-const catalogUnsupported = ref(false)
-const error = ref('')
-const capabilityError = ref('')
-const accessibleWarning = ref('')
-const access = ref<AccessSummary | null>(null)
-const accessLoaded = ref(false)
+const publicCatalog = useWorkspaceState<CatalogModel[]>('user:models:public-catalog', () => [])
+const models = useWorkspaceState<CatalogModel[]>('user:models:models', () => [])
+const loading = useWorkspaceState('user:models:loading', () => false)
+const capabilityLoading = useWorkspaceState('user:models:capability-loading', () => true)
+const catalogReady = useWorkspaceState('user:models:catalog-ready', () => false)
+const catalogUnsupported = useWorkspaceState('user:models:catalog-unsupported', () => false)
+const error = useWorkspaceState('user:models:error', () => '')
+const capabilityError = useWorkspaceState('user:models:capability-error', () => '')
+const accessibleWarning = useWorkspaceState('user:models:accessible-warning', () => '')
+const access = useWorkspaceState<AccessSummary | null>('user:models:access', () => null)
+const accessLoaded = useWorkspaceState('user:models:access-loaded', () => false)
 const search = ref(validQueryString(route.query.q))
 
 const inputModality = ref(validQueryString(route.query.modality))

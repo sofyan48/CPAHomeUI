@@ -179,7 +179,8 @@ const sections: Section[] = [
     description: 'Core CPA listener and diagnostic settings.',
     fields: [
       { key: 'debug', label: 'Debug mode', type: 'switch', description: 'Enable verbose runtime diagnostics.' },
-      { key: 'port', label: 'CPA port', type: 'number', min: 1, max: 65535, step: 1, hint: 'Valid range: 1–65535' }
+      { key: 'port', label: 'CPA port', type: 'number', min: 1, max: 65535, step: 1, hint: 'Valid range: 1–65535' },
+            { key: 'cpaPublicUrl', label: 'CPA Public URL', type: 'url', placeholder: 'https://api.example.com/v1', hint: 'Display only in the user dashboard. Does not change listener, routing, or cluster settings. Leave empty to hide.' }
     ]
   },
   {
@@ -202,6 +203,25 @@ const sections: Section[] = [
       { key: 'remoteManagementDisableControlPanel', label: 'Disable control panel', type: 'switch', description: 'Do not serve the bundled browser control panel.' },
       { key: 'remoteManagementDisableAutoUpdatePanel', label: 'Disable panel auto-update', type: 'switch', description: 'Prevent automatic control-panel updates.' },
       { key: 'remoteManagementPanelGithubRepository', label: 'Panel GitHub repository', type: 'text', placeholder: 'owner/repository' }
+    ]
+  },
+  {
+    id: 'user-email',
+    title: 'Mail Setup',
+    description: 'Configure verification and password recovery. Set the SMTP password in the Home server environment, then restart Home; never enter the password here. External SMTP requires STARTTLS (port 587), not implicit TLS on port 465.',
+    fields: [
+      { key: 'userEmailEnabled', label: 'Enable mail', type: 'switch', description: 'Enable email registration, verification, and password recovery when all settings are valid.' },
+      { key: 'userEmailPublicUrl', label: 'Public user panel URL', type: 'url', placeholder: 'https://home.example.com/user.html', hint: 'HTTPS required; HTTP is allowed only for localhost or loopback.' },
+      { key: 'userEmailFromAddress', label: 'From address', type: 'text', placeholder: 'no-reply@example.com', hint: 'A single mailbox without a display name.' },
+      { key: 'userEmailFromName', label: 'From name', type: 'text', placeholder: 'CPAHome' },
+      { key: 'userEmailSenderType', label: 'Sender type', type: 'select', items: [{ label: 'SMTP', value: 'smtp' }] },
+      { key: 'userEmailSmtpHost', label: 'SMTP host', type: 'text', placeholder: 'smtp.example.com' },
+      { key: 'userEmailSmtpPort', label: 'SMTP port', type: 'number', min: 1, max: 65535, step: 1, hint: '587 recommended; 465 is unsupported.' },
+      { key: 'userEmailSmtpUsername', label: 'SMTP username', type: 'text', placeholder: 'smtp-user', hint: 'Optional for SMTP servers without authentication.' },
+      { key: 'userEmailSmtpPasswordEnv', label: 'SMTP password environment variable', type: 'text', placeholder: 'HOME_USER_EMAIL_SMTP_PASSWORD', hint: 'Variable name only. Its value must be set on the Home server.' },
+      { key: 'userEmailSmtpStarttls', label: 'Require STARTTLS', type: 'switch', description: 'Required for every non-loopback SMTP host. TLS 1.2 or newer.' },
+      { key: 'userEmailVerificationTtl', label: 'Verification token lifetime', type: 'text', placeholder: '24h', hint: 'Positive Go duration, for example 24h or 1h30m.' },
+      { key: 'userEmailResetTtl', label: 'Password reset token lifetime', type: 'text', placeholder: '30m', hint: 'Positive Go duration, for example 30m.' }
     ]
   },
   {

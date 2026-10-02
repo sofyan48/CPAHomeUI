@@ -304,6 +304,8 @@
 </template>
 
 <script setup>
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
+import { useDataSync } from '~/composables/useDataSync'
 const { fetchAPI } = useApi()
 const allOptionValue = '__all__'
 const toast = useToast()
@@ -334,24 +336,24 @@ const sections = [
   { label: 'Model prices', value: 'prices', icon: 'i-tabler-tag' }
 ]
 const activeSection = ref('overview')
-const pageError = ref('')
-const overview = ref(null)
-const chargesResponse = ref(null)
-const balancesResponse = ref(null)
-const priceResponse = ref(null)
-const usersResponse = ref(null)
-const modelCandidatesResponse = ref({ available: [], static: [] })
-const modelCandidatesLoading = ref(false)
-const modelCandidatesError = ref('')
+const pageError = useWorkspaceState('admin:billing:pageError', () => (''))
+const overview = useWorkspaceState('admin:billing:overview', () => (null))
+const chargesResponse = useWorkspaceState('admin:billing:chargesResponse', () => (null))
+const balancesResponse = useWorkspaceState('admin:billing:balancesResponse', () => (null))
+const priceResponse = useWorkspaceState('admin:billing:priceResponse', () => (null))
+const usersResponse = useWorkspaceState('admin:billing:usersResponse', () => (null))
+const modelCandidatesResponse = useWorkspaceState('admin:billing:modelCandidatesResponse', () => ({ available: [], static: [] }))
+const modelCandidatesLoading = useWorkspaceState('admin:billing:modelCandidatesLoading', () => (false))
+const modelCandidatesError = useWorkspaceState('admin:billing:modelCandidatesError', () => (''))
 const modelCandidateSearch = ref('')
 const availableModelsOnly = ref(true)
 const selectedPriceCandidateKeys = ref([])
-const overviewLoading = ref(false)
-const chargesLoading = ref(false)
-const balancesLoading = ref(false)
-const pricesLoading = ref(false)
-const settingsLoading = ref(false)
-const settingsSaving = ref(false)
+const overviewLoading = useWorkspaceState('admin:billing:overviewLoading', () => (false))
+const chargesLoading = useWorkspaceState('admin:billing:chargesLoading', () => (false))
+const balancesLoading = useWorkspaceState('admin:billing:balancesLoading', () => (false))
+const pricesLoading = useWorkspaceState('admin:billing:pricesLoading', () => (false))
+const settingsLoading = useWorkspaceState('admin:billing:settingsLoading', () => (false))
+const settingsSaving = useWorkspaceState('admin:billing:settingsSaving', () => (false))
 
 const deviceTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
 const settingsForm = ref({ service_tier_source: 'request', report_timezone: deviceTimezone })
@@ -367,27 +369,27 @@ const chargePreset = ref('7d')
 const balancePreset = ref('7d')
 const chargePageSize = ref(50)
 const balancePageSize = ref(50)
-const tierDiagnostics = ref(null)
-const diagnosticsLoading = ref(false)
-const diagnosticsError = ref('')
+const tierDiagnostics = useWorkspaceState('admin:billing:tierDiagnostics', () => (null))
+const diagnosticsLoading = useWorkspaceState('admin:billing:diagnosticsLoading', () => (false))
+const diagnosticsError = useWorkspaceState('admin:billing:diagnosticsError', () => (''))
 const tierConfirmOpen = ref(false)
 const matchingSettingsOpen = ref(false)
-const savedTierSource = ref('request')
+const savedTierSource = useWorkspaceState('admin:billing:savedTierSource', () => ('request'))
 const chargePage = ref(1)
 const balancePage = ref(1)
 
 const adjustmentOpen = ref(false)
-const adjustmentSaving = ref(false)
+const adjustmentSaving = useWorkspaceState('admin:billing:adjustmentSaving', () => (false))
 const adjustmentForm = ref({ type: 'recharge', user_id: '', amount: '', note: '' })
 const priceFormOpen = ref(false)
-const priceSaving = ref(false)
+const priceSaving = useWorkspaceState('admin:billing:priceSaving', () => (false))
 
 const editingPrice = ref(null)
 const modalError = ref('')
 const deletePriceOpen = ref(false)
 const deletePriceTarget = ref(null)
-const priceDeleting = ref(false)
-const togglingPrice = ref('')
+const priceDeleting = useWorkspaceState('admin:billing:priceDeleting', () => (false))
+const togglingPrice = useWorkspaceState('admin:billing:togglingPrice', () => (''))
 const chargeDetailOpen = ref(false)
 const selectedCharge = ref(null)
 const balanceDetailOpen = ref(false)
@@ -587,7 +589,7 @@ async function loadOverview() { overviewLoading.value = true; try { overview.val
 async function loadCharges() { chargesLoading.value = true; try { chargesResponse.value = await fetchAPI('/billing/charges', { query: { ...buildRangeQuery(appliedChargeFilters.value), limit: chargePageSize.value, offset: (chargePage.value - 1) * chargePageSize.value } }) } finally { chargesLoading.value = false } }
 async function loadBalances() { balancesLoading.value = true; try { balancesResponse.value = await fetchAPI('/billing/balance-records', { query: { ...buildRangeQuery(appliedBalanceFilters.value), limit: balancePageSize.value, offset: (balancePage.value - 1) * balancePageSize.value } }) } finally { balancesLoading.value = false } }
 async function loadPrices() { pricesLoading.value = true; try { priceResponse.value = await fetchAPI('/billing/model-prices') } finally { pricesLoading.value = false } }
-async function loadSettings() { settingsLoading.value = true; try { const settings = await fetchAPI('/billing/settings'); settingsForm.value = { service_tier_source: settings?.service_tier_source || 'request', report_timezone: settings?.report_timezone || deviceTimezone }; savedTierSource.value = settingsForm.value.service_tier_source } finally { settingsLoading.value = false } }
+async function loadSettings(preserveDraft = false) { settingsLoading.value = true; try { const settings = await fetchAPI('/billing/settings'); if (preserveDraft !== true) settingsForm.value = { service_tier_source: settings?.service_tier_source || 'request', report_timezone: settings?.report_timezone || deviceTimezone }; savedTierSource.value = settings?.service_tier_source || 'request' } finally { settingsLoading.value = false } }
 async function loadDiagnostics() {
   diagnosticsLoading.value = true
   diagnosticsError.value = ''
@@ -744,12 +746,14 @@ function formatDateTime(value) { return value ? new Intl.DateTimeFormat(undefine
 function prettyJSON(value) { return JSON.stringify(value || {}, null, 2) }
 function errorMessage(error, fallback = 'Unexpected request error.') { return error?.data?.message || error?.data?.error || error?.message || fallback }
 
-onMounted(async () => {
+async function loadBilling(preserveDraft = false) {
   await safely(async () => {
-    await loadSettings()
+    await loadSettings(preserveDraft)
     await Promise.all([loadOverview(), loadCharges(), loadBalances(), loadPrices(), loadUsers()])
   }, 'Failed to load billing data.')
-})
+}
+useDataSync('admin:billing:sync', () => loadBilling(true))
+onMounted(loadBilling)
 </script>
 
 <script>

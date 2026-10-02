@@ -37,6 +37,7 @@
 </template>
 
 <script setup lang="ts">
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
 definePageMeta({ layout: 'app' })
 const route = useRoute()
 const router = useRouter()
@@ -45,8 +46,8 @@ const resetToken = ref('')
 const password = ref('')
 const confirmPassword = ref('')
 const securing = ref(true)
-const loading = ref(false)
-const error = ref('')
+const loading = useWorkspaceState('user:reset-password:loading', () => false)
+const error = useWorkspaceState('user:reset-password:error', () => '')
 const complete = ref(false)
 const invalidToken = ref(false)
 const invalidTokenMessage = ref('Open a complete reset link from your recovery email, or request a new one.')
@@ -54,7 +55,7 @@ const invalidTokenMessage = ref('Open a complete reset link from your recovery e
 async function scrubToken() {
   const query = { ...route.query }
   delete query.token
-  await router.replace({ path: route.path, query, hash: route.hash })
+  await router.replace({ path: route.path, query, hash: '' })
 }
 
 async function submit() {
@@ -80,7 +81,8 @@ async function submit() {
 }
 
 onMounted(async () => {
-  resetToken.value = typeof route.query.token === 'string' ? route.query.token.trim() : ''
+  const fragmentToken = new URLSearchParams(route.hash.slice(1)).get('token')
+    resetToken.value = (fragmentToken || (typeof route.query.token === 'string' ? route.query.token : '')).trim()
   invalidToken.value = !resetToken.value
   try {
     await scrubToken()

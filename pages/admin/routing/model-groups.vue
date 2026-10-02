@@ -168,22 +168,24 @@
 </template>
 
 <script setup>
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
+import { useStoreData } from '~/composables/useStoreData'
 const { fetchAPI } = useApi()
 const toast = useToast()
 const rowValue = (row) => row?.original ?? row
 const search = ref('')
-const pageError = ref('')
+const pageError = useWorkspaceState('admin:routing:model-groups:pageError', () => (''))
 const selectedGroupId = ref(null)
 const groupFormOpen = ref(false)
 const detailFormOpen = ref(false)
 const formError = ref('')
-const submitting = ref(false)
+const submitting = useWorkspaceState('admin:routing:model-groups:submitting', () => (false))
 const editingGroup = ref(null)
 const editingDetail = ref(null)
 const deleteOpen = ref(false)
 const deleteKind = ref('')
 const deleteTarget = ref(null)
-const deleting = ref(false)
+const deleting = useWorkspaceState('admin:routing:model-groups:deleting', () => (false))
 const groupForm = ref({ group_name: '', enabled: true })
 const detailForm = ref({ model_id: '', suggested_model_id: '', channels: [] })
 
@@ -213,7 +215,7 @@ async function loadWorkspace() {
     return { groupsResponse: { model_groups: [] }, channelsResponse: { channel_groups: [] }, modelsResponse: { models: [] } }
   }
 }
-const { data, pending, refresh: refreshWorkspace } = await useAsyncData('routing-model-groups', loadWorkspace)
+const { data, pending, refresh: refreshWorkspace } = useStoreData('admin:routing:model-groups:routing-model-groups', loadWorkspace)
 const groups = computed(() => Array.isArray(data.value?.groupsResponse?.model_groups) ? data.value.groupsResponse.model_groups : [])
 const channels = computed(() => Array.isArray(data.value?.channelsResponse?.channel_groups) ? data.value.channelsResponse.channel_groups : [])
 const models = computed(() => {
@@ -245,7 +247,7 @@ async function loadDetails() {
     return { model_group_details: [] }
   }
 }
-const { data: detailsData, pending: detailsPending, refresh: refreshDetails } = await useAsyncData('routing-model-group-details', loadDetails, { immediate: false })
+const { data: detailsData, pending: detailsPending, refresh: refreshDetails } = useStoreData('admin:routing:model-groups:routing-model-group-details', loadDetails, { immediate: false })
 const details = computed(() => Array.isArray(detailsData.value?.model_group_details) ? detailsData.value.model_group_details : [])
 const deleteDescription = computed(() => {
   if (!deleteTarget.value) return ''

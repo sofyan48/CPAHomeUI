@@ -91,6 +91,8 @@
 </template>
 
 <script setup>
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
+import { useStoreData } from '~/composables/useStoreData'
 const route = useRoute();
 if (route.query.tab === "proxy")
   await navigateTo("/admin/proxy-network", { replace: true });
@@ -115,9 +117,9 @@ const upstreamTabs = [
   { label: "Accounts", value: "accounts" },
   { label: "Providers", value: "providers" },
 ];
-const summaryError = ref("");
-const quotaError = ref("");
-const syncing = ref(false);
+const summaryError = useWorkspaceState('admin:upstream:summaryError', () => (""));
+const quotaError = useWorkspaceState('admin:upstream:quotaError', () => (""));
+const syncing = useWorkspaceState('admin:upstream:syncing', () => (false));
 
 const attentionRequest = ref(0);
 const syncRequest = ref(0);
@@ -176,7 +178,7 @@ const {
   data: summary,
   pending: summaryPending,
   refresh: refreshSummary,
-} = useAsyncData("upstream-summary", loadSummary, {
+} = useStoreData('admin:upstream:upstream-summary', loadSummary, {
   lazy: true,
   default: () => ({ accounts: [], groups: [] }),
 });
@@ -211,8 +213,7 @@ const summaryIDs = computed(() =>
     .filter(Boolean)
     .join(","),
 );
-const { data: summaryQuota, refresh: refreshSummaryQuota } = useAsyncData(
-  "upstream-summary-quota",
+const { data: summaryQuota, refresh: refreshSummaryQuota } = useStoreData('admin:upstream:upstream-summary-quota',
   loadSummaryQuota,
   { lazy: true, default: () => [], watch: [summaryIDs] },
 );

@@ -28,13 +28,14 @@
 </template>
 
 <script setup lang="ts">
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
 definePageMeta({ layout: 'app' })
 const router = useRouter()
 const { fetchAPI, saveSession, capabilities, loadCapabilities } = useUserApi()
 const form = reactive({ username: '', email: '', password: '', confirmPassword: '' })
-const loading = ref(false)
-const error = ref('')
-const capabilityLoaded = ref(false)
+const loading = useWorkspaceState('user:register:loading', () => false)
+const error = useWorkspaceState('user:register:error', () => '')
+const capabilityLoaded = useWorkspaceState('user:register:capability-loaded', () => false)
 const emailEnabled = computed(() => capabilityLoaded.value && capabilities.value.email_registration === true)
 
 async function submit() {

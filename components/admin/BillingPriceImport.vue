@@ -77,6 +77,7 @@
 </template>
 
 <script setup lang="ts">
+import { useWorkspaceState } from '~/composables/useWorkspaceState'
 defineProps<{ providers: string[]; models: string[] }>()
 const emit = defineEmits<{ applied: [] }>()
 const { fetchAPI } = useApi()
@@ -89,11 +90,11 @@ const aliases = reactive<{ target_model: string; source_models: string }[]>([])
 const multiplierRules = reactive<{ id: string; label: string; match_mode: string; pattern: string; multiplier: number }[]>([])
 const rowMultipliers = reactive<{ row_key: string; multiplier: number }[]>([])
 const matchOverrides = reactive<{ target_provider: string; target_model: string; source_provider: string; source_model: string }[]>([])
-const loading = ref(false)
-const applying = ref(false)
-const error = ref('')
-const preview = ref<any>(null)
-const operation = ref<any>(null)
+const loading = useWorkspaceState('admin:billing-price-import:loading', () => (false))
+const applying = useWorkspaceState('admin:billing-price-import:applying', () => (false))
+const error = useWorkspaceState('admin:billing-price-import:error', () => (''))
+const preview = useWorkspaceState<any>('admin:billing-price-import:preview', () => (null))
+const operation = useWorkspaceState<any>('admin:billing-price-import:operation', () => (null))
 const selected = ref<string[]>([])
 const confirmOverwrite = ref(false)
 let inputVersion = 0
