@@ -12,7 +12,13 @@
       <form class="space-y-4" @submit.prevent="submit">
         <UAlert v-if="error" ref="errorAlert" color="error" variant="subtle" title="Sign in failed" :description="error" role="alert" tabindex="-1" />
         <UFormField label="Username" required><UInput v-model="form.username" class="w-full" autocomplete="username" icon="i-tabler-user" :readonly="needsTOTP || passkeyRequired" autofocus /></UFormField>
-        <UFormField v-if="!passkeyRequired" label="Password" required><UInput v-model="form.password" class="w-full" type="password" autocomplete="current-password" icon="i-tabler-lock" /></UFormField>
+        <UFormField v-if="!passkeyRequired" label="Password" required>
+          <UInput v-model="form.password" class="w-full" :type="passwordVisible ? 'text' : 'password'" autocomplete="current-password" icon="i-tabler-lock" :ui="{ trailing: 'pe-1' }">
+            <template #trailing>
+              <AppButton type="button" size="xs" color="neutral" variant="ghost" :icon="passwordVisible ? 'i-tabler-eye-off' : 'i-tabler-eye'" :aria-label="passwordVisible ? 'Hide password' : 'Show password'" :title="passwordVisible ? 'Hide password' : 'Show password'" :aria-pressed="passwordVisible" @click="passwordVisible = !passwordVisible" />
+            </template>
+          </UInput>
+        </UFormField>
         <UFormField v-if="needsTOTP" label="Authenticator code" required><UInput v-model="form.totp" class="w-full font-mono tracking-[0.3em]" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" autofocus /></UFormField>
         <UAlert v-if="passkeyRequired" color="warning" variant="subtle" title="Passkey required" description="This account requires one of its registered passkeys to sign in." />
         <div v-if="!needsTOTP && !passkeyRequired" class="flex justify-end"><NuxtLink to="/app/forgot-password" class="text-sm font-medium text-primary-500">Forgot password?</NuxtLink></div>
@@ -34,6 +40,7 @@ const route = useRoute()
 const router = useRouter()
 const { token, login, loginWithPasskey, hydrateSession, loadCurrentUser, clearSession } = useUserApi()
 const form = reactive({ username: '', password: '', totp: '' })
+const passwordVisible = ref(false)
 const needsTOTP = ref(false)
 const passkeyRequired = ref(false)
 const loading = useWorkspaceState('user:login:loading', () => false)
