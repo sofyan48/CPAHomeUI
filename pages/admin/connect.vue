@@ -56,15 +56,20 @@
           <UFormField label="Management key" required>
             <UInput
               v-model="token"
-              type="password"
+              :type="keyVisible ? 'text' : 'password'"
               autocomplete="current-password"
               placeholder="Enter the management secret"
               icon="i-tabler-key"
               size="lg"
               class="w-full"
               :disabled="loading"
+              :ui="{ trailing: 'pe-1' }"
               autofocus
-            />
+            >
+              <template #trailing>
+                <AppButton type="button" size="xs" color="neutral" variant="ghost" :icon="keyVisible ? 'i-tabler-eye-off' : 'i-tabler-eye'" :aria-label="keyVisible ? 'Hide management key' : 'Show management key'" :title="keyVisible ? 'Hide management key' : 'Show management key'" :aria-pressed="keyVisible" :disabled="loading" @click="keyVisible = !keyVisible" />
+              </template>
+            </UInput>
           </UFormField>
 
           <UCheckbox v-model="remember" label="Keep this management connection for 30 days" />
@@ -103,6 +108,7 @@ const { fetchAPI, token: storedToken, apiBase } = useApi()
 const { rememberSession: remembered } = storeToRefs(useManagementSessionStore())
 const { resetCapabilities } = useManagementCapabilities()
 const token = ref('')
+const keyVisible = ref(false)
 const remember = ref(false)
 const loading = useWorkspaceState('admin:connect:loading', () => (false))
 const errorMessage = useWorkspaceState('admin:connect:errorMessage', () => (''))
