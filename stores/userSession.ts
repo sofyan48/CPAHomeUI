@@ -48,6 +48,7 @@ export interface UserSessionResponse {
 }
 
 export interface UserCapabilities {
+  topup_approval?: boolean
   email_registration?: boolean
   email_verification?: boolean
   password_recovery?: boolean
@@ -69,6 +70,15 @@ export interface UserApiKey {
   model_groups: number[]
   created_at?: string
   updated_at?: string
+}
+
+export interface BillingRechargeRequest {
+  id: number
+  user_id: number
+  amount: number
+  note: string
+  status: 'pending' | 'approved'
+  created_at: string
 }
 
 export interface BillingTopItem {

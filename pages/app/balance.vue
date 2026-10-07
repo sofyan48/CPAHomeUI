@@ -11,13 +11,16 @@
       <AppCard class="min-w-0 lg:col-span-6">
         <template #header><h2 class="font-semibold">Recharge Token</h2></template>
         <form class="space-y-4" @submit.prevent="recharge">
+          <UAlert v-if="pendingTopup" color="warning" variant="subtle" icon="i-tabler-clock" title="Topup awaiting approval" :description="`Your request for ${formatCredits(pendingTopup.amount)} credits is waiting for administrator approval. Your balance has not changed. You cannot request another topup while this request is pending.`" />
+          <p v-if="topupApprovalEnabled && !pendingTopup" class="text-sm text-[var(--ui-text-muted)]">Topup requests require administrator approval before credits are added to your balance.</p>
           <UAlert v-if="rechargeError" color="error" variant="subtle" title="Recharge failed" :description="rechargeError" />
           <UFormField label="Recharge amount (credits)" required hint="Enter any positive amount.">
             <div class="flex items-center gap-3">
-              <UInput v-model="amount" type="number" min="0" step="any" placeholder="100" class="min-w-0 flex-1" :disabled="saving" required />
-              <AppButton type="submit" icon="i-tabler-plus" class="shrink-0" :loading="saving" :disabled="!validAmount || !token">Topup {{ validAmount ? formatCredits(Number(amount)) : '' }}</AppButton>
+              <UInput v-model="amount" type="number" min="0" step="any" placeholder="100" class="min-w-0 flex-1" :disabled="saving || loading || !requestStateLoaded || !!pendingTopup" required />
+              <AppButton type="submit" icon="i-tabler-plus" class="shrink-0" :loading="saving" :disabled="!validAmount || !token || loading || !requestStateLoaded || !!pendingTopup">{{ topupApprovalEnabled ? 'Request topup' : 'Topup' }} {{ validAmount ? formatCredits(Number(amount)) : '' }}</AppButton>
             </div>
           </UFormField>
+          <AppButton v-if="pendingTopup || !requestStateLoaded" type="button" color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" :disabled="saving" @click="refresh">Refresh status</AppButton>
         </form>
       </AppCard>
     </div>
@@ -48,10 +51,13 @@
 
 <script setup lang="ts">
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
-import type { BillingBalanceRecord, BillingOverview } from '~/composables/useUserApi'
+import type { BillingBalanceRecord, BillingOverview, BillingRechargeRequest } from '~/composables/useUserApi'
 
 definePageMeta({ layout: 'app' })
-const { currentUser, token, hydrateSession, fetchAPI, loadCurrentUser } = useUserApi()
+const { currentUser, token, hydrateSession, fetchAPI, loadCurrentUser, capabilities, loadCapabilities } = useUserApi()
+const topupApprovalEnabled = computed(() => capabilities.value.topup_approval === true)
+const requestStateLoaded = useWorkspaceState('user:balance:request-state-loaded', () => false)
+const pendingTopup = useWorkspaceState<BillingRechargeRequest | null>('user:balance:pending-topup', () => null)
 const loading = useWorkspaceState('user:balance:loading', () => false)
 const saving = useWorkspaceState('user:balance:saving', () => false)
 const recordsLoading = useWorkspaceState('user:balance:records-loading', () => false)
@@ -106,6 +112,7 @@ async function refresh() {
   pageError.value = ''
   try {
     const results = await Promise.allSettled([
+      loadTopupRequest(),
       fetchAPI<{ overview: BillingOverview }>('/billing/overview').then(response => { overview.value = response.overview }),
       loadCurrentUser(), loadRecords()
     ])
@@ -113,27 +120,49 @@ async function refresh() {
     if (failure?.status === 'rejected') pageError.value = failure.reason?.message || 'Please try refreshing again.'
   } finally { loading.value = false }
 }
+async function loadTopupRequest() {
+  requestStateLoaded.value = false
+  try {
+    await loadCapabilities()
+  } catch (error: any) {
+    if (error?.statusCode !== 404) throw error
+  }
+  if (topupApprovalEnabled.value) {
+    const response = await fetchAPI<{ request: BillingRechargeRequest | null }>('/billing/recharge-request')
+    pendingTopup.value = response.request
+  } else {
+    pendingTopup.value = null
+  }
+  requestStateLoaded.value = true
+}
 async function recharge() {
-  if (!validAmount.value || saving.value) return
+  if (!validAmount.value || saving.value || loading.value || !requestStateLoaded.value || pendingTopup.value) return
   saving.value = true
   rechargeError.value = ''
 
   const rechargeAmount = Number(amount.value)
   try {
-    const response = await fetchAPI<{ record: BillingBalanceRecord; current_balance: number }>('/billing/recharge', { method: 'POST', body: { amount: rechargeAmount } })
-    if (currentUser.value) currentUser.value.credits = response.current_balance
-    if (overview.value) overview.value.current_balance = response.current_balance
-    toast.add({
-      title: 'Recharge completed',
-      description: `${formatCredits(rechargeAmount)} credits recharged. Balance after recharge: ${formatCredits(response.current_balance)}. Transaction: ${response.record.id}.`,
-      color: 'success',
-      icon: 'i-tabler-circle-check'
-    })
+    const response = await fetchAPI<{ request?: BillingRechargeRequest; record?: BillingBalanceRecord; current_balance: number }>('/billing/recharge', { method: 'POST', body: { amount: rechargeAmount } })
+    if (response.request) {
+      pendingTopup.value = response.request
+      toast.add({ title: 'Topup requested', description: `${formatCredits(response.request.amount)} credits are awaiting administrator approval. Your balance has not changed.`, color: 'warning', icon: 'i-tabler-clock' })
+    } else if (response.record) {
+      if (currentUser.value) currentUser.value.credits = response.current_balance
+      if (overview.value) overview.value.current_balance = response.current_balance
+      toast.add({
+        title: 'Recharge completed',
+        description: `${formatCredits(rechargeAmount)} credits recharged. Balance after recharge: ${formatCredits(response.current_balance)}. Transaction: ${response.record.id}.`,
+        color: 'success',
+        icon: 'i-tabler-circle-check'
+      })
+    }
     amount.value = ''
     recordPage.value = 1
     await refresh()
   } catch (error: any) {
     rechargeError.value = error?.message || 'Recharge could not be completed. Refresh and check your history before retrying.'
+    requestStateLoaded.value = false
+    await refresh()
   } finally { saving.value = false }
 }
 async function changeRecordPageSize() {

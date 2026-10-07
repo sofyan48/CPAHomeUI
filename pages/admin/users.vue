@@ -118,6 +118,10 @@
               formatCredits(row.original.credits)
             }}</span></template
           >
+          <template #pendingTopup-cell="{ row }">
+            <UBadge v-if="row.original.pending_topup" color="warning" variant="subtle">{{ formatCredits(row.original.pending_topup.amount) }} credits</UBadge>
+            <span v-else class="text-[var(--ui-text-muted)]">—</span>
+          </template>
           <template #periodLimits-cell="{ row }"
             ><span
               v-if="zeroPeriodWindows(row.original).length"
@@ -168,6 +172,18 @@
                 :aria-label="`Approve user ${row.original.username}`"
                 title="Approve user"
                 @click="openApproval(row.original)"
+              />
+              <AppButton
+                v-if="topupApprovalSupported && row.original.pending_topup && !row.original.deleted_at"
+                icon="i-tabler-coins"
+                color="warning"
+                variant="soft"
+                size="xs"
+                :loading="approvingTopupUserId === row.original.id"
+                :disabled="approvingTopupUserId !== null"
+                :aria-label="`Approve topup for ${row.original.username}`"
+                title="Approve topup"
+                @click="openTopupApproval(row.original)"
               />
               <AdminTableAction
                 action="view"
@@ -1284,6 +1300,32 @@
       </template>
     </AppModal>
 
+    <AppModal
+      v-model:open="topupApprovalOpen"
+      title="Approve topup"
+      description="Confirm this topup request to credit the user's balance."
+      :dismissible="approvingTopupUserId === null"
+      :close="approvingTopupUserId === null"
+    >
+      <template #body>
+        <form v-if="topupApprovalUser" class="space-y-4" @submit.prevent="approveTopup">
+          <UAlert v-if="topupApprovalError" color="error" variant="subtle" :description="topupApprovalError" />
+          <div class="space-y-2 rounded-md border border-[var(--ui-border)] p-3">
+            <SummaryRow label="User" :value="topupApprovalUser.username" />
+            <SummaryRow label="Request ID" :value="String(topupApprovalUser.request.id)" />
+            <SummaryRow label="Amount" :value="`${formatCredits(topupApprovalUser.request.amount)} credits`" />
+            <SummaryRow label="Requested" :value="formatDate(topupApprovalUser.request.created_at)" />
+          </div>
+          <p v-if="topupApprovalUser.request.note" class="break-words text-sm text-[var(--ui-text-muted)]">{{ topupApprovalUser.request.note }}</p>
+          <p class="text-xs text-[var(--ui-text-muted)]">Verify the topup before approving. Credits are added only after approval.</p>
+          <div class="flex justify-end gap-2">
+            <AppButton type="button" color="neutral" variant="outline" :disabled="approvingTopupUserId !== null" @click="topupApprovalOpen = false">Cancel</AppButton>
+            <AppButton type="submit" color="success" icon="i-tabler-coins" :loading="approvingTopupUserId !== null">Approve topup</AppButton>
+          </div>
+        </form>
+      </template>
+    </AppModal>
+
     <AppModal v-model:open="deleteOpen" title="Confirm deletion"
       ><template #body
         ><div class="space-y-4">
@@ -1365,6 +1407,35 @@ const unassignedKeyCount = computed(
 );
 const rowValue = (row) => row?.original ?? row;
 const userStatus = (user) => user.deleted_at ? "Deleted" : user.approval_pending ? "Pending approval" : "Active";
+const topupApprovalSupported = computed(() => supports("topup_approval", false));
+const topupApprovalOpen = ref(false),
+  topupApprovalUser = ref(null),
+  approvingTopupUserId = ref(null),
+  topupApprovalError = ref("");
+function openTopupApproval(user) {
+  if (approvingTopupUserId.value !== null || !user.pending_topup || user.deleted_at) return;
+  topupApprovalUser.value = { id: user.id, username: user.username, request: { ...user.pending_topup } };
+  topupApprovalError.value = "";
+  topupApprovalOpen.value = true;
+}
+async function approveTopup() {
+  const user = topupApprovalUser.value;
+  if (!user || approvingTopupUserId.value !== null || !topupApprovalSupported.value) return;
+  approvingTopupUserId.value = user.id;
+  topupApprovalError.value = "";
+  try {
+    await fetchAPI(`/users/${encodeURIComponent(user.id)}/topup/approve`, {
+      method: "POST", body: { request_id: user.request.id },
+    });
+    topupApprovalOpen.value = false;
+    await syncAll();
+    toast.add({ title: "Topup approved.", description: `${user.username}'s request for ${formatCredits(user.request.amount)} credits has been approved.`, color: "success" });
+  } catch (error) {
+    topupApprovalError.value = errorMessage(error);
+  } finally {
+    approvingTopupUserId.value = null;
+  }
+}
 const approvingUserId = ref(null);
 const approvalOpen = ref(false),
   approvalUser = ref(null),
@@ -1408,6 +1479,7 @@ const userColumns = [
   { accessorKey: "user", header: "User" },
   { accessorKey: "status", header: "Status" },
   { accessorKey: "credits", header: "Credits" },
+  { accessorKey: "pendingTopup", header: "Pending topup" },
   { accessorKey: "periodLimits", header: "Period limits" },
   { accessorKey: "keys", header: "Client keys" },
   { accessorKey: "credentialScope", header: "Credential scope" },
