@@ -108,9 +108,9 @@
           >
           <template #status-cell="{ row }"
             ><UBadge
-              :color="row.original.deleted_at ? 'warning' : 'success'"
+              :color="row.original.deleted_at || row.original.approval_pending ? 'warning' : 'success'"
               variant="subtle"
-              >{{ row.original.deleted_at ? "Deleted" : "Active" }}</UBadge
+              >{{ userStatus(row.original) }}</UBadge
             ></template
           >
           <template #credits-cell="{ row }"
@@ -157,6 +157,18 @@
           >
           <template #actions-cell="{ row }"
             ><div class="flex items-center justify-end gap-1">
+              <AppButton
+                v-if="row.original.approval_pending && !row.original.deleted_at"
+                icon="i-tabler-user-check"
+                color="success"
+                variant="soft"
+                size="xs"
+                :loading="approvingUserId === row.original.id"
+                :disabled="approvingUserId !== null"
+                :aria-label="`Approve user ${row.original.username}`"
+                title="Approve user"
+                @click="openApproval(row.original)"
+              />
               <AdminTableAction
                 action="view"
                 label="View user"
@@ -680,9 +692,9 @@
           <div class="rounded-md border border-[var(--ui-border)] p-4">
             <div class="flex flex-wrap gap-2">
               <UBadge
-                :color="userDetail.deleted_at ? 'warning' : 'success'"
+                :color="userDetail.deleted_at || userDetail.approval_pending ? 'warning' : 'success'"
                 variant="subtle"
-                >{{ userDetail.deleted_at ? "Deleted" : "Active" }}</UBadge
+                >{{ userStatus(userDetail) }}</UBadge
               ><UBadge
                 v-if="userDetail.password_set || userDetail.has_password"
                 color="neutral"
@@ -1242,6 +1254,36 @@
       ></AppModal
     >
 
+    <AppModal
+      v-model:open="approvalOpen"
+      title="Approve user"
+      description="Choose the model scope for this account before approving access."
+      :dismissible="approvingUserId === null"
+      :close="approvingUserId === null"
+    >
+      <template #body>
+        <form class="space-y-4" @submit.prevent="approveUser">
+          <p class="text-sm">User: <span class="font-semibold">{{ approvalUser?.username }}</span></p>
+          <UAlert v-if="approvalError" color="error" variant="subtle" :description="approvalError" />
+          <UAlert v-if="!accessGroupsSupported" color="warning" variant="subtle" title="Model scopes unavailable" description="This server does not support model scopes. Approval with a model scope is unavailable." />
+          <fieldset v-else :disabled="approvingUserId !== null">
+            <ScopePicker
+              title="Model scope"
+              empty-label="No enabled model scopes are available. Create or enable one in Model scopes first."
+              :items="approvalModelOptions"
+              :selected="approvalModelGroups"
+              @toggle="toggleId(approvalModelGroups, $event)"
+            />
+          </fieldset>
+          <p class="text-xs text-[var(--ui-text-muted)]">Select at least one scope. It will be applied to the user's client keys. If the user has no key, an initial key will be created and available in their API keys dashboard.</p>
+          <div class="flex justify-end gap-2">
+            <AppButton type="button" color="neutral" variant="outline" :disabled="approvingUserId !== null" @click="approvalOpen = false">Cancel</AppButton>
+            <AppButton type="submit" color="success" icon="i-tabler-user-check" :loading="approvingUserId !== null" :disabled="!accessGroupsSupported || loading || !approvalModelGroups.length">Approve user</AppButton>
+          </div>
+        </form>
+      </template>
+    </AppModal>
+
     <AppModal v-model:open="deleteOpen" title="Confirm deletion"
       ><template #body
         ><div class="space-y-4">
@@ -1322,6 +1364,45 @@ const unassignedKeyCount = computed(
       .length,
 );
 const rowValue = (row) => row?.original ?? row;
+const userStatus = (user) => user.deleted_at ? "Deleted" : user.approval_pending ? "Pending approval" : "Active";
+const approvingUserId = ref(null);
+const approvalOpen = ref(false),
+  approvalUser = ref(null),
+  approvalModelGroups = ref([]),
+  approvalError = ref("");
+const approvalModelOptions = computed(() => modelGroups.value
+  .filter((group) => !group.disabled && !group.deleted_at)
+  .map((group) => ({ label: group.group_name, value: Number(group.id) })));
+function openApproval(user) {
+  if (approvingUserId.value !== null || !user.approval_pending || user.deleted_at) return;
+  approvalUser.value = user;
+  const existing = new Set(keysForUser(user.id).flatMap((key) => key.model_groups));
+  approvalModelGroups.value = approvalModelOptions.value.filter((option) => existing.has(option.value)).map((option) => option.value);
+  approvalError.value = "";
+  approvalOpen.value = true;
+}
+async function approveUser() {
+  const user = approvalUser.value;
+  if (approvingUserId.value !== null || loading.value || !user?.approval_pending || user.deleted_at) return;
+  approvalError.value = "";
+  if (!accessGroupsSupported.value || !approvalModelGroups.value.length) {
+    approvalError.value = "Select at least one enabled model scope.";
+    return;
+  }
+  approvingUserId.value = user.id;
+  try {
+    await fetchAPI(`/users/${encodeURIComponent(user.id)}/approve`, {
+      method: "POST", body: { model_groups: [...approvalModelGroups.value] },
+    });
+    approvalOpen.value = false;
+    await syncAll();
+    toast.add({ title: "User approved.", description: `${user.username} can now sign in with the selected model scope.`, color: "success" });
+  } catch (error) {
+    approvalError.value = errorMessage(error);
+  } finally {
+    approvingUserId.value = null;
+  }
+}
 const userColumns = [
   { id: "select", header: "" },
   { accessorKey: "user", header: "User" },
@@ -1366,7 +1447,7 @@ const matches = (values) => {
   return !query || values.some((value) => normalize(value).includes(query));
 };
 const filteredUsers = computed(() =>
-  users.value.filter((user) => matches([user.id, user.username])),
+  users.value.filter((user) => matches([user.id, user.username, userStatus(user)])),
 );
 
 const filteredKeys = computed(() =>

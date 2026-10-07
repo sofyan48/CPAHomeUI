@@ -5,7 +5,8 @@
         <h1 class="text-2xl font-bold text-[var(--ui-text-highlighted)]">Create your account</h1>
         <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Start using models through CPAHome.</p>
       </template>
-      <form class="space-y-5" @submit.prevent="submit">
+      <UAlert v-if="approvalPending" color="warning" variant="subtle" icon="i-tabler-clock" title="Account awaiting approval" description="Your account has been created. An administrator must approve it before you can sign in to the user dashboard." />
+            <form v-else class="space-y-5" @submit.prevent="submit">
         <UAlert v-if="error" color="error" variant="subtle" title="Registration failed" :description="error" />
         <UFormField label="Username" required>
           <UInput v-model="form.username" class="w-full" autocomplete="username" icon="i-tabler-user" />
@@ -19,7 +20,7 @@
         <UFormField label="Confirm password" required>
           <UInput v-model="form.confirmPassword" class="w-full" type="password" autocomplete="new-password" icon="i-tabler-lock" />
         </UFormField>
-        <p class="text-xs text-[var(--ui-text-muted)]">Your session stays signed in on this browser until it expires or you log out.</p>
+        <p class="text-xs text-[var(--ui-text-muted)]">New accounts require administrator approval before you can sign in.</p>
         <AppButton type="submit" color="primary" block size="lg" :loading="loading">Create account</AppButton>
       </form>
       <template #footer><p class="text-center text-sm text-[var(--ui-text-muted)]">Already registered? <NuxtLink to="/app/login" class="font-medium text-primary-500">Sign in</NuxtLink></p></template>
@@ -32,6 +33,7 @@ import { useWorkspaceState } from '~/composables/useWorkspaceState'
 definePageMeta({ layout: 'app' })
 const router = useRouter()
 const { fetchAPI, saveSession, capabilities, loadCapabilities } = useUserApi()
+const approvalPending = ref(false)
 const form = reactive({ username: '', email: '', password: '', confirmPassword: '' })
 const loading = useWorkspaceState('user:register:loading', () => false)
 const error = useWorkspaceState('user:register:error', () => '')
@@ -39,14 +41,21 @@ const capabilityLoaded = useWorkspaceState('user:register:capability-loaded', ()
 const emailEnabled = computed(() => capabilityLoaded.value && capabilities.value.email_registration === true)
 
 async function submit() {
+  if (loading.value || approvalPending.value) return
   error.value = ''
   if (!form.username.trim()) return void (error.value = 'Username is required.')
   if (!form.password) return void (error.value = 'Password is required.')
   if (form.password !== form.confirmPassword) return void (error.value = 'Passwords do not match.')
   loading.value = true
   try {
-    const session = await fetchAPI<UserSessionResponse>('/register', { method: 'POST', auth: false, body: { username: form.username.trim(), password: form.password, ...(form.email.trim() ? { email: form.email.trim() } : {}) } })
-    saveSession(session)
+    const session = await fetchAPI<UserSessionResponse | { approval_pending: true; message: string }>('/register', { method: 'POST', auth: false, body: { username: form.username.trim(), password: form.password, ...(form.email.trim() ? { email: form.email.trim() } : {}) } })
+    if ('approval_pending' in session && session.approval_pending) {
+      approvalPending.value = true
+      form.password = ''
+      form.confirmPassword = ''
+      return
+    }
+    saveSession(session as UserSessionResponse)
     await router.replace('/app')
   } catch (cause: any) {
     error.value = cause?.message || 'Unable to create account.'

@@ -12,7 +12,7 @@
 
     <div v-if="points.length">
       <div
-        class="relative h-64 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary sm:h-72"
+        class="relative h-56 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary sm:h-64"
         role="group"
         tabindex="0"
         aria-label="Token consumption trend. Use left and right arrow keys to inspect intervals."
@@ -35,10 +35,16 @@
           <line v-if="selectedPoint" :x1="selectedPoint.x" :x2="selectedPoint.x" y1="18" y2="202" stroke="var(--ui-border)" stroke-opacity="0.8" vector-effect="non-scaling-stroke" />
           <circle v-if="selectedPoint" :cx="selectedPoint.x" :cy="selectedPoint.y" r="5" fill="#50c7bd" stroke="var(--ui-bg)" stroke-width="2.5" vector-effect="non-scaling-stroke" />
 
-          <g fill="var(--ui-text-muted)" font-size="12">
-            <text v-for="label in dateLabels" :key="label.index" :x="label.x" y="232" :text-anchor="label.anchor">{{ formatDate(label.value) }}</text>
-          </g>
         </svg>
+
+        <div class="pointer-events-none absolute inset-x-0 bottom-0 h-7 text-xs text-[var(--ui-text-muted)]" aria-hidden="true">
+          <span
+            v-for="label in dateLabels"
+            :key="label.index"
+            class="absolute whitespace-nowrap"
+            :style="{ left: `${label.x / 720 * 100}%`, transform: label.anchor === 'end' ? 'translateX(-100%)' : label.anchor === 'middle' ? 'translateX(-50%)' : undefined }"
+          >{{ formatDate(label.value) }}</span>
+        </div>
 
         <div
           v-if="selectedPoint"
@@ -56,7 +62,7 @@
       </div>
     </div>
 
-    <p v-else class="flex min-h-64 items-center justify-center text-center text-sm text-[var(--ui-text-muted)]">No token trend is available for this range.</p>
+    <p v-else class="flex min-h-56 items-center justify-center text-center text-sm text-[var(--ui-text-muted)]">No token trend is available for this range.</p>
   </AppCard>
 </template>
 

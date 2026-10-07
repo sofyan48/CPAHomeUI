@@ -118,7 +118,7 @@ const ensureSession = async () => {
   if (!token.value) { await router.replace({ path: '/app/login', query: { redirect: route.fullPath } }); return }
   try { await loadCurrentUser() }
   catch (cause: any) {
-    if (cause?.statusCode !== 401 && token.value) return
+    if (cause?.statusCode !== 401 && cause?.code !== 'approval_pending' && token.value) return
     clearSession()
     await router.replace({ path: '/app/login', query: { redirect: route.fullPath } })
   }

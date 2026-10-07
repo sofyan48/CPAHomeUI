@@ -83,7 +83,8 @@ onMounted(async () => {
     await loadCurrentUser()
     await router.replace(destination.value)
   } catch (cause: any) {
-    if (cause?.statusCode === 401) clearSession()
+    if (cause?.statusCode === 401 || cause?.code === 'approval_pending') clearSession()
+    if (cause?.code === 'approval_pending') { error.value = cause.message; await focusError() }
   }
 })
 </script>
