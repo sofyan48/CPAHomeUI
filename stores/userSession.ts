@@ -49,6 +49,7 @@ export interface UserSessionResponse {
 
 export interface UserCapabilities {
   topup_approval?: boolean
+  request_logs?: boolean
   email_registration?: boolean
   email_verification?: boolean
   password_recovery?: boolean

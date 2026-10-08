@@ -74,7 +74,7 @@
 provide(Symbol.for('cliproxy-user-card'), true)
 const route = useRoute()
 const router = useRouter()
-const { token, currentUser, clearSession, loadCurrentUser, hydrateSession } = useUserApi()
+const { token, currentUser, clearSession, loadCurrentUser, hydrateSession, capabilities, loadCapabilities } = useUserApi()
 const creditBalance = computed(() => {
   if (!currentUser.value) return '—'
   const credits = Number(currentUser.value.credits)
@@ -85,19 +85,22 @@ const sidebarHidden = ref(false)
 const openMobile = () => { mobileOpen.value = true }
 const closeMobile = () => { mobileOpen.value = false }
 const publicPaths = new Set(['/app/login', '/app/register', '/app/forgot-password', '/app/reset-password', '/app/verify-email', '/app/models'])
-const workspaceNavigation = [
+const workspaceNavigation = computed(() => [
   { label: 'Dashboard', to: '/app', icon: 'i-tabler-layout-dashboard' },
     { label: 'Balance', to: '/app/balance', icon: 'i-tabler-wallet' },
   { label: 'Model Catalog', to: '/app/models', icon: 'i-tabler-box-multiple' },
   { label: 'API Key', to: '/app/api-keys', icon: 'i-tabler-key' },
+  ...(capabilities.value.request_logs === true ? [{ label: 'Request Logs', to: '/app/logs', icon: 'i-tabler-list-details' }] : []),
   { label: 'Setting', to: '/app/settings', icon: 'i-tabler-settings' }
-]
-const workspaceRoute = computed(() => ['/app', '/app/balance', '/app/api-keys', '/app/settings', '/app/profile'].includes(route.path) || (route.path === '/app/models' && Boolean(token.value)))
-const pageTitles: Record<string, string> = { '/app': 'Dashboard', '/app/balance': 'Balance', '/app/models': 'Model Catalog', '/app/api-keys': 'API Key', '/app/settings': 'Setting', '/app/profile': 'Profile' }
+])
+const workspaceRoute = computed(() => ['/app', '/app/balance', '/app/api-keys', '/app/settings', '/app/profile', '/app/logs'].includes(route.path) || (route.path === '/app/models' && Boolean(token.value)))
+const pageTitles: Record<string, string> = { '/app/logs': 'Request Logs', '/app': 'Dashboard', '/app/balance': 'Balance', '/app/models': 'Model Catalog', '/app/api-keys': 'API Key', '/app/settings': 'Setting', '/app/profile': 'Profile' }
 const accessSubtitles: Record<string, string> = { '/app/login': 'User login', '/app/register': 'Create account', '/app/models': 'Model catalog', '/app/forgot-password': 'Password recovery', '/app/reset-password': 'Reset password', '/app/verify-email': 'Verify email' }
 const pageTitle = computed(() => pageTitles[route.path] || 'User workspace')
 const pageSubtitle = computed(() => workspaceRoute.value
-  ? route.path === '/app'
+  ? route.path === '/app/logs'
+    ? 'Request summaries for your account only'
+    : route.path === '/app'
     ? 'Billing and account overview'
     : route.path === '/app/balance'
       ? 'Recharge credits and track your balance'
@@ -116,7 +119,7 @@ const ensureSession = async () => {
   hydrateSession()
   if (publicPaths.has(route.path)) return
   if (!token.value) { await router.replace({ path: '/app/login', query: { redirect: route.fullPath } }); return }
-  try { await loadCurrentUser() }
+  try { await loadCurrentUser(); await loadCapabilities().catch(() => {}) }
   catch (cause: any) {
     if (cause?.statusCode !== 401 && cause?.code !== 'approval_pending' && token.value) return
     clearSession()
