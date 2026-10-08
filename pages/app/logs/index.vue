@@ -20,6 +20,35 @@
       </form>
       <UAlert v-if="filterError" class="mt-4" color="error" variant="subtle" :description="filterError" />
     </AppCard>
+    <div v-if="!unsupported" class="grid gap-4 lg:grid-cols-3">
+      <AppCard>
+        <template #header><div class="flex items-center gap-2"><UIcon name="i-tabler-box-multiple" class="size-5 text-primary" /><h3 class="font-semibold">By model</h3></div></template>
+        <USkeleton v-if="pending" class="h-24 w-full" />
+        <div v-else-if="summary?.by_model.length" class="max-h-40 space-y-3 overflow-y-auto">
+          <div v-for="model in summary.by_model" :key="model.model" class="flex items-center justify-between gap-3 text-sm">
+            <span class="min-w-0 truncate" :title="model.model">{{ model.model || 'Unknown model' }}</span>
+            <span class="shrink-0 font-semibold tabular-nums">{{ formatNumber(model.requests) }}</span>
+          </div>
+        </div>
+        <p v-else class="text-sm text-[var(--ui-text-muted)]">{{ summary ? 'No requests in this range.' : 'Summary unavailable.' }}</p>
+        <p class="mt-3 text-xs text-[var(--ui-text-muted)]">Request counts across all matching logs</p>
+      </AppCard>
+      <AppCard>
+        <template #header><div class="flex items-center gap-2"><UIcon name="i-tabler-clock" class="size-5 text-primary" /><h3 class="font-semibold">Average latency</h3></div></template>
+        <USkeleton v-if="pending" class="h-10 w-32" />
+        <p v-else class="text-3xl font-semibold tabular-nums">{{ summary?.average_latency_ms != null ? formatLatency(summary.average_latency_ms) : '—' }}<span v-if="summary?.average_latency_ms != null" class="ml-1 text-sm font-normal text-[var(--ui-text-muted)]">ms</span></p>
+        <p class="mt-3 text-xs text-[var(--ui-text-muted)]">All matching requests with measured latency</p>
+      </AppCard>
+      <AppCard>
+        <template #header><div class="flex items-center gap-2"><UIcon name="i-tabler-circle-check" class="size-5 text-primary" /><h3 class="font-semibold">Status</h3></div></template>
+        <USkeleton v-if="pending" class="h-16 w-full" />
+        <div v-else class="grid grid-cols-2 gap-4">
+          <div><UBadge color="success" variant="subtle">Success</UBadge><p class="mt-2 text-2xl font-semibold tabular-nums">{{ summary ? formatNumber(summary.status.success) : '—' }}</p></div>
+          <div><UBadge color="error" variant="subtle">Failed</UBadge><p class="mt-2 text-2xl font-semibold tabular-nums">{{ summary ? formatNumber(summary.status.failed) : '—' }}</p></div>
+        </div>
+        <p class="mt-3 text-xs text-[var(--ui-text-muted)]">All matching logs, not just the current page</p>
+      </AppCard>
+    </div>
     <AppCard :ui="{ body: 'p-0' }">
       <template #header>
         <div class="flex flex-wrap items-center justify-between gap-3">
@@ -67,7 +96,12 @@ interface RequestLog {
   latency_ms: number
   request_id: string
 }
-interface LogPage { items: RequestLog[]; total: number; limit: number; offset: number }
+interface LogSummary {
+  by_model: { model: string; requests: number }[]
+  average_latency_ms: number | null
+  status: { success: number; failed: number }
+}
+interface LogPage { items: RequestLog[]; total: number; limit: number; offset: number; summary?: LogSummary }
 const { fetchAPI, loadCapabilities, capabilities, hydrateSession } = useUserApi()
 const unsupported = ref(false)
 const localDateTime = (date: Date) => {
@@ -111,6 +145,7 @@ const { data, pending, error, refresh } = useStoreData<LogPage>('user:request-lo
 }, { default: () => ({ items: [], total: 0, limit: 20, offset: 0 }) })
 const items = computed(() => error.value ? [] : data.value?.items || [])
 const total = computed(() => error.value ? 0 : data.value?.total || 0)
+const summary = computed(() => error.value ? null : data.value?.summary || null)
 const pages = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)))
 const rangeStart = computed(() => items.value.length ? (data.value?.offset || 0) + 1 : 0)
 const rangeEnd = computed(() => items.value.length ? (data.value?.offset || 0) + items.value.length : 0)
@@ -126,6 +161,7 @@ const columns = [
   { accessorKey: 'request_id', header: 'Request ID' }
 ]
 const formatNumber = (value: number) => new Intl.NumberFormat().format(value)
+const formatLatency = (value: number) => new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(value)
 const formatTime = (value: string) => {
   const date = new Date(value)
   return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'medium' }).format(date)
