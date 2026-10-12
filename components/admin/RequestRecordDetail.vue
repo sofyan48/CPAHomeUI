@@ -1,5 +1,5 @@
 <template>
-  <AppModal v-model:open="open" title="Request Details" :description="subtitle" :ui="{ content: 'w-[calc(100vw-2rem)] max-w-4xl max-h-[calc(100dvh-2rem)] flex flex-col', header: 'shrink-0 border-b border-[var(--ui-border)]', body: 'min-h-0 overflow-y-auto p-4 sm:p-6', footer: 'shrink-0 border-t border-[var(--ui-border)] bg-[var(--ui-bg)] p-4 sm:px-6' }">
+  <AppModal v-model:open="open" title="Request Details" :description="subtitle" :ui="{ content: 'w-full sm:max-w-4xl', header: 'shrink-0 border-b border-[var(--ui-border)]', body: 'min-h-0 overflow-y-auto p-4 sm:p-6', footer: 'shrink-0 border-t border-[var(--ui-border)] bg-[var(--ui-bg)] p-4 sm:px-6' }">
     <template #body>
       <div v-if="loading" role="status" class="flex items-center justify-center gap-2 py-16 text-sm text-[var(--ui-text-muted)]"><UIcon name="i-tabler-loader-2" class="size-5 animate-spin" />Loading request details…</div>
       <div v-else-if="detail" class="space-y-4">

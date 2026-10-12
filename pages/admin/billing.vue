@@ -193,7 +193,9 @@
 
     <template v-else-if="activeSection === 'prices'">
       <section class="overflow-hidden rounded-lg border border-blue-500/30 bg-blue-500/5" aria-labelledby="tier-policy-title"><div class="flex flex-wrap items-center justify-between gap-4 p-4"><div class="flex items-start gap-3"><span class="flex size-9 items-center justify-center rounded-md bg-blue-500/10 text-blue-500"><UIcon name="i-tabler-arrows-exchange" class="size-5" /></span><div><div class="flex flex-wrap items-center gap-2"><h2 id="tier-policy-title" class="font-semibold">Runtime billing context</h2><UBadge color="info" variant="subtle">Global</UBadge><UBadge v-if="priceSchemaVersion >= 2" color="success" variant="subtle">Tier and context pricing supported</UBadge></div><p class="mt-1 text-sm text-[var(--ui-text-muted)]">{{ settingsForm.service_tier_source === 'response' ? 'Rules match the provider response tier, falling back to the requested tier when absent.' : 'Rules match the service tier requested by the client.' }}</p><p v-if="priceSchemaVersion < 2" class="mt-1 text-xs text-[var(--ui-text-muted)]">This Home instance supports flat-price compatibility rules only.</p></div></div><AppButton v-if="priceSchemaVersion >= 2" color="neutral" variant="outline" icon="i-tabler-settings" @click="openMatchingSettings">Configure matching</AppButton></div></section>
-      <BillingPriceImport :providers="providerSearchOptions" :models="modelSearchOptions" @applied="loadPrices" />
+      <UAlert v-if="modelCandidatesError" color="warning" variant="subtle" title="Import model candidates unavailable" :description="modelCandidatesError" />
+      <p v-if="modelCandidatesLoading" class="text-xs text-[var(--ui-text-muted)]">Loading available import targets…</p>
+      <AdminBillingPriceImport ref="priceImporter" :providers="importProviderOptions" :models="modelSearchOptions" :candidates="modelCandidates" :available-targets="modelCandidates.filter(candidate => candidate.available)" :price-rules="priceRules" :service-tier-source="savedTierSource" @applied="loadPricesSafely" />
       <AdminTablePanel title="Model prices" :description="`${filteredPriceRules.length} rules`">
         <template #filters>
           <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -203,7 +205,7 @@
             <UFormField label="Source"><USelect :model-value="priceFilters.source || allOptionValue" @update:model-value="priceFilters.source = $event === allOptionValue ? '' : $event" :items="priceSourceOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
           </div>
         </template>
-        <template #actions><AppButton v-if="hasPriceFilters" color="neutral" variant="ghost" @click="clearPriceFilters">Clear filters</AppButton><AppButton color="primary" icon="i-tabler-plus" @click="openPriceForm()">New price</AppButton></template>
+        <template #actions><AppButton v-if="hasPriceFilters" color="neutral" variant="ghost" @click="clearPriceFilters">Clear filters</AppButton><AppButton color="neutral" variant="outline" icon="i-tabler-refresh" :disabled="pricesLoading || modelCandidatesLoading || !priceRules.some(rule => rule.source === 'sync')" @click="priceImporter?.checkUpdates()">Check for updates</AppButton><AppButton color="neutral" variant="outline" icon="i-tabler-download" @click="priceImporter?.openImport()">Import model prices</AppButton><AppButton color="primary" icon="i-tabler-plus" @click="openPriceForm()">New price</AppButton></template>
         <AppTable :columns="priceColumns" :data="filteredPriceRules" :loading="pricesLoading" class="min-w-[1260px]">
           <template #provider-cell="{ row }"><span class="font-medium">{{ rowValue(row).provider }}</span></template>
           <template #model-cell="{ row }"><div class="flex min-w-52 items-center gap-1"><span class="truncate font-mono">{{ rowValue(row).model }}</span><AppButton size="xs" color="neutral" variant="ghost" icon="i-tabler-clipboard" aria-label="Copy model ID" @click="copyText(rowValue(row).model)" /></div></template>
@@ -358,6 +360,8 @@ const selectedPriceCandidateKeys = ref([])
 const overviewLoading = useWorkspaceState('admin:billing:overviewLoading', () => (false))
 const chargesLoading = useWorkspaceState('admin:billing:chargesLoading', () => (false))
 const balancesLoading = useWorkspaceState('admin:billing:balancesLoading', () => (false))
+const priceImporter = ref(null)
+const importProviderOptions = computed(() => [...new Set([...providerSearchOptions.value, ...modelCandidates.value.map(candidate => candidate.provider)])].sort())
 const pricesLoading = useWorkspaceState('admin:billing:pricesLoading', () => (false))
 const settingsLoading = useWorkspaceState('admin:billing:settingsLoading', () => (false))
 const settingsSaving = useWorkspaceState('admin:billing:settingsSaving', () => (false))
@@ -785,7 +789,7 @@ function errorMessage(error, fallback = 'Unexpected request error.') { return er
 async function loadBilling(preserveDraft = false) {
   await safely(async () => {
     await loadSettings(preserveDraft)
-    await Promise.all([loadOverview(), loadCharges(), loadBalances(), loadPrices(), loadUsers()])
+    await Promise.all([loadOverview(), loadCharges(), loadBalances(), loadPrices(), loadUsers(), loadModelCandidates()])
   }, 'Failed to load billing data.')
 }
 useDataSync('admin:billing:sync', () => loadBilling(true))
