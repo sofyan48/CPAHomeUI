@@ -1,39 +1,51 @@
 <template>
-  <div class="space-y-6">
+  <div class="balance-workspace min-w-0 space-y-6">
     <UAlert v-if="pageError" color="error" variant="subtle" title="Could not load balance information" :description="pageError" />
 
-    <div class="grid grid-cols-1 gap-4 lg:grid-cols-12">
-      <div class="grid min-w-0 grid-cols-2 gap-4 lg:col-span-6">
-        <AppCard v-for="metric in metrics" :key="metric.label" tinted :accent="metric.label === 'Current balance' ? 'emerald' : undefined">
-          <p class="text-sm text-[var(--ui-text-muted)]">{{ metric.label }}</p><p class="mt-2 break-words text-2xl font-bold tabular-nums">{{ metric.value }}</p><p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ metric.detail }}</p>
-        </AppCard>
+    <section class="balance-hero grid min-w-0 gap-6 rounded-2xl border p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-center" aria-labelledby="balance-title">
+      <div class="min-w-0">
+        <p class="flex items-center gap-2 text-xs font-medium text-[var(--ui-text-muted)]"><UIcon name="i-tabler-wallet" class="size-4 text-[var(--ui-success)]" aria-hidden="true" /> Account credits</p>
+        <h1 id="balance-title" class="mt-2 text-2xl font-semibold tracking-tight text-[var(--ui-text-highlighted)]">Balance</h1>
+        <p class="mt-2 max-w-md text-sm leading-relaxed text-[var(--ui-text-muted)]">Keep your next request covered. Add credits, track spending, and review your account activity in one place.</p>
       </div>
-      <AppCard class="min-w-0 lg:col-span-6">
-        <template #header><h2 class="font-semibold">Recharge Token</h2></template>
+      <dl class="grid min-w-0 gap-3 sm:grid-cols-2" :aria-busy="loading">
+        <div v-for="(metric, index) in metrics" :key="metric.label" class="balance-summary min-w-0 rounded-xl border p-4">
+          <dt class="flex items-center gap-2 text-xs font-medium text-[var(--ui-text-muted)]"><UIcon :name="index === 0 ? 'i-tabler-wallet' : 'i-tabler-arrow-down-left'" class="size-4 text-[var(--ui-success)]" aria-hidden="true" />{{ metric.label }}</dt>
+          <dd class="mt-3 break-words text-3xl font-semibold tracking-tight tabular-nums text-[var(--ui-text-highlighted)]">{{ metric.value }}<span class="ml-1 text-xs font-normal tracking-normal text-[var(--ui-text-muted)]">credits</span></dd>
+          <dd class="mt-2 text-xs text-[var(--ui-text-muted)]">{{ metric.detail }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <AppCard class="balance-panel min-w-0" :ui="{ body: 'grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] lg:items-start' }">
+      <template #header><div class="flex items-center gap-3"><span class="balance-icon flex size-9 shrink-0 items-center justify-center rounded-xl"><UIcon name="i-tabler-coins" class="size-5" aria-hidden="true" /></span><div><h2 class="text-sm font-semibold">Add credits</h2><p class="mt-0.5 text-xs text-[var(--ui-text-muted)]">Top up your available balance.</p></div></div></template>
+      <div class="rounded-xl border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] p-4">
+        <p class="flex items-center gap-2 text-sm font-medium"><UIcon name="i-tabler-info-circle" class="size-4 text-[var(--ui-primary)]" aria-hidden="true" />{{ topupApprovalEnabled ? 'Approval-based topups' : 'Account topups' }}</p>
+        <p class="mt-2 text-xs leading-relaxed text-[var(--ui-text-muted)]">{{ topupApprovalEnabled ? 'An administrator reviews each request before credits are added. Pending requests appear here so you can follow their status.' : 'Enter the number of credits you want to add. Completed topups appear in your balance history below.' }}</p>
+      </div>
         <form class="space-y-4" @submit.prevent="recharge">
           <UAlert v-if="pendingTopup" color="warning" variant="subtle" icon="i-tabler-clock" title="Topup awaiting approval" :description="`Your request for ${formatCredits(pendingTopup.amount)} credits is waiting for administrator approval. Your balance has not changed. You cannot request another topup while this request is pending.`" />
           <p v-if="topupApprovalEnabled && !pendingTopup" class="text-sm text-[var(--ui-text-muted)]">Topup requests require administrator approval before credits are added to your balance.</p>
           <UAlert v-if="rechargeError" color="error" variant="subtle" title="Recharge failed" :description="rechargeError" />
           <UFormField label="Recharge amount (credits)" required hint="Enter any positive amount.">
-            <div class="flex items-center gap-3">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
               <UInput v-model="amount" type="number" min="0" step="any" placeholder="100" class="min-w-0 flex-1" :disabled="saving || loading || !requestStateLoaded || !!pendingTopup" required />
               <AppButton type="submit" icon="i-tabler-plus" class="shrink-0" :loading="saving" :disabled="!validAmount || !token || loading || !requestStateLoaded || !!pendingTopup">{{ topupApprovalEnabled ? 'Request topup' : 'Topup' }} {{ validAmount ? formatCredits(Number(amount)) : '' }}</AppButton>
             </div>
           </UFormField>
           <AppButton v-if="pendingTopup || !requestStateLoaded" type="button" color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" :disabled="saving" @click="refresh">Refresh status</AppButton>
         </form>
-      </AppCard>
-    </div>
+    </AppCard>
     <AppUserWorkspace section="billing" class="min-w-0">
       <template #balance-history>
-      <AppCard class="flex min-w-0 flex-col" :ui="{ header: 'min-h-24', body: 'flex-1 p-0' }">
+      <AppCard class="balance-panel flex min-w-0 flex-col overflow-hidden" :ui="{ header: 'min-h-24', body: 'flex-1 p-0' }">
       <template #header>
               <div class="flex flex-wrap items-center justify-between gap-3">
-                <div><h2 class="font-semibold">Balance history</h2><p class="text-xs text-[var(--ui-text-muted)]">{{ formatNumber(recordsTotal) }} recharge and deduction records</p></div>
+                <div><h2 class="flex items-center gap-2 text-sm font-semibold"><UIcon name="i-tabler-history" class="size-4 text-[var(--ui-primary)]" aria-hidden="true" /> Balance history</h2><p class="text-xs text-[var(--ui-text-muted)]">{{ formatNumber(recordsTotal) }} recharge and deduction records</p></div>
                 <UFormField label="Rows per page"><USelect v-model="pageSize" :items="pageSizeOptions" value-key="value" label-key="label" class="w-28" :disabled="busy" @update:model-value="changeRecordPageSize" /></UFormField>
               </div>
             </template>
-      <div class="min-h-80 overflow-x-auto">
+      <div class="min-h-64 overflow-x-auto">
         <AppTable :data="records" :columns="recordColumns" :loading="loading || recordsLoading" empty="No balance adjustments yet." class="min-w-[720px]">
           <template #created_at-cell="{ row }">{{ formatDate(balanceRow(row).created_at) }}</template>
           <template #type-cell="{ row }"><UBadge :color="balanceRow(row).type === 'recharge' ? 'success' : 'warning'" variant="subtle">{{ balanceRow(row).type }}</UBadge></template>
@@ -179,3 +191,28 @@ async function changeRecordPage(delta: number) {
 
 onMounted(() => { hydrateSession(); void refresh() })
 </script>
+
+<style scoped>
+.balance-workspace .balance-hero {
+  border-color: color-mix(in oklch, var(--ui-success) 18%, var(--ui-border));
+  background: radial-gradient(ellipse at 0% 0%, color-mix(in oklch, var(--ui-success) 10%, transparent), transparent 70%), var(--ui-bg);
+  box-shadow: 0 6px 24px color-mix(in oklch, var(--ui-success) 4%, transparent);
+}
+
+.balance-workspace .balance-summary {
+  border-color: color-mix(in oklch, var(--ui-success) 16%, var(--ui-border));
+  background: color-mix(in oklch, var(--ui-bg) 85%, transparent);
+}
+
+.balance-workspace .balance-panel {
+  border-radius: 1.25rem;
+  border-color: color-mix(in oklch, var(--ui-border) 75%, transparent);
+  background: var(--ui-bg);
+  box-shadow: 0 4px 20px color-mix(in oklch, var(--ui-text-highlighted) 4%, transparent);
+}
+
+.balance-workspace .balance-icon {
+  color: var(--ui-primary);
+  background: color-mix(in oklch, var(--ui-primary) 10%, var(--ui-bg));
+}
+</style>
