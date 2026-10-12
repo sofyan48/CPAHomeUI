@@ -58,7 +58,7 @@
         </div>
       </fieldset>
       <UAlert v-if="validationError" color="warning" variant="subtle" :description="validationError" />
-      <AppButton :loading="loading" :disabled="loading || applying || !!validationError" @click="previewPrices">Preview {{ targets.length }} target(s)</AppButton>
+      <AppButton :loading="loading" :disabled="loading || applying || operationLoading || !!validationError" @click="previewPrices">Preview {{ targets.length }} target(s)</AppButton>
       <template v-if="preview">
         <div class="text-sm text-[var(--ui-text-muted)]">{{ preview.rows?.length || 0 }} rows · Expires {{ preview.expires_at ? new Date(preview.expires_at).toLocaleString() : 'unknown' }}</div>
         <div class="max-h-72 space-y-2 overflow-y-auto">
@@ -68,10 +68,20 @@
           </label>
         </div>
         <UCheckbox v-if="requiresOverwrite" v-model="confirmOverwrite" label="I confirm replacing existing model-price rules" />
-        <AppButton :loading="applying" :disabled="applying || !selected.length || (requiresOverwrite && !confirmOverwrite)" @click="applyPrices">Apply {{ selected.length }} selected rules</AppButton>
+        <AppButton :loading="applying" :disabled="applying || operationLoading || !selected.length || (requiresOverwrite && !confirmOverwrite)" @click="applyPrices">Apply {{ selected.length }} selected rules</AppButton>
       </template>
-      <UAlert v-if="operation" color="success" variant="subtle" :title="`Import ${operation.status}`" :description="`Operation ${operation.operation_id} · ${operation.rows?.length || 0} row(s) processed atomically`" />
-      <div v-if="operation?.rows?.length" class="max-h-56 space-y-2 overflow-y-auto"><div v-for="result in operation.rows" :key="result.key" class="rounded-lg border border-[var(--ui-border)] p-3 text-xs"><strong>{{ result.key }}</strong><span> · {{ result.status || result.action }}</span><span v-if="result.resource_id" class="block font-mono text-[var(--ui-text-muted)]">{{ result.resource_id }}</span></div></div>
+      <form class="space-y-3 rounded-lg border border-[var(--ui-border)] p-4" @submit.prevent="lookupOperation">
+        <h4 class="font-medium">Look up a stored import operation</h4>
+        <p class="text-xs text-[var(--ui-text-muted)]">Enter an operation ID from a previous import. Lookup only reads the stored result; it does not apply prices again.</p>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <UFormField label="Operation ID" class="flex-1"><UInput v-model="operationId" placeholder="import_…" class="w-full" :disabled="operationLoading" /></UFormField>
+          <AppButton type="submit" color="neutral" variant="outline" :loading="operationLoading" :disabled="operationLoading || loading || applying || !operationId.trim()">Look up operation</AppButton>
+        </div>
+        <UAlert v-if="operationError" color="error" variant="subtle" title="Operation lookup failed" :description="operationError" />
+      </form>
+      <UAlert v-if="operation" :color="operation.status === 'applied' ? 'success' : 'warning'" variant="subtle" :title="`Import ${operation.status}`" :description="`Operation ${operation.operation_id} · ${operation.rows?.length || 0} row(s) · ${operation.atomic ? 'Atomic' : 'Non-atomic'} · Applied ${operation.applied_at ? new Date(operation.applied_at).toLocaleString() : 'unknown'}`" />
+      <pre v-if="operation?.summary" class="overflow-auto rounded-lg bg-[var(--ui-bg-muted)] p-3 text-xs">{{ JSON.stringify(operation.summary, null, 2) }}</pre>
+      <div v-if="operation?.rows?.length" class="max-h-56 space-y-2 overflow-y-auto"><div v-for="result in operation.rows" :key="result.key" class="rounded-lg border border-[var(--ui-border)] p-3 text-xs"><strong>{{ result.key }}</strong><span> · {{ result.status || result.action }}</span><span v-if="result.resource_id" class="block font-mono text-[var(--ui-text-muted)]">{{ result.resource_id }}</span><span v-if="result.error_code || result.error_message" class="block text-[var(--ui-error)]">{{ result.error_code }} {{ result.error_message }}</span></div></div>
     </div>
   </AppCard>
 </template>
@@ -95,6 +105,30 @@ const applying = useWorkspaceState('admin:billing-price-import:applying', () => 
 const error = useWorkspaceState('admin:billing-price-import:error', () => (''))
 const preview = useWorkspaceState<any>('admin:billing-price-import:preview', () => (null))
 const operation = useWorkspaceState<any>('admin:billing-price-import:operation', () => (null))
+const operationId = ref('')
+const operationLoading = ref(false)
+const operationError = ref('')
+let operationController: AbortController | null = null
+onScopeDispose(() => { operationController?.abort() })
+watch(operationId, () => { operationError.value = '' })
+async function lookupOperation() {
+  const id = operationId.value.trim()
+  if (!id || operationLoading.value || loading.value || applying.value) return
+  operationLoading.value = true
+  operationError.value = ''
+  operation.value = null
+  const controller = new AbortController()
+  operationController = controller
+  try {
+    const result = await fetchAPI(`/billing/model-prices/import/operations/${encodeURIComponent(id)}`, { method: 'GET', signal: controller.signal })
+    if (!controller.signal.aborted) operation.value = result
+  } catch (cause: any) {
+    if (!controller.signal.aborted) operationError.value = cause?.data?.message || cause?.data?.error || cause?.message || 'Unable to load the stored import operation.'
+  } finally {
+    operationLoading.value = false
+    operationController = null
+  }
+}
 const selected = ref<string[]>([])
 const confirmOverwrite = ref(false)
 let inputVersion = 0
@@ -127,6 +161,7 @@ const validationError = computed(() => {
 })
 const requiresOverwrite = computed(() => (preview.value?.rows || []).some((row: any) => selected.value.includes(row.row_key) && row.action === 'overwrite'))
 async function previewPrices() {
+  if (loading.value || applying.value || operationLoading.value) return
   loading.value = true
   error.value = ''
   invalidatePreview()
@@ -158,7 +193,7 @@ async function previewPrices() {
   finally { loading.value = false }
 }
 async function applyPrices() {
-  if (!preview.value || !selected.value.length || applying.value) return
+  if (!preview.value || !selected.value.length || applying.value || operationLoading.value) return
   applying.value = true
   error.value = ''
   try {

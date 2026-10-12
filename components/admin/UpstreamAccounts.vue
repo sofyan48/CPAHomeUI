@@ -101,19 +101,28 @@
 
 
 
-    <USlideover v-model:open="detailsOpen" :title="detailsTarget?.label || detailsTarget?.name || 'Credential details'" :description="detailsTarget?.id || ''" :ui="{ content: 'sm:max-w-xl' }">
+    <USlideover v-model:open="detailsOpen" :dismissible="!savingFields && !savingPolicy && !credentialAction" :title="detailsTarget?.label || detailsTarget?.name || 'Credential details'" :description="detailsTarget?.id || ''" :ui="{ content: 'sm:max-w-xl' }">
       <template #body>
         <div v-if="detailsTarget" class="space-y-5">
-          <div class="-mx-4 flex flex-wrap gap-1 border-b border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] px-4 py-2" role="tablist" aria-label="Credential details"><AppButton v-for="section in detailSections" :key="section" role="tab" :aria-selected="detailsTab === section" size="sm" color="neutral" :variant="detailsTab === section ? 'soft' : 'ghost'" @click="selectDetailSection(section)">{{ section }}</AppButton></div>
+          <div class="-mx-4 flex flex-wrap gap-1 border-b border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] px-4 py-2" role="tablist" aria-label="Credential details"><AppButton v-for="section in detailSections" :key="section" role="tab" :aria-selected="detailsTab === section" size="sm" color="neutral" :variant="detailsTab === section ? 'soft' : 'ghost'" :disabled="savingFields || savingPolicy || Boolean(credentialAction)" @click="selectDetailSection(section)">{{ section }}</AppButton></div>
           <section v-if="detailsTab === 'Overview'" class="space-y-3"><div><h3 class="font-semibold">Overview</h3><p class="text-xs text-[var(--ui-text-muted)]">Credential identity, routing, and runtime state.</p></div><dl class="grid gap-3 text-sm"><div v-for="entry in overviewFields(detailsTarget)" :key="entry.label" class="rounded-md border border-[var(--ui-border)] px-3 py-2.5"><dt class="text-xs text-[var(--ui-text-muted)]">{{ entry.label }}</dt><dd class="mt-1 break-words font-mono text-xs">{{ entry.value }}</dd></div></dl><UAlert v-if="detailsTarget.status_message" color="warning" variant="subtle" :description="detailsTarget.status_message" /></section>
           <form v-else-if="detailsTab === 'Metadata'" class="space-y-4 text-sm" @submit.prevent="saveFields"><div><h3 class="font-semibold">Metadata</h3><p class="text-xs text-[var(--ui-text-muted)]">Edit routing and credential metadata directly.</p></div>
+            <fieldset :disabled="savingFields || savingPolicy || Boolean(credentialAction)" class="space-y-4">
             <p class="text-xs text-[var(--ui-text-muted)]">Only changed fields are saved. Leave optional text blank to clear it.</p>
             <div class="grid gap-3 sm:grid-cols-2"><UFormField label="Prefix"><UInput v-model="fields.prefix" class="w-full" /></UFormField><UFormField label="Proxy URL"><UInput v-model="fields.proxy_url" class="w-full" placeholder="socks5://..." /></UFormField><UFormField label="Priority"><UInput v-model="fields.priority" type="number" step="1" class="w-full" /></UFormField><UFormField label="Request retries"><UInput v-model="fields.request_retry" type="number" min="0" step="1" class="w-full" placeholder="Default" /></UFormField></div>
             <UFormField label="Note"><UTextarea v-model="fields.note" class="w-full" /></UFormField>
+            <UFormField label="OAuth excluded models" description="JSON array of model IDs or wildcard patterns. Empty clears credential-specific exclusions; global exclusions still apply."><UTextarea v-model="excludedModels" class="w-full font-mono" :disabled="!exclusionsLoaded || savingFields" placeholder='["model-id", "model-prefix-*"]' /></UFormField>
+            <p v-if="exclusionsLoading" class="text-xs text-[var(--ui-text-muted)]">Reading stored exclusions…</p>
+            <UAlert v-if="exclusionsError" color="warning" variant="subtle" :description="exclusionsError" />
+            <AppButton v-if="!exclusionsLoaded && !exclusionsLoading" type="button" size="sm" variant="outline" @click="loadExclusions">Read exclusions</AppButton>
             <UCheckbox v-if="supportsWebsockets(detailsTarget || {})" v-model="fields.websockets" label="WebSockets" />
+            <div v-else class="flex items-center justify-between rounded-md border border-[var(--ui-border)] p-3"><div><h4 class="font-semibold">WebSocket support</h4><p class="text-xs text-[var(--ui-text-muted)]">The current provider does not expose a WS toggle.</p></div><UBadge color="neutral" variant="subtle">N/A</UBadge></div>
             <UFormField label="Cooling override"><USelect v-model="fields.disable_cooling" :items="coolingOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
+            <div class="flex items-center justify-between rounded-md border border-[var(--ui-border)] p-3"><span class="font-semibold">Enable credential</span><USwitch v-model="fields.enabled" aria-label="Enable credential" :disabled="savingFields" /></div>
+            <AdminCredentialConcurrencyPolicy v-model:total="policyTotal" v-model:models="policyModels" class="border-t border-[var(--ui-border)] pt-4" :available="policySupported" :dirty="policyDirty" :policy="policy" :loading="loadingPolicy" :saving="savingFields || savingPolicy" :conflict="policyConflict" :error="policyError" @reload="loadPolicy" @add="addPolicyModel" @remove="policyModels.splice($event, 1)" />
             <UAlert v-if="fieldsError" color="error" variant="subtle" :description="fieldsError" />
-            <div class="flex justify-end border-t border-[var(--ui-border)] pt-3"><AppButton type="submit" size="sm" :loading="savingFields">Save changes</AppButton></div>
+            <div class="flex justify-end border-t border-[var(--ui-border)] pt-3"><AppButton type="submit" size="sm" :loading="savingFields" :disabled="savingFields || savingPolicy || Boolean(credentialAction) || (!policySupported && policyDirty) || (policySupported && (loadingPolicy || !policy || policyConflict))">Save changes</AppButton></div>
+            </fieldset>
           </form>
           <section v-else-if="detailsTab === 'Quota'" class="space-y-3 text-sm"><div><h3 class="font-semibold">Quota</h3><p class="text-xs text-[var(--ui-text-muted)]">All quota windows, collection state, and reset credits.</p></div>
             <UAlert v-if="accountQuotaError" color="error" variant="subtle" :description="accountQuotaError" />
@@ -130,10 +139,12 @@
           </section>
           <section v-else-if="detailsTab === 'Concurrency'" class="space-y-5 text-sm"><div><h3 class="font-semibold">Concurrency</h3><p class="text-xs text-[var(--ui-text-muted)]">Policy, admitted state, and observed requests.</p></div>
             <UAlert v-if="policyError || concurrencyError" color="error" variant="subtle" :description="policyError || concurrencyError" />
-            <section class="space-y-3"><div class="flex items-center justify-between gap-2"><div><h3 class="font-semibold">Concurrency policy</h3><p class="text-xs text-[var(--ui-text-muted)]">Blank or 0 removes a limit.</p></div><AppButton size="sm" color="neutral" variant="outline" :loading="loadingPolicy" @click="loadPolicy">Reload</AppButton></div><div v-if="policyConflict" class="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-600 dark:text-amber-400">Policy changed elsewhere. Reload before saving.</div><form v-if="policy && !loadingPolicy" class="space-y-3" @submit.prevent="savePolicy"><p class="text-xs text-[var(--ui-text-muted)]">Version {{ policy.version }}</p><UFormField label="Total max in flight"><UInput v-model="policyTotal" type="number" min="0" step="1" placeholder="Unlimited" class="w-full" /></UFormField><div class="flex items-center justify-between"><h4 class="text-sm font-semibold">Per-model limits</h4><AppButton size="sm" color="neutral" variant="outline" type="button" @click="policyModels.push({ key: ++modelKey, model: '', limit: '' })">Add model</AppButton></div><div v-for="(entry, index) in policyModels" :key="entry.key" class="flex items-end gap-2"><UFormField label="Model" class="flex-1"><UInput v-model="entry.model" placeholder="Canonical model ID" class="w-full" /></UFormField><UFormField label="Max in flight" class="w-28"><UInput v-model="entry.limit" type="number" min="0" step="1" class="w-full" /></UFormField><AppButton type="button" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove model limit" @click="policyModels.splice(index, 1)" /></div><div class="flex justify-end"><AppButton type="submit" size="sm" :loading="savingPolicy" :disabled="policyConflict">Save policy</AppButton></div></form><p v-else-if="loadingPolicy" class="py-4 text-center text-[var(--ui-text-muted)]">Loading policy…</p></section>
-            <section class="space-y-3 border-t border-[var(--ui-border)] pt-4"><div class="flex items-center justify-between gap-2"><div><h3 class="font-semibold">Current concurrency</h3><p class="text-xs text-[var(--ui-text-muted)]">Admitted state and observed in-flight requests.</p></div><AppButton size="sm" color="neutral" variant="outline" :loading="loadingConcurrency" @click="loadConcurrency()">Refresh</AppButton></div><div v-if="concurrencyState" class="space-y-2"><p>Admitted: <strong>{{ concurrencyState.admitted_in_flight }}</strong> / {{ concurrencyState.max_in_flight ?? '∞' }} <UBadge v-if="concurrencyState.total_saturated" color="warning" variant="subtle">Saturated</UBadge></p><p class="text-xs text-[var(--ui-text-muted)]">Remaining: {{ concurrencyState.remaining ?? 'unlimited' }} · Policy version: {{ concurrencyState.policy_version }} · Fully enforced: {{ concurrencyState.fully_enforced }}</p><div v-for="model in concurrencyState.models || []" :key="model.model" class="rounded-md border border-[var(--ui-border)] p-3"><span class="font-medium">{{ model.model }}</span> · {{ model.admitted_in_flight }} / {{ model.max_in_flight }} <UBadge v-if="model.saturated" color="warning" variant="subtle">Saturated</UBadge></div></div><p v-if="flightDetails?.stale || flightDetails?.details_truncated || flightDetails?.coverage_complete === false" class="text-xs text-amber-500">Observation may be stale or incomplete.</p><p v-if="flightDetails?.observed_at" class="text-xs text-[var(--ui-text-muted)]">Observed at {{ flightDetails.observed_at }} · {{ flightDetails.total }} request(s)</p><div v-for="request in flightDetails?.items || []" :key="request.request_id" class="rounded-md border border-[var(--ui-border)] p-3"><p class="break-all font-mono text-xs">{{ request.request_id }}</p><p>{{ request.model || 'Unknown model' }} · {{ request.request_kind || 'request' }}</p><p class="text-xs text-[var(--ui-text-muted)]">Started {{ request.started_at }}</p></div><p v-if="!loadingConcurrency && !flightDetails?.items?.length" class="text-[var(--ui-text-muted)]">No observed requests.</p><AppButton v-if="flightDetails?.next_offset != null" color="neutral" variant="outline" :loading="loadingConcurrency" @click="loadConcurrency(flightDetails.next_offset)">Load more</AppButton></section>
+            <AdminCredentialConcurrencyPolicy v-model:total="policyTotal" v-model:models="policyModels" :available="policySupported" :dirty="policyDirty" :policy="policy" :loading="loadingPolicy" :saving="savingFields || savingPolicy" :conflict="policyConflict" :error="policyError" show-save @reload="loadPolicy" @save="savePolicy" @add="addPolicyModel" @remove="policyModels.splice($event, 1)" />
+            <p v-if="!snapshotsSupported" class="text-[var(--ui-text-muted)]">In-flight snapshots are unavailable on this deployment.</p>
+            <section class="space-y-3 border-t border-[var(--ui-border)] pt-4"><div class="flex items-center justify-between gap-2"><div><h3 class="font-semibold">Current concurrency</h3><p class="text-xs text-[var(--ui-text-muted)]">Admitted state and observed in-flight requests.</p></div><AppButton size="sm" color="neutral" variant="outline" :loading="loadingConcurrency" @click="loadConcurrency()">Refresh</AppButton></div><div v-if="concurrencyState" class="space-y-2"><p>Admitted: <strong>{{ concurrencyState.admitted_in_flight }}</strong> / {{ concurrencyState.max_in_flight ?? '∞' }} <UBadge v-if="concurrencyState.total_saturated" color="warning" variant="subtle">Saturated</UBadge></p><p class="text-xs text-[var(--ui-text-muted)]">Remaining: {{ concurrencyState.remaining ?? 'unlimited' }} · Policy version: {{ concurrencyState.policy_version }} · Fully enforced: {{ concurrencyState.fully_enforced }}</p><div v-for="model in concurrencyState.models || []" :key="model.model" class="rounded-md border border-[var(--ui-border)] p-3"><span class="font-medium">{{ model.model }}</span> · {{ model.admitted_in_flight }} / {{ model.max_in_flight }} <UBadge v-if="model.saturated" color="warning" variant="subtle">Saturated</UBadge></div></div><p v-if="flightDetails?.stale || flightDetails?.details_truncated || flightDetails?.coverage_complete === false" class="text-xs text-amber-500">Observation may be stale or incomplete.</p><p v-if="flightDetails?.observed_at" class="text-xs text-[var(--ui-text-muted)]">Observed at {{ flightDetails.observed_at }} · {{ flightDetails.total }} request(s)</p><div v-for="request in flightDetails?.items || []" :key="request.request_id" class="rounded-md border border-[var(--ui-border)] p-3"><p class="break-all font-mono text-xs">{{ request.request_id }}</p><p>{{ request.model || 'Unknown model' }} · {{ request.request_kind || 'request' }}</p><p class="text-xs text-[var(--ui-text-muted)]">Started {{ request.started_at }}</p></div><p v-if="snapshotsSupported && !loadingConcurrency && !flightDetails?.items?.length" class="text-[var(--ui-text-muted)]">No observed requests.</p><AppButton v-if="flightDetails?.next_offset != null" color="neutral" variant="outline" :loading="loadingConcurrency" @click="loadConcurrency(flightDetails.next_offset)">Load more</AppButton></section>
           </section>
-          <section v-else-if="detailsTab === 'Models'" class="space-y-3 text-sm"><div><h3 class="font-semibold">Models</h3><p class="text-xs text-[var(--ui-text-muted)]">Models exposed by this credential.</p></div><UAlert v-if="modelsError" color="error" variant="subtle" :description="modelsError" /><div class="flex items-center justify-between gap-2"><div><h3 class="font-semibold">Available models</h3><p class="text-xs text-[var(--ui-text-muted)]">Models exposed by this credential.</p></div><AppButton size="sm" color="neutral" variant="outline" :loading="modelsLoading" @click="loadModels(detailsTarget)">Refresh</AppButton></div><p v-if="modelsLoading" class="py-8 text-center text-[var(--ui-text-muted)]">Loading models…</p><div v-else class="space-y-2"><div v-for="model in credentialModels" :key="model.id" class="rounded-md border border-[var(--ui-border)] px-3 py-2"><p class="font-medium">{{ model.display_name || model.id }}</p><p class="font-mono text-xs text-[var(--ui-text-muted)]">{{ model.id }}</p></div><p v-if="!credentialModels.length" class="py-6 text-center text-[var(--ui-text-muted)]">No models found.</p></div></section>
+          <section v-else-if="detailsTab === 'Models'" class="space-y-3 text-sm"><div><h3 class="font-semibold">Models</h3><p class="text-xs text-[var(--ui-text-muted)]">Models exposed by this credential.</p></div><UAlert v-if="modelsError" color="error" variant="subtle" :description="modelsError" /><div class="flex items-center justify-between gap-2"><div><h3 class="font-semibold">Available models</h3><p class="text-xs text-[var(--ui-text-muted)]">Models exposed by this credential.</p></div><AppButton size="sm" color="neutral" variant="outline" :loading="modelsLoading" @click="loadModels(detailsTarget)">Refresh</AppButton></div><p v-if="modelsLoading" class="py-8 text-center text-[var(--ui-text-muted)]">Loading models…</p><UAlert v-if="modelStatesNotice" color="warning" variant="subtle" :description="modelStatesNotice" /><div v-if="modelStates?.credential" class="space-y-2"><p class="text-xs text-[var(--ui-text-muted)]">Runtime node {{ modelStates.node?.ip }}:{{ modelStates.node?.port }} · Observed {{ modelStates.observed_at }} · State version {{ modelStates.credential.state_version }}</p><p>Status: {{ modelStates.credential.status }} · Unavailable: {{ modelStates.credential.unavailable }} · Refresh blocked: {{ modelStates.credential.refresh_blocked }}</p><p v-if="modelStates.credential.status_message">{{ modelStates.credential.status_message }}</p><div v-for="model in modelStates.credential.models || []" :key="model.state_key" class="rounded-md border border-[var(--ui-border)] p-3"><p class="font-medium">{{ model.display_name || model.model }}</p><p class="font-mono text-xs">{{ model.model }} · Upstream {{ model.upstream_model }} · State {{ model.state_key }}</p><p class="text-xs text-[var(--ui-text-muted)]">{{ model.status }} · {{ model.blocked ? model.block_reason : 'Not blocked' }} · Registered: {{ model.registered }}</p><p v-if="model.remaining_cooldown || model.next_retry_after" class="text-xs">Cooldown {{ model.remaining_cooldown || '—' }} · Retry {{ model.next_retry_after || '—' }}</p><p v-if="model.status_message || model.last_error?.message" class="text-xs">{{ model.status_message || model.last_error?.message }}</p></div></div><div v-if="!modelsLoading" class="space-y-2"><div v-for="model in credentialModels" :key="model.id" class="rounded-md border border-[var(--ui-border)] px-3 py-2"><p class="font-medium">{{ model.display_name || model.id }}</p><p class="font-mono text-xs text-[var(--ui-text-muted)]">{{ model.id }}</p></div><p v-if="!credentialModels.length" class="py-6 text-center text-[var(--ui-text-muted)]">No models found.</p></div></section>
+          <section v-else-if="detailsTab === 'Recovery'" class="space-y-3"><h3 class="font-semibold">Credential recovery</h3><p class="text-xs text-[var(--ui-text-muted)]">OAuth refresh updates tokens. Cooldown reset clears quota cooldowns only; it does not redeem credits or clear unrelated errors.</p><UAlert v-if="actionError" color="warning" variant="subtle" :description="actionError" /><div class="flex flex-wrap gap-2"><AppButton v-if="refreshAvailable" size="sm" variant="outline" :disabled="busy || Boolean(credentialAction)" :loading="credentialAction === 'refresh'" @click="runCredentialAction('refresh')">Refresh OAuth credential</AppButton><AppButton v-if="supports('credential_cooldown_reset', false) && cooldownAvailable" size="sm" color="warning" variant="outline" :disabled="busy || Boolean(credentialAction)" :loading="credentialAction === 'cooldown'" @click="runCredentialAction('cooldown')">Reset quota cooldown</AppButton></div><p v-if="!supports('credential_cooldown_reset', false) || !cooldownAvailable" class="text-xs text-[var(--ui-text-muted)]">Cooldown reset is unavailable on this deployment.</p></section>
           <section v-else class="space-y-3"><div><h3 class="font-semibold text-red-600 dark:text-red-400">Danger zone</h3><p class="text-xs text-[var(--ui-text-muted)]">Download a backup or permanently remove this credential.</p></div><div class="flex flex-wrap gap-2"><AppButton size="sm" color="neutral" variant="outline" @click="downloadCredential(detailsTarget)">Download credential</AppButton><AppButton size="sm" color="error" variant="outline" @click="confirmDelete(detailsTarget)">Delete credential</AppButton></div></section>
         </div>
       </template>
@@ -207,11 +218,11 @@ const uploadActive = computed(() => uploadResults.value.some(result => result.st
 let uploadID = 0
 const changing = useWorkspaceState('admin:upstream-accounts:changing', () => (''))
 const inlineChanging = useWorkspaceState('admin:upstream-accounts:inlineChanging', () => (''))
-const busy = computed(() => bulkBusy.value || deleting.value || Boolean(changing.value) || Boolean(inlineChanging.value) || savingFields.value)
+const busy = computed(() => bulkBusy.value || deleting.value || Boolean(changing.value) || Boolean(inlineChanging.value) || savingFields.value || savingPolicy.value)
 const detailsOpen = ref(false)
 const detailsTarget = ref(null)
 const detailsTab = ref('Overview')
-const detailSections = ['Overview', 'Metadata', 'Quota', 'Concurrency', 'Models', 'Danger']
+const detailSections = ['Overview', 'Metadata', 'Quota', 'Concurrency', 'Models', 'Recovery', 'Danger']
 function metadataFields(item) {
   return [
     ['Prefix', item.prefix || '—'], ['Priority', item.priority ?? '—'],
@@ -272,9 +283,9 @@ const connectivityBody = computed(() => {
   const body = connectivityResult.value?.body || ''
   try { return JSON.stringify(JSON.parse(body), null, 2) } catch { return body }
 })
-const modelsError = useWorkspaceState('admin:upstream-accounts:modelsError', () => (''))
-const modelsLoading = useWorkspaceState('admin:upstream-accounts:modelsLoading', () => (false))
-const credentialModels = useWorkspaceState('admin:upstream-accounts:credentialModels', () => ([]))
+const modelsError = ref('')
+const modelsLoading = ref(false)
+const credentialModels = ref([])
 
 const deleteOpen = ref(false)
 const deleteTarget = ref(null)
@@ -284,7 +295,30 @@ const bulkBusy = useWorkspaceState('admin:upstream-accounts:bulkBusy', () => (fa
 const bulkAction = ref('')
 const bulkDeleteOpen = ref(false)
 const fieldsTarget = computed(() => detailsTarget.value)
-const fields = reactive({ prefix: '', proxy_url: '', priority: '', request_retry: '', note: '', websockets: false, disable_cooling: 'inherit' })
+const fields = reactive({ prefix: '', proxy_url: '', priority: '', request_retry: '', note: '', websockets: false, disable_cooling: 'inherit', enabled: true })
+const excludedModels = ref('')
+const originalExcludedModels = ref('')
+const exclusionsLoaded = ref(false)
+const exclusionsLoading = ref(false)
+const exclusionsError = ref('')
+const policyAvailable = ref(true)
+const snapshotsAvailable = ref(true)
+const policySupported = computed(() => supports('credential_concurrency_limits_v2', false) && policyAvailable.value)
+const snapshotsSupported = computed(() => supports('credential_in_flight_snapshots', false) && snapshotsAvailable.value)
+const modelStates = ref(null)
+const modelStatesNotice = ref('')
+const credentialAction = ref('')
+const actionError = ref('')
+const refreshAvailable = ref(true)
+const cooldownAvailable = ref(true)
+let detailGeneration = 0
+let modelsRequest = 0
+watch(detailsOpen, open => {
+  if (!open) { detailGeneration++; policyRequest++; concurrencyRequest++; modelsRequest++; loadingPolicy.value = false; loadingConcurrency.value = false; modelsLoading.value = false; exclusionsLoading.value = false; policy.value = null }
+})
+onBeforeUnmount(() => { detailGeneration++; policyRequest++; concurrencyRequest++; modelsRequest++ })
+const unavailable = error => [404, 405, 501].includes(error?.statusCode)
+const ownsDetails = (id, generation) => detailsOpen.value && detailsTarget.value?.id === id && detailGeneration === generation
 const coolingOptions = [
   { label: 'Inherit global setting', value: 'inherit' },
   { label: 'Enable cooling', value: 'enable' },
@@ -292,22 +326,25 @@ const coolingOptions = [
 ]
 const originalFields = ref({})
 const fieldsError = ref('')
-const savingFields = useWorkspaceState('admin:upstream-accounts:savingFields', () => (false))
+const savingFields = ref(false)
 const policyTarget = computed(() => detailsTarget.value)
-const policy = useWorkspaceState('admin:upstream-accounts:policy', () => (null))
+const policy = ref(null)
 const policyTotal = ref('')
 const policyModels = ref([])
-const policyError = useWorkspaceState('admin:upstream-accounts:policyError', () => (''))
-const policyConflict = useWorkspaceState('admin:upstream-accounts:policyConflict', () => (false))
-const loadingPolicy = useWorkspaceState('admin:upstream-accounts:loadingPolicy', () => (false))
-const savingPolicy = useWorkspaceState('admin:upstream-accounts:savingPolicy', () => (false))
+const policyDraft = () => JSON.stringify([String(policyTotal.value), policyModels.value.map(({ model, limit }) => [model, String(limit)])])
+const originalPolicyDraft = ref(policyDraft())
+const policyDirty = computed(() => policyDraft() !== originalPolicyDraft.value)
+const policyError = ref('')
+const policyConflict = ref(false)
+const loadingPolicy = ref(false)
+const savingPolicy = ref(false)
 let policyRequest = 0
 let modelKey = 0
 const concurrencyTarget = computed(() => detailsTarget.value)
-const concurrencyState = useWorkspaceState('admin:upstream-accounts:concurrencyState', () => (null))
-const flightDetails = useWorkspaceState('admin:upstream-accounts:flightDetails', () => (null))
-const concurrencyError = useWorkspaceState('admin:upstream-accounts:concurrencyError', () => (''))
-const loadingConcurrency = useWorkspaceState('admin:upstream-accounts:loadingConcurrency', () => (false))
+const concurrencyState = ref(null)
+const flightDetails = ref(null)
+const concurrencyError = ref('')
+const loadingConcurrency = ref(false)
 let concurrencyRequest = 0
 const createOpen = ref(false)
 const createMode = ref('oauth')
@@ -330,7 +367,7 @@ const submittingCallback = useWorkspaceState('admin:upstream-accounts:submitting
 const oauthProviders = [
   { label: 'Claude', value: 'claude' }, { label: 'Codex', value: 'codex' },
   { label: 'Antigravity', value: 'antigravity' }, { label: 'Kimi', value: 'kimi' },
-  { label: 'xAI', value: 'xai' }
+  { label: 'xAI', value: 'xai' }, { label: 'Devin', value: 'devin' }, { label: 'Meta', value: 'meta' }
 ]
 const credentialRoute = suffix => `/credentials${suffix}`
 function handleCreateOpen(open) {
@@ -351,12 +388,23 @@ async function loadData() {
   }
 }
 const { data: authData, pending, refresh: refreshCredentialsData } = useStoreData('admin:upstream-accounts:management-credentials', loadData, { lazy: true, default: () => ({ files: [] }) })
+let flightRequest = 0
+onBeforeUnmount(() => { flightRequest++ })
 async function loadFlight() {
+  const requestID = ++flightRequest
+  const requestToken = token.value
   flightError.value = ''
+  if (!snapshotsSupported.value) return { items: [] }
   try { return await fetchAPI('/credentials/in-flight/summary') }
-  catch (error) { flightError.value = message(error); return { items: [] } }
+  catch (error) {
+    if (requestID === flightRequest && requestToken === token.value && snapshotsSupported.value) {
+      if (unavailable(error)) snapshotsAvailable.value = false
+      flightError.value = unavailable(error) ? 'In-flight snapshots are unavailable on this deployment.' : message(error)
+    }
+    return { items: [] }
+  }
 }
-const { data: flightData, refresh: refreshFlightData } = useStoreData('admin:upstream-accounts:management-credentials-flight', loadFlight, { lazy: true, default: () => ({ items: [] }) })
+const { data: flightData, refresh: refreshFlightData } = useStoreData('admin:upstream-accounts:management-credentials-flight', loadFlight, { lazy: true, default: () => ({ items: [] }), watch: [snapshotsSupported] })
 async function refreshData(notify = true) {
   try {
     await refreshCredentialsData()
@@ -640,7 +688,17 @@ async function retryFailedUploads() { await runUploadItems(failedUploads.value.f
 async function uploadDroppedFiles(event) { if (!uploadActive.value && !busy.value) await addUploadFiles(Array.from(event.dataTransfer?.files || [])) }
 async function toggleStatus(item) { changing.value = item.id; try { await fetchAPI(credentialRoute('/status'), { method: 'PATCH', body: { name: item.id, disabled: !item.disabled } }); await refreshData() } catch (error) { toast.add({ title: 'Status update failed', description: message(error), color: 'error' }) } finally { changing.value = '' } }
 async function showDetails(item, section = 'Overview') {
+  if (savingFields.value || savingPolicy.value || credentialAction.value) return
+  detailGeneration++
+  policyRequest++; concurrencyRequest++; modelsRequest++
+  loadingPolicy.value = false; loadingConcurrency.value = false; modelsLoading.value = false
+  exclusionsLoaded.value = false; exclusionsLoading.value = false; exclusionsError.value = ''
+  excludedModels.value = ''; originalExcludedModels.value = ''
+  policyConflict.value = false; policyTotal.value = ''; policyModels.value = []
+  originalPolicyDraft.value = policyDraft()
+  modelStates.value = null; modelStatesNotice.value = ''; actionError.value = ''
   detailsTarget.value = item
+
   initializeFields(item)
   detailsTab.value = section
   accountQuotaDetail.value = null
@@ -655,14 +713,13 @@ async function showDetails(item, section = 'Overview') {
   await selectDetailSection(section)
 }
 async function selectDetailSection(section) {
+  if (savingFields.value || savingPolicy.value || credentialAction.value) return
   detailsTab.value = section
-  if (section === 'Metadata') initializeFields(detailsTarget.value)
+  if (section === 'Metadata') await Promise.all([loadExclusions(), policy.value ? Promise.resolve() : loadPolicy()])
   if (section === 'Quota') await refreshAccountQuota()
   if (section === 'Concurrency') {
-    policyError.value = ''
-    policyConflict.value = false
     concurrencyError.value = ''
-    await Promise.all([loadPolicy(), loadConcurrency()])
+    await Promise.all([policy.value ? Promise.resolve() : loadPolicy(), loadConcurrency()])
   }
   if (section === 'Models') await loadModels(detailsTarget.value)
 }
@@ -701,12 +758,69 @@ function initializeFields(item) {
   Object.assign(fields, {
     prefix: item.prefix || '', proxy_url: item.proxy_url || '',
     priority: item.priority == null ? '' : String(item.priority), request_retry: item['request-retry'] == null ? '' : String(item['request-retry']),
-    note: item.note || '', websockets: Boolean(item.websockets), disable_cooling: item['disable-cooling'] == null ? 'inherit' : item['disable-cooling'] ? 'disable' : 'enable'
+    note: item.note || '', websockets: Boolean(item.websockets), disable_cooling: item['disable-cooling'] == null ? 'inherit' : item['disable-cooling'] ? 'disable' : 'enable', enabled: !item.disabled
   })
   originalFields.value = { ...fields }
 }
+async function loadExclusions() {
+  if (!detailsTarget.value || exclusionsLoaded.value || exclusionsLoading.value) return
+  const id = detailsTarget.value.id
+  const generation = detailGeneration
+  exclusionsLoading.value = true; exclusionsError.value = ''
+  try {
+    // The list response omits exclusions; read metadata without displaying or retaining tokens.
+    const metadata = await fetchAPI(credentialRoute('/download'), { query: { id } })
+    if (!ownsDetails(id, generation)) return
+    const models = metadata.excluded_models ?? metadata['excluded-models'] ?? []
+    if (!Array.isArray(models) || models.some(model => typeof model !== 'string')) throw new Error('Stored exclusions are not a string array. Download the credential to inspect them.')
+    excludedModels.value = JSON.stringify(models, null, 2)
+    originalExcludedModels.value = excludedModels.value
+    exclusionsLoaded.value = true
+  } catch (error) { if (ownsDetails(id, generation)) exclusionsError.value = message(error) }
+  finally { if (ownsDetails(id, generation)) exclusionsLoading.value = false }
+}
+function addPolicyModel() {
+  if (!savingFields.value && !savingPolicy.value && !policyConflict.value) policyModels.value.push({ key: ++modelKey, model: '', limit: '' })
+}
+function canonicalPolicyModel(raw) {
+  // Match Home's limiter key normalization, including recognized reasoning suffixes.
+  const trim = value => value.replace(/^[ \t\r\n\v\f]+|[ \t\r\n\v\f]+$/g, '')
+  let model = trim(raw).toLowerCase()
+  const suffix = model.match(/\(([^()]*)\)$/)
+  if (suffix && (['-1', 'none', 'auto', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'].includes(suffix[1]) || (/^\d{1,10}$/.test(suffix[1]) && Number(suffix[1]) <= 2147483647))) {
+    const base = trim(model.slice(0, suffix.index))
+    if (base) model = base
+  }
+  if (!model || new TextEncoder().encode(model).length > 256 || /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/u.test(model)) throw new Error('Model IDs must be valid UTF-8 and at most 256 bytes after normalization.')
+  return model
+}
+function policyPatch() {
+  if (!policySupported.value) {
+    if (policyDirty.value) throw new Error('Concurrency policy is unavailable. Unsaved limits were retained; metadata cannot be saved without them.')
+    return {}
+  }
+  if (loadingPolicy.value || !policy.value || policy.value.credential_id !== detailsTarget.value?.id) throw new Error('Load the credential policy before saving.')
+  if (policyConflict.value) throw new Error('Policy changed elsewhere. Reload before saving.')
+  const total = policyLimit(policyTotal.value)
+  const models = Object.create(null)
+  const seen = new Set()
+  for (const entry of policyModels.value) {
+    if (!entry.model.trim()) throw new Error('Enter a model ID or remove the empty row.')
+    const model = canonicalPolicyModel(entry.model)
+    if (seen.has(model)) throw new Error(`Duplicate model: ${model}`)
+    seen.add(model)
+    const limit = policyLimit(entry.limit)
+    if (limit) models[model] = limit
+  }
+  const body = {}
+  if (total !== (policy.value.max_in_flight ?? null)) body.max_in_flight = total
+  if (JSON.stringify(Object.entries(models).sort()) !== JSON.stringify(Object.entries(policy.value.max_in_flight_by_model || {}).sort())) body.max_in_flight_by_model = models
+  if (Object.keys(body).length) body.version = policy.value.version
+  return body
+}
 async function saveFields() {
-  if (!fieldsTarget.value) return
+  if (!fieldsTarget.value || savingFields.value || savingPolicy.value || credentialAction.value) return
+  const generation = detailGeneration
   const body = { id: fieldsTarget.value.id }
   for (const key of Object.keys(fields)) {
     if (fields[key] === originalFields.value[key]) continue
@@ -715,34 +829,60 @@ async function saveFields() {
       if (raw && (!/^\d+$/.test(raw) || !Number.isSafeInteger(Number(raw)))) { fieldsError.value = `${key} must be a non-negative integer.`; return }
       body[key] = raw ? Number(raw) : null
     } else if (key === 'disable_cooling') body['disable-cooling'] = fields[key] === 'inherit' ? null : fields[key] === 'disable'
+    else if (key === 'enabled') body.disabled = !fields.enabled
     else body[key] = fields[key]
   }
+  try {
+    if (exclusionsLoaded.value && excludedModels.value !== originalExcludedModels.value) {
+      const models = excludedModels.value.trim() ? JSON.parse(excludedModels.value) : []
+      if (!Array.isArray(models) || models.some(model => typeof model !== 'string')) throw new Error('Excluded models must be a JSON array of strings.')
+      body.excluded_models = models
+    }
+    Object.assign(body, policyPatch())
+  } catch (error) { fieldsError.value = message(error); return }
   if (Object.keys(body).length === 1) return
   savingFields.value = true; fieldsError.value = ''
   try {
     await fetchAPI(credentialRoute('/fields'), { method: 'PATCH', body })
     await refreshData()
     const updated = credentials.value.find(item => item.id === body.id)
-    if (updated) { detailsTarget.value = updated; initializeFields(updated) }
+    if (ownsDetails(body.id, generation)) {
+      if (updated) { detailsTarget.value = updated; initializeFields(updated) }
+      if (body.excluded_models) { excludedModels.value = JSON.stringify(body.excluded_models, null, 2); originalExcludedModels.value = excludedModels.value }
+      if (body.version != null) { policy.value = null; await loadPolicy(true) }
+    }
     toast.add({ title: 'Credential fields updated', color: 'success' })
-  } catch (error) { fieldsError.value = message(error) }
+  } catch (error) {
+    if (ownsDetails(body.id, generation)) {
+      policyConflict.value = error?.statusCode === 409
+      fieldsError.value = policyConflict.value ? 'Policy changed elsewhere. Reload before saving; no metadata or policy changes were applied.' : message(error)
+    }
+  }
   finally { savingFields.value = false }
 }
 
-async function loadPolicy() {
-  if (!policyTarget.value) return
+async function loadPolicy(internal = false) {
+  if (!policyTarget.value || !policySupported.value || savingPolicy.value || (savingFields.value && internal !== true)) return
   const requestID = ++policyRequest
   const id = policyTarget.value.id
+  const generation = detailGeneration
   loadingPolicy.value = true
   policyError.value = ''
   try {
     const result = await fetchAPI(`/credentials/${encodeURIComponent(id)}/concurrency-policy`)
-    if (requestID !== policyRequest) return
+    if (requestID !== policyRequest || !ownsDetails(id, generation)) return
+    if (result.credential_id !== id) throw new Error('Policy response belongs to a different credential.')
     policy.value = result
     policyTotal.value = result.max_in_flight == null ? '' : String(result.max_in_flight)
     policyModels.value = Object.entries(result.max_in_flight_by_model || {}).sort(([a], [b]) => a.localeCompare(b)).map(([model, limit]) => ({ key: ++modelKey, model, limit: String(limit) }))
+    originalPolicyDraft.value = policyDraft()
     policyConflict.value = false
-  } catch (error) { if (requestID === policyRequest) policyError.value = message(error) }
+  } catch (error) {
+    if (requestID === policyRequest && ownsDetails(id, generation)) {
+      if (unavailable(error)) policyAvailable.value = false
+      policyError.value = unavailable(error) ? 'Concurrency policy is unavailable on this deployment.' : message(error)
+    }
+  }
   finally { if (requestID === policyRequest) loadingPolicy.value = false }
 }
 function policyLimit(raw) {
@@ -752,34 +892,29 @@ function policyLimit(raw) {
   return Number(text) || null
 }
 async function savePolicy() {
-  if (!policyTarget.value || !policy.value || savingPolicy.value || policyConflict.value) return
+  if (!policyTarget.value || !policySupported.value || savingFields.value || savingPolicy.value || loadingPolicy.value || credentialAction.value) return
+  const id = policyTarget.value.id
+  const generation = detailGeneration
+  const requestID = ++policyRequest
   let body
   try {
-    const total = policyLimit(policyTotal.value)
-    const models = {}
-    for (const entry of policyModels.value) {
-      const model = entry.model.trim()
-      if (!model) throw new Error('Enter a model ID or remove the empty row.')
-      if (Object.hasOwn(models, model)) throw new Error(`Duplicate model: ${model}`)
-      const limit = policyLimit(entry.limit)
-      if (limit) models[model] = limit
-    }
-    body = { version: policy.value.version }
-    if (total !== policy.value.max_in_flight) body.max_in_flight = total
-    const original = policy.value.max_in_flight_by_model || {}
-    if (JSON.stringify(Object.entries(models).sort()) !== JSON.stringify(Object.entries(original).sort())) body.max_in_flight_by_model = models
-    if (Object.keys(body).length === 1) return
+    body = policyPatch()
+    if (!Object.keys(body).length) return
   } catch (error) { policyError.value = message(error); return }
   savingPolicy.value = true
   policyError.value = ''
   try {
-    const result = await fetchAPI(`/credentials/${encodeURIComponent(policyTarget.value.id)}/concurrency-policy`, { method: 'PATCH', body })
+    const result = await fetchAPI(`/credentials/${encodeURIComponent(id)}/concurrency-policy`, { method: 'PATCH', body })
+    if (requestID !== policyRequest || !ownsDetails(id, generation)) return
     policy.value = result
     policyTotal.value = result.max_in_flight == null ? '' : String(result.max_in_flight)
     policyModels.value = Object.entries(result.max_in_flight_by_model || {}).sort(([a], [b]) => a.localeCompare(b)).map(([model, limit]) => ({ key: ++modelKey, model, limit: String(limit) }))
+    originalPolicyDraft.value = policyDraft()
     await refreshData()
     toast.add({ title: 'Concurrency policy updated', color: 'success' })
   } catch (error) {
+    if (requestID !== policyRequest || !ownsDetails(id, generation)) return
+    if (unavailable(error)) policyAvailable.value = false
     policyConflict.value = error?.statusCode === 409
     policyError.value = policyConflict.value ? 'Policy changed elsewhere. Reload the latest version before editing and saving again.' : message(error)
   } finally { savingPolicy.value = false }
@@ -788,30 +923,44 @@ async function savePolicy() {
 async function loadConcurrency(offset = 0) {
   if (!concurrencyTarget.value || loadingConcurrency.value) return
   const id = concurrencyTarget.value.id
+  const generation = detailGeneration
   const requestID = ++concurrencyRequest
   loadingConcurrency.value = true; concurrencyError.value = ''
   try {
     const query = { credential_id: id, limit: 25, offset }
-    if (offset && flightDetails.value?.snapshot_cursor) query.snapshot_cursor = flightDetails.value.snapshot_cursor
-    else query.stable_snapshot = true
+    if (supports('credential_in_flight_snapshot_cursor', false)) {
+      if (offset && flightDetails.value?.snapshot_cursor) query.snapshot_cursor = flightDetails.value.snapshot_cursor
+      else query.stable_snapshot = true
+    }
     const [states, details] = await Promise.all([
-      fetchAPI('/credentials/concurrency'), fetchAPI('/credentials/in-flight', { query })
+      policySupported.value ? fetchAPI('/credentials/concurrency').catch(error => {
+        if (unavailable(error)) {
+          if (requestID === concurrencyRequest && ownsDetails(id, generation)) policyAvailable.value = false
+          return { items: [] }
+        }
+        throw error
+      }) : Promise.resolve({ items: [] }),
+      snapshotsSupported.value ? fetchAPI('/credentials/in-flight', { query }) : Promise.resolve(null)
     ])
-    if (requestID !== concurrencyRequest) return
+    if (requestID !== concurrencyRequest || !ownsDetails(id, generation)) return
     concurrencyState.value = (states.items || []).find(item => item.credential_id === id) || null
-    flightDetails.value = offset ? { ...details, items: [...(flightDetails.value?.items || []), ...(details.items || [])] } : details
+    flightDetails.value = offset && details ? { ...details, items: [...(flightDetails.value?.items || []), ...(details.items || [])] } : details
   } catch (error) {
-    if (requestID === concurrencyRequest) concurrencyError.value = error?.statusCode === 409 ? 'Request snapshot expired. Refresh to load current requests.' : message(error)
+    if (requestID === concurrencyRequest && ownsDetails(id, generation)) {
+      if (unavailable(error)) snapshotsAvailable.value = false
+      concurrencyError.value = unavailable(error) ? 'Concurrency snapshots are unavailable on this deployment.' : error?.statusCode === 409 ? 'Request snapshot expired. Refresh to load current requests.' : message(error)
+    }
   } finally { if (requestID === concurrencyRequest) loadingConcurrency.value = false }
 }
 async function importVertex() {
+  if (importingVertex.value) return
   if (!vertexFile.value) { vertexError.value = 'Choose a service-account JSON file.'; return }
   importingVertex.value = true; vertexError.value = ''
   try {
     const body = new FormData()
     body.append('file', vertexFile.value)
     if (vertexLocation.value.trim()) body.append('location', vertexLocation.value.trim())
-    vertexResult.value = await fetchAPI('/vertex/import', { method: 'POST', body })
+    vertexResult.value = await fetchAPI('/oauth/import', { method: 'POST', query: { provider: 'vertex' }, body })
     vertexFile.value = null
     await refreshData()
     toast.add({ title: 'Vertex credential imported', color: 'success' })
@@ -820,12 +969,59 @@ async function importVertex() {
 }
 async function loadModels(item) {
   if (!item?.id || modelsLoading.value) return
-  modelsLoading.value = true
-  modelsError.value = ''
-  credentialModels.value = []
-  try { const result = await fetchAPI(credentialRoute('/models'), { query: { name: item.id } }); if (detailsTarget.value?.id === item.id) credentialModels.value = result.models || [] }
-  catch (error) { if (detailsTarget.value?.id === item.id) modelsError.value = message(error) }
-  finally { if (detailsTarget.value?.id === item.id) modelsLoading.value = false }
+  const generation = detailGeneration
+  const requestID = ++modelsRequest
+  const current = () => requestID === modelsRequest && ownsDetails(item.id, generation)
+  modelsLoading.value = true; modelsError.value = ''; modelStatesNotice.value = ''
+  credentialModels.value = []; modelStates.value = null
+  try {
+    const [models, states] = await Promise.all([
+      fetchAPI(credentialRoute('/models'), { query: { name: item.id } }),
+      fetchAPI(`/credentials/${encodeURIComponent(item.id)}/model-states`).catch(async error => {
+        if (error?.statusCode === 404) {
+          try {
+            const result = await fetchAPI('/credentials/model-states', { query: { credential_id: item.id } })
+            return { ...result, credential: (result.credentials || []).find(entry => entry.credential_id === item.id) }
+          } catch (fallbackError) {
+            if (current()) modelStatesNotice.value = unavailable(fallbackError) ? 'Runtime model-state diagnostics are unavailable; showing registered models only.' : message(fallbackError)
+            return null
+          }
+        }
+        if (current()) modelStatesNotice.value = unavailable(error) ? 'Runtime model-state diagnostics are unavailable; showing registered models only.' : message(error)
+        return null
+      })
+    ])
+    if (!current()) return
+    credentialModels.value = models.models || []
+    modelStates.value = states
+    if (states && !states.credential) modelStatesNotice.value = 'No runtime state is available for this credential on the current Home node.'
+  } catch (error) { if (current()) modelsError.value = message(error) }
+  finally { if (requestID === modelsRequest) modelsLoading.value = false }
+}
+async function runCredentialAction(action) {
+  if (!detailsTarget.value || credentialAction.value || savingFields.value || savingPolicy.value || busy.value) return
+  if (action === 'refresh' ? !refreshAvailable.value : !supports('credential_cooldown_reset', false) || !cooldownAvailable.value) return
+  const item = detailsTarget.value
+  const generation = detailGeneration
+  credentialAction.value = action; actionError.value = ''
+  try {
+    const result = action === 'refresh'
+      ? await fetchAPI('/credentials/refresh', { method: 'POST', body: { auth_index: item.id } })
+      : await fetchAPI(`/credentials/${encodeURIComponent(item.id)}/cooldown`, { method: 'DELETE' })
+    if (action === 'refresh' && !result.auth) throw new Error('This credential does not support OAuth refresh.')
+    await refreshData()
+    if (ownsDetails(item.id, generation)) {
+      const updated = credentials.value.find(entry => entry.id === item.id)
+      if (updated) { detailsTarget.value = updated; initializeFields(updated) }
+      if (detailsTab.value === 'Models') await loadModels(detailsTarget.value)
+    }
+    toast.add({ title: action === 'refresh' ? 'Credential refreshed' : result.cleared ? 'Quota cooldown cleared' : 'No quota cooldown to clear', color: 'success' })
+  } catch (error) {
+    if (ownsDetails(item.id, generation)) {
+      if (unavailable(error)) { if (action === 'refresh') refreshAvailable.value = false; else cooldownAvailable.value = false }
+      actionError.value = unavailable(error) ? 'This action is unavailable on this deployment.' : message(error)
+    }
+  } finally { credentialAction.value = '' }
 }
 async function downloadCredential(item) {
   try {
@@ -842,6 +1038,7 @@ async function downloadCredential(item) {
 function confirmDelete(item) { deleteTarget.value = item; deleteOpen.value = true }
 async function deleteCredential() { if (!deleteTarget.value) return; deleting.value = true; try { await fetchAPI(`${credentialRoute('')}?id=${encodeURIComponent(deleteTarget.value.id)}`, { method: 'DELETE' }); deleteOpen.value = false; await refreshData(); toast.add({ title: 'Credential deleted', color: 'success' }) } catch (error) { toast.add({ title: 'Delete failed', description: message(error), color: 'error' }) } finally { deleting.value = false } }
 async function startOAuth(provider) {
+  if (startingOAuth.value) return
   startingOAuth.value = provider; oauthError.value = ''
   try {
     const result = await fetchAPI('/oauth/auth-url', { query: { provider, is_webui: true } })

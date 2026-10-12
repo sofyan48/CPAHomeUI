@@ -65,6 +65,17 @@
             <div v-for="item in modelFacts(selectedModel)" :key="item.label"><dt class="text-xs text-[var(--ui-text-muted)]">{{ item.label }}</dt><dd class="break-words font-medium">{{ item.value }}</dd></div>
           </dl>
 
+          <section v-if="selectedModel.provider_limits?.length" class="space-y-3">
+            <h3 class="font-semibold">Provider limits</h3>
+            <div v-for="(limit, index) in selectedModel.provider_limits" :key="`${limit.provider}:${index}`" class="rounded-lg border border-[var(--ui-border)] p-3">
+              <p class="break-words font-medium">{{ limit.provider }}</p>
+              <dl class="mt-2 grid gap-3 sm:grid-cols-2">
+                <div><dt class="text-xs text-[var(--ui-text-muted)]">Context tokens</dt><dd class="font-mono tabular-nums">{{ providerLimit(limit.context_length) }}</dd></div>
+                <div><dt class="text-xs text-[var(--ui-text-muted)]">Maximum output tokens</dt><dd class="font-mono tabular-nums">{{ providerLimit(limit.max_output_tokens) }}</dd></div>
+              </dl>
+            </div>
+          </section>
+
           <section><h3 class="font-semibold">Modalities</h3><p class="mt-1">Input: {{ modalityText(selectedModel, 'input') }}</p><p>Output: {{ modalityText(selectedModel, 'output') }}</p></section>
           <section class="space-y-1"><h3 class="font-semibold">Capabilities</h3>
             <p>Reasoning: {{ capabilityText(selectedModel.capabilities?.reasoning?.status) }}</p>
@@ -357,6 +368,7 @@ function capabilityText(status?: string) { return status === 'supported' ? 'Supp
 function budgetText(budget: Record<string, unknown>) { return Object.entries(budget).map(([key, value]) => `${key.replaceAll('_', ' ')}: ${value}`).join(' · ') }
 function duration(ms?: number) { return ms == null ? 'Not published' : `${ms.toLocaleString()} ms` }
 function dateText(value?: string) { return value ? new Date(value).toLocaleString() : 'Not published' }
+function providerLimit(value?: number) { return typeof value === 'number' && Number.isFinite(value) ? value.toLocaleString() : 'Not published' }
 function modelLimit(model: UserModel, field: 'context_length' | 'max_output_tokens') {
   if (model[field]) return formatTokens(model[field])
   const published = (model.provider_limits || []).map(limit => limit[field]).filter((value): value is number => Boolean(value))

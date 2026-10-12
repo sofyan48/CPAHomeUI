@@ -131,11 +131,33 @@
               <UFormField label="Model prefix"><UInput v-model="providerForm.prefix" class="w-full" /></UFormField>
               <UFormField label="Priority"><UInput v-model="providerForm.priority" type="number" step="1" class="w-full" /></UFormField>
               <UFormField label="Weight" hint="Used by weighted round-robin routing"><UInput v-model="providerForm.weight" type="number" step="1" class="w-full" /></UFormField>
-              <UFormField label="Request retry rounds" hint="Blank inherits global; 0 disables retry rounds"><UInput v-model="requestRetryText" type="number" min="0" step="1" class="w-full" placeholder="Inherit global" /></UFormField>
-              <UCheckbox v-model="providerForm['disable-cooling']" label="Disable cooling" />
+              <UFormField label="Request retry rounds" hint="Blank inherits global; 0 disables retry rounds"><UInput v-model="requestRetryText" type="number" step="1" class="w-full" placeholder="Inherit global" /></UFormField>
+              <UFormField label="Cooling policy" hint="Inherit uses the group policy, then the global policy.">
+                      <USelect v-model="coolingPolicy" :items="coolingPolicyOptions" value-key="value" label-key="label" class="w-full" />
+                    </UFormField>
             </div>
             <UCheckbox v-if="supportsWebsockets" v-model="providerForm.websockets" label="WebSocket support" />
             <UCheckbox v-if="isCompat" v-model="providerForm.disabled" label="Disabled" />
+            <div v-if="selectedProviderRoute === 'codex-api-key'" class="space-y-3">
+              <UCheckbox v-model="providerForm['alpha-search']" label="Enable Alpha Search" />
+              <UFormField label="Codex identity headers" hint="Unset uses the backend default.">
+                <USelect v-model="codexCloakingPolicy" :items="codexCloakingOptions" value-key="value" label-key="label" class="w-full" />
+              </UFormField>
+            </div>
+            <div v-if="selectedProviderRoute === 'claude-api-key'" class="space-y-3">
+              <UCheckbox v-model="providerForm['native-tool-search']" label="Trust custom upstream with native tool search" />
+              <p class="text-xs text-[var(--ui-text-muted)]">Requires upstream.claude.tool-search. Official api.anthropic.com keys support native tool search automatically.</p>
+              <UCheckbox v-model="providerForm['rebuild-mid-system-message']" label="Move conversation system messages into the Claude system field" />
+              <UFormField label="Fingerprint profile" hint="Blank leaves the caller's profile in control; claude-code-cli opts into the CLI fingerprint.">
+                <UInput v-model="providerForm['fingerprint-profile']" class="w-full" placeholder="Caller-owned (default)" />
+              </UFormField>
+            </div>
+            <AdminModalCard v-if="supportsRequestScopedErrors" as="details" class="space-y-3">
+              <summary class="cursor-pointer font-medium">Request-scoped error rules</summary>
+              <UFormField class="mt-3" label="Rules (JSON array)" hint="Blank inherits; [] disables rules. Fields: status, match, match-regexr, action. Actions: stop, stop-and-cooldown, continue, continue-and-cooldown.">
+                <UTextarea v-model="requestScopedErrorsText" :rows="6" class="w-full" placeholder='[{"status": 400, "match": ["invalid request"], "action": "stop"}]' />
+              </UFormField>
+            </AdminModalCard>
             <AdminModalCard v-if="selectedProviderRoute === 'claude-api-key'" as="details" class="space-y-3">
               <summary class="cursor-pointer font-medium">Cloak configuration</summary>
               <div class="mt-3 space-y-3">
@@ -173,6 +195,33 @@
               </AdminModalCard>
               <AdminModalCard v-for="(model, index) in providerForm.models" :key="index" nested class="space-y-2">
                 <div class="grid gap-2 sm:grid-cols-2"><UFormField label="Model ID"><UInputMenu v-model="model.name" :items="modelSuggestions" create-item class="w-full" placeholder="Search catalog or enter model" @create="model.name = $event.trim()" /></UFormField><UFormField label="Alias"><UInput v-model="model.alias" class="w-full" /></UFormField><UFormField v-if="supportsModelMapping" label="Display name"><UInput v-model="model['display-name']" class="w-full" /></UFormField><div class="flex items-end justify-between gap-2"><UCheckbox v-if="supportsModelMapping" v-model="model['force-mapping']" label="Force response model mapping" /><AppButton type="button" color="error" variant="ghost" icon="i-tabler-trash" aria-label="Remove model" :disabled="providerForm.models.length <= 1" @click="removeProviderModel(index)" /></div></div>
+                <details class="rounded-md border border-[var(--ui-border)] p-3">
+                  <summary class="cursor-pointer text-sm font-medium">Model capabilities</summary>
+                  <div class="mt-3 space-y-3">
+                    <UFormField v-if="supportsContextLimit" label="Context limit (tokens)" hint="Blank uses the backend default; configured limits must be positive.">
+                      <UInput v-model="model['max-context-length']" type="number" min="1" step="1" class="w-full" />
+                    </UFormField>
+                    <UCheckbox v-if="supportsContextLimit" v-model="model['is-compat']" label="Retain thinking blocks with empty signatures" />
+                    <UCheckbox v-if="selectedProviderRoute === 'codex-api-key'" v-model="model['support-configuration-update']" label="Support Responses configuration_update" />
+                    <UCheckbox :model-value="model.thinking != null" label="Override thinking capability" @update:model-value="model.thinking = $event ? (model.thinking || {}) : undefined" />
+                    <div v-if="model.thinking != null" class="grid gap-3 sm:grid-cols-2">
+                      <UFormField label="Minimum thinking budget"><UInput v-model="model.thinking.min" type="number" min="0" step="1" class="w-full" /></UFormField>
+                      <UFormField label="Maximum thinking budget"><UInput v-model="model.thinking.max" type="number" min="0" step="1" class="w-full" /></UFormField>
+                      <UCheckbox v-model="model.thinking['zero-allowed']" label="Allow zero budget" />
+                      <UCheckbox v-model="model.thinking['dynamic-allowed']" label="Allow dynamic budget" />
+                      <UFormField label="Thinking levels" hint="Comma-separated; levels replace budget-based reasoning. none allows zero; auto allows dynamic." class="sm:col-span-2">
+                        <UInput :model-value="(model.thinking.levels || []).join(', ')" class="w-full" @update:model-value="model.thinking.levels = splitModelList($event)" />
+                      </UFormField>
+                    </div>
+                    <template v-if="isCompat">
+                      <UCheckbox v-model="model.image" label="Image model" />
+                      <UCheckbox v-model="model['use-max-completion-tokens']" label="Send max_completion_tokens instead of max_tokens" />
+                      <UFormField v-for="field in ['input-modalities', 'output-modalities']" :key="field" :label="field === 'input-modalities' ? 'Input modalities' : 'Output modalities'" hint="Comma-separated; blank uses the backend default.">
+                        <UInput :model-value="(model[field] || []).join(', ')" class="w-full" placeholder="text, image" @update:model-value="model[field] = splitModelList($event)" />
+                      </UFormField>
+                    </template>
+                  </div>
+                </details>
               </AdminModalCard>
             </AdminModalCard>
             <AdminModalCard v-if="!isCompat" as="details"><summary class="cursor-pointer font-medium">Excluded models</summary><UTextarea v-model="excludedModelsText" :rows="3" class="mt-3 w-full" placeholder="Separate model IDs with commas or new lines" /></AdminModalCard>
@@ -266,6 +315,13 @@ const cloakCacheUserID = ref('inherit')
 const cloakModeOptions = [{ label: 'Not set', value: unsetCloakMode }, { label: 'Auto', value: 'auto' }, { label: 'Always', value: 'always' }, { label: 'Never', value: 'never' }]
 const cloakCacheOptions = [{ label: 'Use default', value: 'inherit' }, { label: 'Cache per API key', value: 'enabled' }, { label: 'Generate for each request', value: 'disabled' }]
 const requestRetryText = ref('')
+const coolingPolicy = ref('inherit')
+const coolingPolicyOptions = [{ label: 'Inherit', value: 'inherit' }, { label: 'Disable cooling', value: 'disabled' }, { label: 'Enable cooling', value: 'enabled' }]
+const codexCloakingPolicy = ref('inherit')
+const codexCloakingOptions = [{ label: 'Unset (backend default)', value: 'inherit' }, { label: 'Disable Codex identity headers', value: 'disabled' }, { label: 'Use Codex identity headers', value: 'enabled' }]
+const requestScopedErrorsText = ref('')
+const supportsRequestScopedErrors = computed(() => selectedProviderRoute.value !== 'vertex-api-key')
+const supportsContextLimit = computed(() => selectedProviderRoute.value !== 'vertex-api-key')
 
 const isCompat = computed(() => selectedProviderRoute.value === 'openai-compatibility')
 const supportsWebsockets = computed(() => ['codex-api-key', 'xai-api-key'].includes(selectedProviderRoute.value))
@@ -275,7 +331,7 @@ const testModelOptions = computed(() => [{ label: 'Auto (first custom model)', v
 const testError = useWorkspaceState('admin:upstream-providers:testError', () => (''))
 const testSuccess = useWorkspaceState('admin:upstream-providers:testSuccess', () => (false))
 const testingConnection = useWorkspaceState('admin:upstream-providers:testingConnection', () => (false))
-const supportsModelMapping = computed(() => ['interactions-api-key', 'codex-api-key'].includes(selectedProviderRoute.value))
+const supportsModelMapping = computed(() => true)
 const requiresBaseURL = computed(() => ['codex-api-key', 'xai-api-key', 'openai-compatibility'].includes(selectedProviderRoute.value))
 const supportsDiscovery = computed(() => ['gemini-api-key', 'interactions-api-key', 'claude-api-key', 'codex-api-key', 'openai-compatibility'].includes(selectedProviderRoute.value))
 const discoveredModels = useWorkspaceState('admin:upstream-providers:discoveredModels', () => ([]))
@@ -330,7 +386,7 @@ const selectedProvider = computed(() => providerCategories.find(item => item.val
 const providerOptions = providerCategories.map(item => ({ label: item.label, value: item.value }))
 
 const v8GroupFields = ['name', 'base-url', 'priority', 'disabled', 'prefix', 'proxy-url', 'headers', 'models', 'excluded-models', 'disable-cooling', 'request-retry', 'request-scoped-errors', 'support-prompt-cache-key']
-const v8NativeKeyFields = ['id', 'uuid', 'api-key', 'weight', 'priority', 'prefix', 'proxy-url', 'headers', 'models', 'excluded-models', 'disable-cooling', 'request-retry', 'request-scoped-errors', 'websockets', 'alpha-search', 'disable-codex-cloaking', 'cloak', 'experimental-cch-signing', 'rebuild-mid-system-message', 'fingerprint-profile']
+const v8NativeKeyFields = ['id', 'uuid', 'api-key', 'weight', 'priority', 'prefix', 'proxy-url', 'headers', 'models', 'excluded-models', 'disable-cooling', 'request-retry', 'request-scoped-errors', 'websockets', 'alpha-search', 'disable-codex-cloaking', 'cloak', 'experimental-cch-signing', 'rebuild-mid-system-message', 'fingerprint-profile', 'native-tool-search']
 
 function cloneValue(value) {
   return value == null ? value : JSON.parse(JSON.stringify(value))
@@ -373,9 +429,9 @@ function copyFields(target, source, fields) {
   }
 }
 
-function v8GroupFieldsChanged(entry) {
+function v8GroupFieldsChanged(entry, compat = isCompat.value) {
   const original = entry.__v8Group || {}
-  return v8GroupFields.some(field => JSON.stringify(entry[field]) !== JSON.stringify(original[field]))
+  return v8GroupFields.some(field => (compat || field !== 'disable-cooling') && JSON.stringify(entry[field]) !== JSON.stringify(original[field]))
 }
 
 function v8GroupsFromEntries(entries, category = selectedProvider.value) {
@@ -387,9 +443,10 @@ function v8GroupsFromEntries(entries, category = selectedProvider.value) {
     buckets.get(key).push(entry)
   })
   return [...buckets.values()].map((groupEntries) => {
-    const editedEntry = groupEntries.find(v8GroupFieldsChanged) || groupEntries[0]
+    const editedEntry = groupEntries.find(entry => v8GroupFieldsChanged(entry, compat)) || groupEntries[0]
     const group = cloneValue(editedEntry.__v8Group) || {}
-    copyFields(group, editedEntry, v8GroupFields)
+    // Native cooling is a key override; changing it must not replace the inherited group policy.
+    copyFields(group, editedEntry, compat ? v8GroupFields : v8GroupFields.filter(field => field !== 'disable-cooling'))
     if (compat) delete group['excluded-models']
     if (!compat) {
       delete group.id
@@ -525,12 +582,19 @@ function duplicateProvider(entry) {
   delete copy.uuid
   delete copy.auth_index
   delete copy.disabled
-  delete copy.__v8Group
   delete copy.__v8GroupIndex
-  delete copy.__v8Key
+  delete copy.__v8KeyIndex
+  // Keep unexposed group/key properties, but never reuse credential identity or secrets.
+  for (const source of [copy.__v8Group, copy.__v8Key]) {
+    if (!source) continue
+    delete source.id
+    delete source.uuid
+    delete source.auth_index
+    delete source['api-key']
+  }
   if (isCompat.value) {
     copy.name = ''
-    copy['api-key-entries'] = (copy['api-key-entries'] || []).map(key => ({ 'api-key': '', 'proxy-url': key['proxy-url'] || '', weight: key.weight ?? copy.weight ?? 1 }))
+    copy['api-key-entries'] = (copy['api-key-entries'] || []).map(key => ({ ...key, id: undefined, uuid: undefined, auth_index: undefined, 'api-key': '', weight: key.weight ?? copy.weight ?? 1 }))
   } else copy['api-key'] = ''
   loadGuidedEntry(copy)
   editorError.value = ''
@@ -675,7 +739,8 @@ function applyDiscoveredModels() {
   selectedDiscovered.value = []
 }
 
-function addProviderModel() { providerForm.value.models.push({ name: '', alias: '', 'display-name': '', 'force-mapping': false }) }
+function splitModelList(value) { return String(value || '').split(/[,\n]/).map(item => item.trim()).filter(Boolean) }
+function addProviderModel() { providerForm.value.models.push({ name: '', alias: '' }) }
 function removeProviderModel(index) { providerForm.value.models.splice(index, 1) }
 
 function loadGuidedEntry(entry) {
@@ -692,14 +757,15 @@ function loadGuidedEntry(entry) {
   if (providerEditorMode.value === 'create' && !isCompat.value) providerKey.value = providerForm.value['api-key'] || ''
   if (providerEditorMode.value === 'create' && isCompat.value) providerKey.value = providerForm.value['api-key-entries']?.[0]?.['api-key'] || ''
   if (!providerForm.value.models.length) providerForm.value.models = [{ name: '', alias: '' }]
-  if (providerEditorMode.value === 'create') providerForm.value.priority = ''
-  providerForm.value.models = providerForm.value.models.map(model => ({ ...model, 'display-name': model['display-name'] || '', 'force-mapping': Boolean(model['force-mapping']) }))
-  excludedModelsText.value = Array.isArray(entry['excluded-models']) ? entry['excluded-models'].filter(model => String(model).trim() !== '*').join('\n') : ''
+  excludedModelsText.value = Array.isArray(entry['excluded-models']) ? entry['excluded-models'].join('\n') : ''
   testModel.value = String(entry['test-model'] || automaticTestModel)
   testError.value = ''
   testSuccess.value = false
   requestRetryText.value = entry['request-retry'] == null ? '' : String(entry['request-retry'])
-  providerForm.value['disable-cooling'] = Boolean(entry['disable-cooling'])
+  const coolingOverride = !isCompat.value && entry.__v8Group ? entry.__v8Key?.['disable-cooling'] : entry['disable-cooling']
+  coolingPolicy.value = coolingOverride == null ? 'inherit' : coolingOverride ? 'disabled' : 'enabled'
+  codexCloakingPolicy.value = entry['disable-codex-cloaking'] == null ? 'inherit' : entry['disable-codex-cloaking'] ? 'disabled' : 'enabled'
+  requestScopedErrorsText.value = entry['request-scoped-errors'] == null ? '' : JSON.stringify(entry['request-scoped-errors'], null, 2)
   headerRows.value = Object.entries(entry.headers || {}).map(([name, value]) => ({ name, value: typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' ? String(value) : '' }))
   if (!headerRows.value.length) headerRows.value = [{ name: '', value: '' }]
   const cloak = entry.cloak && typeof entry.cloak === 'object' && !Array.isArray(entry.cloak) ? entry.cloak : null
@@ -726,24 +792,55 @@ function guidedEntry() {
   }
   value.weight = weight
   const retry = requestRetryText.value.trim()
-  if (retry && (!/^\d+$/.test(retry) || !Number.isSafeInteger(Number(retry)))) { editorError.value = 'Request retry must be a non-negative whole number.'; return null }
+  if (retry && (!/^-?\d+$/.test(retry) || !Number.isSafeInteger(Number(retry)))) { editorError.value = 'Request retry must be a whole number; negative values inherit the global setting.'; return null }
   if (retry) value['request-retry'] = Number(retry)
   else if (providerEditorMode.value === 'edit') value['request-retry'] = null
   else delete value['request-retry']
-  value['disable-cooling'] = Boolean(value['disable-cooling'])
+  value['disable-cooling'] = coolingPolicy.value === 'inherit' ? null : coolingPolicy.value === 'disabled'
+  if (selectedProviderRoute.value === 'codex-api-key') value['disable-codex-cloaking'] = codexCloakingPolicy.value === 'inherit' ? null : codexCloakingPolicy.value === 'disabled'
+  if (supportsRequestScopedErrors.value) {
+    try {
+      const rules = requestScopedErrorsText.value.trim() ? JSON.parse(requestScopedErrorsText.value) : null
+      if (rules !== null && (!Array.isArray(rules) || rules.some(rule => !rule || typeof rule !== 'object' || Array.isArray(rule)
+        || (rule.status != null && (!Number.isInteger(rule.status) || rule.status < 100 || rule.status > 599))
+        || ['match', 'match-regexr'].some(field => rule[field] != null && (!Array.isArray(rule[field]) || rule[field].some(pattern => typeof pattern !== 'string')))
+        || !['stop', 'stop-and-cooldown', 'continue', 'continue-and-cooldown'].includes(rule.action)))) throw new Error()
+      value['request-scoped-errors'] = rules
+    } catch { editorError.value = 'Enter a valid request-scoped error rule array with supported actions, status codes, and string pattern lists.'; return null }
+  }
   for (const model of value.models) {
-    if (!String(model.name || '').trim() && (String(model.alias || '').trim() || String(model['display-name'] || '').trim() || model['force-mapping'])) {
+    if (!String(model.name || '').trim() && Object.entries(model).some(([field, setting]) => field !== 'name' && setting != null && setting !== false && setting !== '' && (!Array.isArray(setting) || setting.length))) {
       editorError.value = 'Model ID is required when a model row has other values.'
       return null
+    }
+  }
+  for (const model of value.models) {
+    for (const field of supportsContextLimit.value ? ['max-context-length'] : []) {
+      if (model[field] === '' || model[field] == null) delete model[field]
+      else if (!Number.isSafeInteger(Number(model[field])) || Number(model[field]) <= 0) { editorError.value = 'Model context limits must be positive whole numbers.'; return null }
+      else model[field] = Number(model[field])
+    }
+    if (model.thinking != null) {
+      for (const field of ['min', 'max']) {
+        if (model.thinking[field] === '' || model.thinking[field] == null) delete model.thinking[field]
+        else if (!Number.isSafeInteger(Number(model.thinking[field])) || Number(model.thinking[field]) < 0) { editorError.value = 'Thinking budgets must be non-negative whole numbers.'; return null }
+        else model.thinking[field] = Number(model.thinking[field])
+      }
+      if (model.thinking.max > 0 && model.thinking.min > model.thinking.max) { editorError.value = 'Minimum thinking budget cannot exceed the maximum.'; return null }
+    }
+    if (isCompat.value) {
+      for (const field of ['input-modalities', 'output-modalities']) {
+        if (Array.isArray(model[field]) && !model[field].length) delete model[field]
+      }
     }
   }
   value.models = value.models.filter(model => String(model.name || '').trim()).map(model => {
     const result = { ...model, name: model.name.trim() }
     if (!String(result.alias || '').trim() || result.alias.trim() === result.name) delete result.alias
     else result.alias = result.alias.trim()
-    if (!supportsModelMapping.value || !String(result['display-name'] || '').trim()) delete result['display-name']
+    if (!String(result['display-name'] || '').trim()) delete result['display-name']
     else result['display-name'] = result['display-name'].trim()
-    if (!supportsModelMapping.value || !result['force-mapping']) delete result['force-mapping']
+    if (result['force-mapping'] == null) delete result['force-mapping']
     return result
   })
   value.headers = {}
@@ -761,9 +858,15 @@ function guidedEntry() {
       }
       const cloak = value.cloak && typeof value.cloak === 'object' && !Array.isArray(value.cloak) ? value.cloak : {}
       value.cloak = { ...cloak, 'strict-mode': cloakStrictMode.value, 'cache-user-id': cloakCacheUserID.value === 'enabled', 'sensitive-words': cloakSensitiveWordsText.value.split(/[,\n]/).map(word => word.trim()).filter(Boolean) }
+      if (cloakCacheUserID.value === 'inherit') delete value.cloak['cache-user-id']
       if (selectedCloakMode) value.cloak.mode = selectedCloakMode
       else delete value.cloak.mode
-    } else delete value.cloak
+    } else {
+      const remaining = { ...value.cloak }
+      for (const field of ['mode', 'strict-mode', 'sensitive-words', 'cache-user-id']) delete remaining[field]
+      if (Object.keys(remaining).length) value.cloak = remaining
+      else delete value.cloak
+    }
   }
   if (isCompat.value) delete value['excluded-models']
   else value['excluded-models'] = excludedModelsText.value.split(/[,\n]/).map(item => item.trim()).filter(Boolean)
@@ -794,11 +897,12 @@ function guidedEntry() {
     if (testModel.value !== automaticTestModel && testModel.value.trim()) value['test-model'] = testModel.value.trim()
     else delete value['test-model']
     delete value['proxy-url']
-    if (providerKey.value.trim()) value['api-key-entries'] = [{ 'api-key': providerKey.value.trim(), weight: value.weight }]
+    if (providerKey.value.trim()) value['api-key-entries'] = [{ ...value['api-key-entries']?.[0], 'api-key': providerKey.value.trim(), weight: value.weight }]
     else delete value['api-key-entries']
   } else if (providerKey.value.trim()) value['api-key'] = providerKey.value.trim()
   else delete value['api-key']
   const payload = {
+    ...value,
     priority: value.priority,
     headers: value.headers,
     models: value.models,

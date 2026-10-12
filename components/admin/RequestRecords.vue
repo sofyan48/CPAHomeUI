@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <AppCard :ui="{ body: 'flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-4 sm:py-3' }">
       <div><p class="text-sm font-semibold">Request records</p><p class="text-xs text-[var(--ui-text-muted)]">Search persisted requests and inspect redacted routing, billing, and log details.</p></div>
-      <div class="flex flex-wrap items-center gap-2"><div class="flex items-center gap-2 rounded-md border border-[var(--ui-border)] px-2.5 py-1.5"><USwitch v-model="liveRefresh" size="sm" /><span class="text-xs">Live refresh</span><USelect v-if="liveRefresh" v-model="refreshSeconds" :items="refreshOptions" value-key="value" label-key="label" size="sm" class="w-24" /></div><AppButton color="neutral" variant="outline" size="sm" icon="i-tabler-download" @click="exportOpen = true">Export CSV</AppButton></div>
+      <div class="flex flex-wrap items-center gap-2"><div class="flex items-center gap-2 rounded-md border border-[var(--ui-border)] px-2.5 py-1.5"><USwitch v-model="liveRefresh" size="sm" /><span class="text-xs">Live refresh</span><USelect v-if="liveRefresh" v-model="refreshSeconds" :items="refreshOptions" value-key="value" label-key="label" size="sm" class="w-24" /></div><AppButton color="neutral" variant="outline" size="sm" icon="i-tabler-download" :disabled="exporting || !canExport" @click="exportOpen = true">Export CSV / JSONL</AppButton></div>
     </AppCard>
 
     <UAlert
@@ -13,6 +13,9 @@
       title="Request events unavailable"
       :description="pageError || liveError"
     />
+
+    <UAlert v-if="capabilityError" color="warning" variant="subtle" title="Capabilities unavailable" description="Request export will be checked when requested." />
+    <UAlert v-if="!canExport" color="warning" variant="subtle" title="Request export unavailable" description="This Home deployment does not support request event export." />
 
     <AppCard :ui="{ body: 'px-4 py-3 sm:px-4 sm:py-3' }">
       <form class="space-y-3" @submit.prevent="applyFilters">
@@ -45,6 +48,7 @@
       </form>
     </AppCard>
 
+    <AdminUsageSessionTree />
 
     <AppCard :ui="{ body: 'p-0' }">
       <template #header>
@@ -78,54 +82,21 @@
       </div>
     </AppCard>
 
-    <USlideover v-model:open="detailOpen" side="right" title="Request event details" description="Routing, usage, billing, and redacted logs for this request." :ui="{ content: 'w-full sm:max-w-3xl', body: 'min-h-0 overflow-y-auto p-4 sm:p-6', header: 'shrink-0 border-b border-[var(--ui-border)]' }">
-      <template #body>
-        <div v-if="detailLoading" class="flex items-center justify-center gap-2 py-16 text-sm text-[var(--ui-text-muted)]"><UIcon name="i-tabler-loader-2" class="size-5 animate-spin" />Loading event details…</div>
-        <div v-else-if="selectedDetail" class="space-y-5">
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <div class="flex flex-wrap gap-2"><UBadge :color="selectedDetail.event?.failed ? 'error' : 'success'" variant="subtle">{{ selectedDetail.event?.failed ? 'Failed' : 'Success' }}</UBadge><UBadge color="neutral" variant="subtle">{{ selectedDetail.event?.event_type || 'completion' }}</UBadge></div>
-            <AppButton v-if="selectedDetail.event?.related?.request_log?.download_url" color="neutral" variant="outline" icon="i-tabler-download" :loading="downloadingId === selectedDetail.event.request_id" @click="downloadRequestLog(selectedDetail.event.related.request_log.download_url, selectedDetail.event.request_id)">Download log</AppButton>
-          </div>
-          <section class="rounded-lg border border-[var(--ui-border)] p-4">
-            <h3 class="mb-4 text-sm font-semibold">Request overview</h3>
-            <dl class="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
-            <DetailItem label="Event ID" :value="selectedDetail.event?.id" mono />
-            <DetailItem label="Request ID" :value="selectedDetail.event?.request_id" mono />
-            <DetailItem label="Timestamp" :value="formatDateTime(selectedDetail.event?.timestamp)" />
-            <DetailItem label="HTTP status" :value="formatStatus(selectedDetail.event)" />
-            <DetailItem label="Provider / Model" :value="`${selectedDetail.event?.provider || 'Unknown'} / ${selectedDetail.event?.model || 'Unknown'}`" />
-            <DetailItem label="Original model / alias" :value="selectedDetail.event?.model_alias || selectedDetail.event?.original_model || '—'" />
-            <DetailItem label="Endpoint" :value="selectedDetail.event?.endpoint" mono />
-            <DetailItem label="Executor" :value="selectedDetail.event?.executor_type" />
-            <DetailItem label="Service tier" :value="selectedDetail.event?.service_tier || '—'" />
-            <DetailItem label="Reasoning effort" :value="selectedDetail.event?.reasoning_effort || '—'" />
-            <DetailItem label="Session ID" :value="selectedDetail.event?.session_id || '—'" mono />
-            <DetailItem label="Root session ID" :value="selectedDetail.event?.root_session_id || '—'" mono />
-            </dl>
-          </section>
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <DetailSection title="Runtime" :items="runtimeDetails" />
-            <DetailSection title="Credential" :items="credentialDetails" />
-            <DetailSection title="Client" :items="clientDetails" />
-          </div>
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <DetailSection title="Tokens" :items="tokenDetails" />
-            <DetailSection title="Performance" :items="performanceDetails" />
-            <DetailSection title="Billing" :items="billingDetails" />
-          </div>
-          <UAlert v-if="hasEventError" color="error" variant="subtle" icon="i-tabler-alert-circle" title="Request error" :description="eventErrorText" />
-          <div v-if="selectedDetail.payload_summary" class="rounded-lg border border-[var(--ui-border)] p-4"><p class="mb-3 text-sm font-semibold">Payload summary</p><pre class="max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-md bg-[var(--ui-bg-muted)] p-3 font-mono text-xs leading-5">{{ prettyJSON(selectedDetail.payload_summary) }}</pre></div>
-          <div v-if="selectedDetail.log_excerpt?.length" class="rounded-lg border border-[var(--ui-border)] p-4"><div class="mb-3 flex flex-wrap items-center justify-between gap-2"><h3 class="text-sm font-semibold">Request log excerpt</h3><UBadge color="neutral" variant="subtle" size="sm">Redacted</UBadge></div><pre class="max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-md bg-[var(--ui-bg-muted)] p-3 font-mono text-xs leading-5">{{ selectedDetail.log_excerpt.join('\n') }}</pre></div>
-        </div>
-      </template>
-    </USlideover>
+    <AdminRequestRecordDetail
+      v-model:open="detailOpen"
+      :detail="selectedDetail"
+      :loading="detailLoading"
+      :downloading="Boolean(downloadingId)"
+      :download-error="detailDownloadError"
+      @download="downloadRequestLog"
+    />
 
-    <AppModal v-model:open="exportOpen" title="Export request events" description="Exports up to 10,000 events matching the currently applied filters.">
+    <AppModal v-model:open="exportOpen" title="Export request events" description="Exports up to 10,000 events matching the currently applied filters and sort, across all pages.">
       <template #body>
         <div class="space-y-5">
           <UFormField label="Format"><USelect v-model="exportFormat" :items="exportOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
           <UAlert color="info" variant="subtle" icon="i-tabler-shield-check" title="Secrets remain redacted" description="The server export uses flattened event fields and does not include raw client API keys or payload bodies." />
-          <div class="flex justify-end gap-3"><AppButton color="neutral" variant="ghost" @click="exportOpen = false">Cancel</AppButton><AppButton icon="i-tabler-download" :loading="exporting" @click="exportEvents">Download {{ exportFormat.toUpperCase() }}</AppButton></div>
+          <div class="flex justify-end gap-3"><AppButton color="neutral" variant="ghost" @click="exportOpen = false">Cancel</AppButton><AppButton icon="i-tabler-download" :loading="exporting" :disabled="exporting || !canExport" @click="exportEvents">Download {{ exportFormat.toUpperCase() }}</AppButton></div>
         </div>
       </template>
     </AppModal>
@@ -135,7 +106,12 @@
 <script setup>
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
 import { useDataSync } from '~/composables/useDataSync'
-const { fetchAPI } = useApi()
+const { fetchAPI, token } = useApi()
+const { supports, error: capabilityError, refreshCapabilities } = useCapabilities()
+const exportUnavailable = ref(false)
+const canExport = computed(() => supports('request_event_export') && !exportUnavailable.value)
+let exportController = new AbortController()
+let exportVersion = 0
 const allOptionValue = '__all__'
 const pageSize = 50
 const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
@@ -151,6 +127,7 @@ const defaultFilters = () => ({
 const filters = ref(defaultFilters())
 const appliedFilters = ref({ ...filters.value })
 const searchField = ref('all')
+const appliedSearchField = ref('all')
 const timeRange = ref('24h')
 const sort = ref('timestamp_desc')
 const page = ref(1)
@@ -171,6 +148,7 @@ let refreshTimer = null
 const detailOpen = ref(false)
 const detailLoading = useWorkspaceState('admin:request-records:detailLoading', () => (false))
 const selectedDetail = useWorkspaceState('admin:request-records:selectedDetail', () => (null))
+const detailDownloadError = ref('')
 const downloadingId = useWorkspaceState('admin:request-records:downloadingId', () => (''))
 const exportOpen = ref(false)
 const exportFormat = ref('csv')
@@ -202,26 +180,13 @@ const modelOptions = computed(() => optionList('models', 'All models'))
 const homeOptions = computed(() => optionList('home_ips', 'All Home nodes'))
 const cpaOptions = computed(() => optionList('cpa_nodes', 'All CPA nodes'))
 const statusCodeOptions = computed(() => optionList('status_codes', 'All status codes'))
-const detailEvent = computed(() => selectedDetail.value?.event || {})
-const runtimeDetails = computed(() => detailMap(detailEvent.value.runtime, [['Home', 'home_id'], ['CPA label', 'cpa_label'], ['CPA node ID', 'cpa_node_id'], ['CPA address', 'cpa_ip']]))
-const credentialDetails = computed(() => detailMap(detailEvent.value.credential, [['Type', 'credential_type'], ['Label', 'label'], ['Credential ID', 'credential_id'], ['Auth index', 'auth_index'], ['Provider', 'provider'], ['Key preview', 'api_key_preview']]))
-const clientDetails = computed(() => detailMap(detailEvent.value.client, [['Username', 'username'], ['User ID', 'user_id'], ['Key label', 'client_key_label'], ['Masked key', 'client_key_masked'], ['Client IP', 'client_ip']]))
-const tokenDetails = computed(() => detailMap(detailEvent.value.tokens, [['Input', 'input_tokens'], ['Output', 'output_tokens'], ['Reasoning', 'reasoning_tokens'], ['Cached', 'cached_tokens'], ['Cache read', 'cache_read_tokens'], ['Cache creation', 'cache_creation_tokens'], ['Total', 'total_tokens']], formatNumber))
-const performanceDetails = computed(() => [
-  { label: 'Latency', value: formatMilliseconds(detailEvent.value.performance?.latency_ms) }, { label: 'TTFT', value: formatMilliseconds(detailEvent.value.performance?.ttft_ms) }, { label: 'TPS', value: detailEvent.value.performance?.tps == null ? '—' : formatDecimal(detailEvent.value.performance.tps) }
-])
-const billingDetails = computed(() => [
-  { label: 'Amount', value: formatAmount(detailEvent.value.billing?.amount, detailEvent.value.billing?.currency) }, { label: 'Charge ID', value: detailEvent.value.billing?.charge_id || '—' }, { label: 'Price rule', value: detailEvent.value.billing?.matched_price_rule || '—' }
-])
-const hasEventError = computed(() => Boolean(detailEvent.value.error?.message || detailEvent.value.error?.reason || detailEvent.value.error?.body_preview))
-const eventErrorText = computed(() => detailEvent.value.error?.message || detailEvent.value.error?.body_preview || detailEvent.value.error?.reason || '')
 
 function buildQuery(source = appliedFilters.value, includePagination = true) {
   const query = { timezone, sort: sort.value }
   for (const [key, value] of Object.entries(source)) {
     if (value === '' || value == null) continue
     if (key === 'from' || key === 'to') query[key] = new Date(value).toISOString()
-    else if (key === 'search' && searchField.value !== 'all') query[searchField.value] = value
+    else if (key === 'search' && appliedSearchField.value !== 'all') query[appliedSearchField.value] = value
     else query[key] = value
   }
   if (includePagination) { query.limit = pageSize; query.offset = (page.value - 1) * pageSize }
@@ -262,8 +227,8 @@ function applyTimeRange(value) {
   filters.value.from = toInputDateTime(start)
   filters.value.to = value === 'yesterday' ? toInputDateTime(now) : ''
 }
-async function applyFilters() { appliedFilters.value = { ...filters.value }; page.value = 1; pendingNewEvents.value = 0; await refreshEvents() }
-async function resetFilters() { filters.value = defaultFilters(); appliedFilters.value = { ...filters.value }; searchField.value = 'all'; timeRange.value = '24h'; advancedOpen.value = false; sort.value = 'timestamp_desc'; page.value = 1; pendingNewEvents.value = 0; await refreshEvents() }
+async function applyFilters() { appliedSearchField.value = searchField.value; appliedFilters.value = { ...filters.value }; page.value = 1; pendingNewEvents.value = 0; await refreshEvents() }
+async function resetFilters() { filters.value = defaultFilters(); appliedFilters.value = { ...filters.value }; searchField.value = 'all'; appliedSearchField.value = 'all'; timeRange.value = '24h'; advancedOpen.value = false; sort.value = 'timestamp_desc'; page.value = 1; pendingNewEvents.value = 0; await refreshEvents() }
 async function changePage(delta) {
   const next = page.value + delta
   if (next < 1 || next > totalPages.value) return
@@ -289,21 +254,31 @@ async function openDetail(event) {
   detailOpen.value = true
   detailLoading.value = true
   selectedDetail.value = null
+  detailDownloadError.value = ''
   try { selectedDetail.value = await fetchAPI(`/request-events/${encodeURIComponent(event.id)}`, { query: { include_payload: true, include_logs: true } }); pageError.value = '' } catch (error) { detailOpen.value = false; pageError.value = errorMessage(error, 'Failed to load event details.') } finally { detailLoading.value = false }
 }
 async function downloadRequestLog(downloadUrl, requestId) {
-  if (!downloadUrl) return
+  if (!downloadUrl || downloadingId.value) return
+  detailDownloadError.value = ''
   downloadingId.value = requestId || downloadUrl
-  try { const blob = await fetchAPI(downloadUrl, { responseType: 'blob' }); downloadBlob(blob, `${requestId || 'request'}.log`) } catch (error) { pageError.value = errorMessage(error, 'Failed to download the request log.') } finally { downloadingId.value = '' }
+  try { const blob = await fetchAPI(downloadUrl, { responseType: 'blob' }); downloadBlob(blob, `${requestId || 'request'}.log`) } catch (error) { pageError.value = errorMessage(error, 'Failed to download the request log.'); detailDownloadError.value = pageError.value } finally { downloadingId.value = '' }
 }
 async function exportEvents() {
+  if (exporting.value || !canExport.value) return
+  const version = ++exportVersion
+  const format = exportFormat.value
   exporting.value = true
   pageError.value = ''
   try {
-    const blob = await fetchAPI('/request-events/export', { query: { ...buildQuery(appliedFilters.value, false), format: exportFormat.value }, responseType: 'blob' })
-    downloadBlob(blob, `request-events.${exportFormat.value}`)
+    const blob = await fetchAPI('/request-events/export', { query: { ...buildQuery(appliedFilters.value, false), format }, responseType: 'blob', signal: exportController.signal })
+    if (disposed || version !== exportVersion) return
+    downloadBlob(blob, `request-events.${format}`)
     exportOpen.value = false
-  } catch (error) { pageError.value = errorMessage(error, 'Failed to export request events.') } finally { exporting.value = false }
+  } catch (error) {
+    if (disposed || version !== exportVersion) return
+    if ([404, 405, 501].includes(error?.statusCode)) { exportUnavailable.value = true; exportOpen.value = false }
+    else pageError.value = errorMessage(error, 'Failed to export request events.')
+  } finally { if (!disposed && version === exportVersion) exporting.value = false }
 }
 function downloadBlob(blob, filename) { const objectUrl = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = objectUrl; anchor.download = filename; document.body.appendChild(anchor); anchor.click(); anchor.remove(); URL.revokeObjectURL(objectUrl) }
 function scheduleRefresh() {
@@ -312,7 +287,6 @@ function scheduleRefresh() {
   if (!liveRefresh.value) { liveError.value = ''; return }
   refreshTimer = setInterval(pollEvents, Number(refreshSeconds.value) * 1000)
 }
-function detailMap(object, pairs, formatter = value => value == null || value === '' ? '—' : value) { return pairs.map(([label, key]) => ({ label, value: formatter(object?.[key]) })) }
 function formatNumber(value) { return new Intl.NumberFormat().format(Number(value) || 0) }
 function formatCompactNumber(value) { return new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(Number(value) || 0) }
 function formatDecimal(value) { return new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(Number(value) || 0) }
@@ -320,12 +294,19 @@ function formatMilliseconds(value) { return value == null ? '—' : `${formatNum
 function formatDateTime(value) { return value ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'medium' }).format(new Date(value)) : '—' }
 function formatAmount(amount, currency) { return amount == null ? '—' : `${formatDecimal(amount)} ${currency || 'credits'}` }
 function formatStatus(event) { return `${event?.status || (event?.failed ? 'failed' : 'success')}${event?.status_code ? ` (${event.status_code})` : ''}${event?.upstream_status_code && event.upstream_status_code !== event.status_code ? ` · upstream ${event.upstream_status_code}` : ''}` }
-function prettyJSON(value) { return JSON.stringify(value || {}, null, 2) }
 function errorMessage(error, fallback = 'Unexpected request error.') { return error?.data?.message || error?.data?.error || error?.message || fallback }
 
 watch([liveRefresh, refreshSeconds], scheduleRefresh)
 watch(sort, async () => { page.value = 1; pendingNewEvents.value = 0; await refreshEvents() })
 useDataSync('admin:request-records:sync', refreshEvents)
-onMounted(refreshEvents)
-onBeforeUnmount(() => { disposed = true; requestVersion++; loading.value = false; if (refreshTimer) clearInterval(refreshTimer) })
+watch(token, () => {
+  exportVersion++
+  exportController.abort()
+  exportController = new AbortController()
+  exportUnavailable.value = false
+  exportOpen.value = false
+  exporting.value = false
+})
+onMounted(() => { void refreshCapabilities().catch(() => {}); void refreshEvents() })
+onBeforeUnmount(() => { disposed = true; exportVersion++; exportController.abort(); requestVersion++; loading.value = false; if (refreshTimer) clearInterval(refreshTimer) })
 </script>

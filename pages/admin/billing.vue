@@ -9,6 +9,10 @@
       :description="pageError"
     />
 
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <p class="text-xs text-[var(--ui-text-muted)]">Reporting timezone: {{ savedReportTimezone }} (saved default). Date filters include both calendar dates; timestamps use this timezone.</p>
+      <AppButton color="neutral" variant="outline" icon="i-tabler-settings" :loading="settingsLoading" :disabled="settingsLoading || settingsSaving" @click="openMatchingSettings">Billing settings</AppButton>
+    </div>
     <AppPanelTabs v-model="activeSection" :items="sections" label="Billing sections" />
 
     <template v-if="activeSection === 'overview'">
@@ -220,8 +224,8 @@
 
 
 
-    <AppModal v-model:open="matchingSettingsOpen" title="Configure global tier matching" description="Choose which service tier Home uses when matching future model-price rules.">
-      <template #body><form class="space-y-5" @submit.prevent="saveSettings"><UFormField label="Tier matching source"><div class="grid gap-2"><button v-for="option in tierSourceOptions" :key="option.value" type="button" class="rounded-lg border border-[var(--ui-border)] p-3 text-left" :class="settingsForm.service_tier_source === option.value ? 'border-[var(--ui-primary)] bg-[var(--ui-primary)]/10' : ''" @click="settingsForm.service_tier_source = option.value"><span class="font-medium">{{ option.label }}</span><UBadge v-if="option.value === 'request'" class="ml-2" color="neutral" variant="subtle">Default</UBadge><p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ option.value === 'request' ? 'Match the tier requested by the client.' : 'Match the provider response tier and fall back to the requested tier when absent.' }}</p></button></div></UFormField><UAlert v-if="diagnosticsError" color="warning" variant="subtle" title="Tier diagnostics unavailable" :description="diagnosticsError" /><div v-else-if="settingsForm.service_tier_source === 'response' && tierDiagnostics" class="rounded-lg border border-[var(--ui-border)] p-4 text-sm"><p>{{ formatNumber(tierDiagnostics.fallback_requests) }} of {{ formatNumber(tierDiagnostics.eligible_requests) }} recent eligible requests would fall back to the requested tier.</p></div><div class="flex justify-end gap-2 border-t border-[var(--ui-border)] pt-4"><AppButton type="button" color="neutral" variant="ghost" @click="matchingSettingsOpen = false">Cancel</AppButton><AppButton type="submit" :loading="settingsSaving || diagnosticsLoading">Save matching</AppButton></div></form></template>
+    <AppModal v-model:open="matchingSettingsOpen" title="Billing settings" description="Set the saved reporting timezone and tier matching for future charges.">
+      <template #body><form class="space-y-5" @submit.prevent="saveSettings"><UAlert v-if="settingsError" color="error" variant="subtle" :description="settingsError" /><UFormField label="Reporting timezone" required :error="timezoneError"><UInputMenu v-model="settingsForm.report_timezone" :items="timezoneOptions" create-item :search-input="{ placeholder: 'Search IANA timezones…' }" class="w-full" @create="settingsForm.report_timezone = $event.trim()" /><p class="mt-1 text-xs text-[var(--ui-text-muted)]">Saved default for billing overview, charge records, and balance records. Changes regroup reports and reinterpret date filters, but do not change historical charges.</p></UFormField><UFormField v-if="priceSchemaVersion >= 2" label="Tier matching source"><div class="grid gap-2"><button v-for="option in tierSourceOptions" :key="option.value" type="button" class="rounded-lg border border-[var(--ui-border)] p-3 text-left" :class="settingsForm.service_tier_source === option.value ? 'border-[var(--ui-primary)] bg-[var(--ui-primary)]/10' : ''" @click="settingsForm.service_tier_source = option.value"><span class="font-medium">{{ option.label }}</span><UBadge v-if="option.value === 'request'" class="ml-2" color="neutral" variant="subtle">Default</UBadge><p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ option.value === 'request' ? 'Match the tier requested by the client.' : 'Match the provider response tier and fall back to the requested tier when absent.' }}</p></button></div></UFormField><UAlert v-if="diagnosticsError" color="warning" variant="subtle" title="Tier diagnostics unavailable" :description="diagnosticsError" /><div v-else-if="settingsForm.service_tier_source === 'response' && tierDiagnostics" class="rounded-lg border border-[var(--ui-border)] p-4 text-sm"><p>{{ formatNumber(tierDiagnostics.fallback_requests) }} of {{ formatNumber(tierDiagnostics.eligible_requests) }} recent eligible requests would fall back to the requested tier.</p></div><div class="flex justify-end gap-2 border-t border-[var(--ui-border)] pt-4"><AppButton type="button" color="neutral" variant="ghost" @click="matchingSettingsOpen = false">Cancel</AppButton><AppButton type="submit" :loading="settingsSaving || diagnosticsLoading" :disabled="settingsSaving || diagnosticsLoading || !!timezoneError">Save settings</AppButton></div></form></template>
     </AppModal>
 
     <AppModal v-model:open="adjustmentOpen" :title="adjustmentForm.type === 'recharge' ? 'Recharge user balance' : 'Deduct user balance'" description="Creates an immutable billing balance record.">
@@ -315,16 +319,19 @@ const rangeOptions = [
   { label: 'Last 30 days', value: '30d' }, { label: 'Custom', value: 'custom' }
 ]
 const rowValue = row => row?.original ?? row
-const dateInputValue = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+const savedReportTimezone = useWorkspaceState('admin:billing:savedReportTimezone', () => ('UTC'))
+const dateInputValue = date => date.toISOString().slice(0, 10)
 
 function datesForRange(preset) {
-  const to = new Date()
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: savedReportTimezone.value, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date())
+  const part = type => parts.find(item => item.type === type).value
+  const to = new Date(`${part('year')}-${part('month')}-${part('day')}T00:00:00Z`)
   const from = new Date(to)
   if (preset === 'all') return { from: '', to: '' }
-  if (preset === 'yesterday') { from.setDate(to.getDate() - 1); return { from: dateInputValue(from), to: dateInputValue(from) } }
-  if (preset === 'month') from.setDate(1)
-  if (preset === '7d') from.setDate(to.getDate() - 6)
-  if (preset === '30d') from.setDate(to.getDate() - 29)
+  if (preset === 'yesterday') { from.setUTCDate(to.getUTCDate() - 1); return { from: dateInputValue(from), to: dateInputValue(from) } }
+  if (preset === 'month') from.setUTCDate(1)
+  if (preset === '7d') from.setUTCDate(to.getUTCDate() - 6)
+  if (preset === '30d') from.setUTCDate(to.getUTCDate() - 29)
   return { from: dateInputValue(from), to: dateInputValue(to) }
 }
 const defaultRange = () => datesForRange('7d')
@@ -356,7 +363,19 @@ const settingsLoading = useWorkspaceState('admin:billing:settingsLoading', () =>
 const settingsSaving = useWorkspaceState('admin:billing:settingsSaving', () => (false))
 
 const deviceTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
-const settingsForm = ref({ service_tier_source: 'request', report_timezone: deviceTimezone })
+const settingsForm = ref({ service_tier_source: 'request', report_timezone: 'UTC' })
+const settingsError = ref('')
+const timezoneOptions = computed(() => {
+  let supported = []
+  try { supported = typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : [] } catch {}
+  return [...new Set(['UTC', deviceTimezone, savedReportTimezone.value, 'Asia/Shanghai', 'Asia/Tokyo', 'Europe/London', 'America/New_York', ...supported])].sort((left, right) => left.localeCompare(right))
+})
+const timezoneError = computed(() => {
+  const timezone = settingsForm.value.report_timezone?.trim()
+  if (!timezone || /^[+-]/.test(timezone)) return 'Choose a valid IANA timezone, such as UTC or Asia/Shanghai.'
+  try { new Intl.DateTimeFormat('en', { timeZone: timezone }); return '' }
+  catch { return 'Choose a valid IANA timezone, such as UTC or Asia/Shanghai.' }
+})
 const overviewFilters = ref({ ...defaultRange(), user: '', provider: '', model: '' })
 const appliedOverviewFilters = ref({ ...overviewFilters.value })
 const chargeFilters = ref({ ...defaultRange(), user: '', provider: '', model: '' })
@@ -575,11 +594,11 @@ const chargeDetailItems = computed(() => selectedCharge.value ? [
   { label: 'Client key', value: selectedCharge.value.api_key_label || selectedCharge.value.api_key_masked || '—' }
 ] : [])
 
-function buildRangeQuery(source, includeTimezone = true) {
+function buildRangeQuery(source) {
   const query = {}
   if (source.from) query.from = source.from
   if (source.to) query.to = source.to
-  if (includeTimezone) query.timezone = deviceTimezone
+
   if (source.user?.trim()) (/^\d+$/.test(source.user.trim()) ? query.user_id = source.user.trim() : query.user = source.user.trim())
   if (source.provider?.trim()) query.provider = source.provider.trim()
   if (source.model?.trim()) query.model = source.model.trim()
@@ -589,7 +608,17 @@ async function loadOverview() { overviewLoading.value = true; try { overview.val
 async function loadCharges() { chargesLoading.value = true; try { chargesResponse.value = await fetchAPI('/billing/charges', { query: { ...buildRangeQuery(appliedChargeFilters.value), limit: chargePageSize.value, offset: (chargePage.value - 1) * chargePageSize.value } }) } finally { chargesLoading.value = false } }
 async function loadBalances() { balancesLoading.value = true; try { balancesResponse.value = await fetchAPI('/billing/balance-records', { query: { ...buildRangeQuery(appliedBalanceFilters.value), limit: balancePageSize.value, offset: (balancePage.value - 1) * balancePageSize.value } }) } finally { balancesLoading.value = false } }
 async function loadPrices() { pricesLoading.value = true; try { priceResponse.value = await fetchAPI('/billing/model-prices') } finally { pricesLoading.value = false } }
-async function loadSettings(preserveDraft = false) { settingsLoading.value = true; try { const settings = await fetchAPI('/billing/settings'); if (preserveDraft !== true) settingsForm.value = { service_tier_source: settings?.service_tier_source || 'request', report_timezone: settings?.report_timezone || deviceTimezone }; savedTierSource.value = settings?.service_tier_source || 'request' } finally { settingsLoading.value = false } }
+function updateReportTimezone(timezone) {
+  if (savedReportTimezone.value === timezone) return
+  savedReportTimezone.value = timezone
+  for (const [preset, filters, applied] of [[overviewPreset, overviewFilters, appliedOverviewFilters], [chargePreset, chargeFilters, appliedChargeFilters], [balancePreset, balanceFilters, appliedBalanceFilters]]) {
+    if (preset.value === 'custom') continue
+    const range = datesForRange(preset.value)
+    Object.assign(filters.value, range)
+    Object.assign(applied.value, range)
+  }
+}
+async function loadSettings(preserveDraft = false) { settingsLoading.value = true; try { const settings = await fetchAPI('/billing/settings'); updateReportTimezone(settings?.report_timezone || 'UTC'); if (preserveDraft !== true) settingsForm.value = { service_tier_source: settings?.service_tier_source || 'request', report_timezone: savedReportTimezone.value }; savedTierSource.value = settings?.service_tier_source || 'request' } finally { settingsLoading.value = false } }
 async function loadDiagnostics() {
   diagnosticsLoading.value = true
   diagnosticsError.value = ''
@@ -623,7 +652,7 @@ async function changePageSize(section) {
   if (section === 'charges') { chargePage.value = 1; await safely(loadCharges, 'Failed to load charges.') }
   else { balancePage.value = 1; await safely(loadBalances, 'Failed to load balance records.') }
 }
-async function openMatchingSettings() { await loadSettings(); await loadDiagnostics(); matchingSettingsOpen.value = true }
+async function openMatchingSettings() { await safely(async () => { await loadSettings(); settingsError.value = ''; matchingSettingsOpen.value = true; if (priceSchemaVersion.value >= 2) await loadDiagnostics() }, 'Could not load billing settings.') }
 async function applyOverviewFilters() { appliedOverviewFilters.value = { ...overviewFilters.value }; await safely(loadOverview, 'Failed to load billing overview.') }
 async function resetOverviewFilters() { overviewPreset.value = '7d'; overviewFilters.value = { ...defaultRange(), user: '', provider: '', model: '' }; appliedOverviewFilters.value = { ...overviewFilters.value }; await safely(loadOverview, 'Failed to load billing overview.') }
 async function applyChargeFilters() { appliedChargeFilters.value = { ...chargeFilters.value }; chargePage.value = 1; await safely(loadCharges, 'Failed to load charges.') }
@@ -705,10 +734,13 @@ async function togglePriceEnabled(rule, enabled) { togglingPrice.value = rule.id
 function confirmDeletePrice(rule) { deletePriceTarget.value = rule; deletePriceOpen.value = true }
 async function deletePrice() { if (!deletePriceTarget.value) return; priceDeleting.value = true; try { await fetchAPI(`/billing/model-prices/${encodeURIComponent(deletePriceTarget.value.id)}`, { method: 'DELETE' }); deletePriceOpen.value = false; await loadPrices(); toast.add({ title: 'Price rule deleted', color: 'success', icon: 'i-tabler-circle-check' }) } catch (error) { pageError.value = errorMessage(error, 'Could not delete the price rule.') } finally { priceDeleting.value = false } }
 async function saveSettings() {
+  if (settingsSaving.value || diagnosticsLoading.value) return
+  settingsError.value = timezoneError.value
+  if (settingsError.value) return
   if (settingsForm.value.service_tier_source === 'response' && savedTierSource.value !== 'response') {
     await loadDiagnostics()
     if (diagnosticsError.value || !tierDiagnostics.value?.supported) {
-      pageError.value = diagnosticsError.value || 'Response-tier diagnostics are not supported; cannot confirm this change.'
+      settingsError.value = diagnosticsError.value || 'Response-tier diagnostics are not supported; cannot confirm this change.'
       return
     }
     tierConfirmOpen.value = true
@@ -717,16 +749,20 @@ async function saveSettings() {
   await persistSettings()
 }
 async function persistSettings() {
+  if (settingsSaving.value) return
+  settingsError.value = timezoneError.value
+  if (settingsError.value) return
   settingsSaving.value = true
-  pageError.value = ''
   try {
-    const saved = await fetchAPI('/billing/settings', { method: 'PATCH', body: { service_tier_source: settingsForm.value.service_tier_source } })
+    const saved = await fetchAPI('/billing/settings', { method: 'PATCH', body: { service_tier_source: settingsForm.value.service_tier_source, report_timezone: settingsForm.value.report_timezone.trim() } })
     settingsForm.value = saved
     savedTierSource.value = saved.service_tier_source
+    updateReportTimezone(saved.report_timezone || 'UTC')
     tierConfirmOpen.value = false
     matchingSettingsOpen.value = false
-    toast.add({ title: 'Tier matching saved', color: 'success', icon: 'i-tabler-circle-check' })
-  } catch (error) { pageError.value = errorMessage(error, 'Could not save tier matching.') }
+    toast.add({ title: 'Billing settings saved', color: 'success', icon: 'i-tabler-circle-check' })
+    await safely(async () => { await Promise.all([loadOverview(), loadCharges(), loadBalances()]) }, 'Settings saved, but billing reports could not be refreshed.')
+  } catch (error) { settingsError.value = errorMessage(error, 'Could not save billing settings.') }
   finally { settingsSaving.value = false }
 }
 function chargeUserName(charge) {
@@ -742,7 +778,7 @@ function trendWidth(value) { return Math.max(2, Math.round(((Number(value) || 0)
 function formatCredits(value) { return new Intl.NumberFormat(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 6 }).format(Number(value) || 0) }
 function formatNumber(value) { return new Intl.NumberFormat().format(Number(value) || 0) }
 
-function formatDateTime(value) { return value ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : '—' }
+function formatDateTime(value) { return value ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short', timeZone: savedReportTimezone.value }).format(new Date(value)) : '—' }
 function prettyJSON(value) { return JSON.stringify(value || {}, null, 2) }
 function errorMessage(error, fallback = 'Unexpected request error.') { return error?.data?.message || error?.data?.error || error?.message || fallback }
 
