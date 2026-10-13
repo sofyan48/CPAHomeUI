@@ -1,24 +1,24 @@
 <template>
-  <div class="user-profile mx-auto max-w-[90rem] space-y-5" :aria-busy="loading">
-    <section class="profile-hero flex flex-col gap-4 rounded-2xl border p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6" aria-labelledby="profile-title">
-      <div class="flex min-w-0 items-start gap-4">
-        <span class="profile-icon flex size-12 shrink-0 items-center justify-center rounded-2xl"><UIcon name="i-tabler-user-circle" class="size-7" aria-hidden="true" /></span>
-        <div class="min-w-0"><p class="text-xs font-medium text-[var(--ui-text-muted)]">Your account</p><h1 id="profile-title" class="mt-1 break-words text-2xl font-semibold tracking-tight text-[var(--ui-text-highlighted)]">{{ user?.username || 'User' }}</h1><p class="mt-2 text-xs leading-relaxed text-[var(--ui-text-muted)]">Account #{{ user?.id || '—' }} · Profile and sign-in security at a glance.</p></div>
+  <div class="user-profile mx-auto min-w-0 max-w-[80rem] space-y-5 py-3" :aria-busy="loading">
+    <section class="flex flex-wrap items-center justify-between gap-3" aria-labelledby="profile-title">
+      <div class="flex min-w-0 items-center gap-3">
+        <span class="profile-icon flex size-9 shrink-0 items-center justify-center rounded-xl"><UIcon name="i-tabler-user-circle" class="size-5" aria-hidden="true" /></span>
+        <div class="min-w-0"><h1 id="profile-title" class="break-words text-base font-semibold tracking-tight text-[var(--ui-text-highlighted)]">{{ user?.username || 'User' }}</h1><p class="mt-0.5 text-xs text-[var(--ui-text-muted)]">Account #{{ user?.id || '—' }} · Profile and security</p></div>
       </div>
-      <AppButton class="self-start rounded-xl sm:self-auto" color="neutral" variant="outline" size="sm" icon="i-tabler-refresh" :loading="loading" @click="loadProfile">Refresh</AppButton>
+      <AppButton class="shrink-0 rounded-full" color="neutral" variant="ghost" size="sm" icon="i-tabler-refresh" :loading="loading" @click="loadProfile">Refresh</AppButton>
     </section>
 
     <UAlert v-if="error" color="error" variant="subtle" title="Profile could not be loaded" :description="error" />
 
-    <AppCard v-if="activePeriods.length" class="profile-panel"><template #header><div class="flex items-center gap-3"><span class="profile-icon flex size-9 shrink-0 items-center justify-center rounded-xl"><UIcon name="i-tabler-gauge" class="size-5" aria-hidden="true" /></span><div><h2 class="text-sm font-semibold">Period limits</h2><p class="text-xs text-[var(--ui-text-muted)]">Active limits currently applied to your account.</p></div></div></template><div class="grid gap-3 sm:grid-cols-2"><div v-for="window in activePeriods" :key="window.id" class="rounded-xl border border-[var(--ui-border)] bg-[var(--ui-bg-muted)]/50 p-4"><div class="flex items-center justify-between"><span class="font-medium">{{ periodLabel(window.id) }}</span><span class="text-xs font-semibold">{{ percent(window) }}%</span></div><div class="mt-2 h-2 overflow-hidden rounded-full bg-[var(--ui-bg-muted)]"><div class="h-full rounded-full bg-[var(--ui-primary)]" :style="{ width: `${percent(window)}%` }" /></div><p class="mt-2 text-xs text-[var(--ui-text-muted)]">{{ credits(window.used) }} used · {{ credits(window.remaining) }} remaining</p></div></div></AppCard>
+    <AppCard v-if="activePeriods.length" class="profile-panel"><template #header><div class="flex items-center gap-3"><span class="profile-icon flex size-9 shrink-0 items-center justify-center rounded-xl"><UIcon name="i-tabler-gauge" class="size-5" aria-hidden="true" /></span><div><h2 class="text-sm font-semibold">Period limits</h2><p class="text-xs text-[var(--ui-text-muted)]">Active limits currently applied to your account.</p></div></div></template><div class="grid gap-x-6 gap-y-4 sm:grid-cols-2"><div v-for="window in activePeriods" :key="window.id" class="min-w-0"><div class="flex items-center justify-between"><span class="font-medium">{{ periodLabel(window.id) }}</span><span class="text-xs font-semibold">{{ percent(window) }}%</span></div><div class="mt-2 h-2 overflow-hidden rounded-full bg-[var(--ui-bg-muted)]"><div class="h-full rounded-full bg-[var(--ui-primary)]" :style="{ width: `${percent(window)}%` }" /></div><p class="mt-2 text-xs text-[var(--ui-text-muted)]">{{ credits(window.used) }} used · {{ credits(window.remaining) }} remaining</p></div></div></AppCard>
 
     <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Account summary">
-      <AppCard v-for="(stat, index) in stats" :key="stat.label" class="profile-panel profile-metric min-w-0" :class="`profile-metric--${index}`"><div class="flex items-center justify-between gap-2"><p class="text-xs font-medium text-[var(--ui-text-muted)]">{{ stat.label }}</p><span class="profile-icon flex size-8 shrink-0 items-center justify-center rounded-lg"><UIcon :name="profileStatIcons[index]" class="size-4" aria-hidden="true" /></span></div><p class="mt-3 break-words text-xl font-semibold tabular-nums tracking-tight text-[var(--ui-text-highlighted)]">{{ stat.value }}</p><p class="mt-1 text-xs text-[var(--ui-text-dimmed)]">{{ stat.detail }}</p></AppCard>
+      <AppCard v-for="(stat, index) in stats" :key="stat.label" class="profile-panel min-w-0" :ui="{ body: 'p-4' }"><div class="flex items-center justify-between gap-2"><p class="text-xs font-medium text-[var(--ui-text-muted)]">{{ stat.label }}</p><span class="profile-icon flex size-8 shrink-0 items-center justify-center rounded-lg"><UIcon :name="profileStatIcons[index]" class="size-4" aria-hidden="true" /></span></div><p class="mt-2 break-words text-lg font-semibold tabular-nums tracking-tight text-[var(--ui-text-highlighted)]">{{ stat.value }}</p><p class="mt-1 text-xs text-[var(--ui-text-dimmed)]">{{ stat.detail }}</p></AppCard>
     </section>
 
     <div class="grid items-start gap-5 lg:grid-cols-2">
-      <AppCard class="profile-panel"><template #header><div class="flex items-center gap-3"><span class="profile-icon flex size-9 shrink-0 items-center justify-center rounded-xl"><UIcon name="i-tabler-id" class="size-5" aria-hidden="true" /></span><div><h2 class="text-sm font-semibold">Account details</h2><p class="text-xs text-[var(--ui-text-muted)]">Identity and recovery information.</p></div></div></template><dl class="grid gap-3 sm:grid-cols-2"><div v-for="item in accountDetails" :key="item.label" class="min-w-0 rounded-xl bg-[var(--ui-bg-muted)]/60 p-3"><dt class="text-xs font-medium text-[var(--ui-text-muted)]">{{ item.label }}</dt><dd class="mt-1 break-words text-sm" :class="item.mono ? 'font-mono text-xs' : ''">{{ item.value }}</dd></div></dl></AppCard>
-      <AppCard class="profile-panel"><template #header><div class="flex items-center gap-3"><span class="profile-icon flex size-9 shrink-0 items-center justify-center rounded-xl"><UIcon name="i-tabler-shield-lock" class="size-5" aria-hidden="true" /></span><div><h2 class="text-sm font-semibold">Security status</h2><p class="text-xs text-[var(--ui-text-muted)]">Your current sign-in and recovery methods.</p></div></div></template><div class="space-y-3"><div v-for="item in securityDetails" :key="item.label" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-bg-muted)]/40 p-3"><div><p class="text-sm font-medium">{{ item.label }}</p><p class="text-xs text-[var(--ui-text-muted)]">{{ item.detail }}</p></div><UBadge :color="item.enabled ? 'success' : 'neutral'" variant="subtle">{{ item.enabled ? 'Enabled' : 'Not enabled' }}</UBadge></div></div><template #footer><div class="flex justify-end"><AppButton to="/app/settings" size="sm" color="neutral" variant="outline" icon="i-tabler-settings" class="rounded-xl">Manage security</AppButton></div></template></AppCard>
+      <AppCard class="profile-panel"><template #header><div class="flex items-center gap-3"><span class="profile-icon flex size-9 shrink-0 items-center justify-center rounded-xl"><UIcon name="i-tabler-id" class="size-5" aria-hidden="true" /></span><div><h2 class="text-sm font-semibold">Account details</h2><p class="text-xs text-[var(--ui-text-muted)]">Identity and recovery information.</p></div></div></template><dl class="divide-y divide-[var(--ui-border)]/50"><div v-for="item in accountDetails" :key="item.label" class="grid min-w-0 gap-1 py-3 first:pt-0 last:pb-0 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-4"><dt class="text-xs font-medium text-[var(--ui-text-muted)]">{{ item.label }}</dt><dd class="min-w-0 break-words text-sm" :class="item.mono ? 'font-mono text-xs' : ''">{{ item.value }}</dd></div></dl></AppCard>
+      <AppCard class="profile-panel"><template #header><div class="flex items-center gap-3"><span class="profile-icon flex size-9 shrink-0 items-center justify-center rounded-xl"><UIcon name="i-tabler-shield-lock" class="size-5" aria-hidden="true" /></span><div><h2 class="text-sm font-semibold">Security status</h2><p class="text-xs text-[var(--ui-text-muted)]">Your current sign-in and recovery methods.</p></div></div></template><div class="divide-y divide-[var(--ui-border)]/50"><div v-for="item in securityDetails" :key="item.label" class="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"><div class="min-w-0"><p class="text-sm font-medium">{{ item.label }}</p><p class="text-xs text-[var(--ui-text-muted)]">{{ item.detail }}</p></div><UBadge :color="item.enabled ? 'success' : 'neutral'" variant="subtle">{{ item.enabled ? 'Enabled' : 'Not enabled' }}</UBadge></div></div><template #footer><div class="flex justify-end"><AppButton to="/app/settings" size="sm" color="neutral" variant="outline" icon="i-tabler-settings" class="rounded-xl">Manage security</AppButton></div></template></AppCard>
     </div>
 
 
@@ -85,23 +85,13 @@ onMounted(loadProfile)
 </script>
 
 <style scoped>
-.user-profile { --profile-accent: var(--ui-primary); }
-.profile-hero {
-  border-color: color-mix(in oklch, var(--ui-primary) 14%, var(--ui-border));
-  background: radial-gradient(ellipse at 0% 0%, color-mix(in oklch, var(--ui-primary) 10%, transparent), transparent 65%), var(--ui-bg);
-  box-shadow: 0 8px 32px color-mix(in oklch, var(--ui-primary) 4%, transparent);
-}
 .profile-panel {
-  border-radius: 1.25rem;
-  border-color: color-mix(in oklch, var(--ui-border) 75%, transparent);
+  border-radius: 1.5rem;
+  border-color: color-mix(in oklch, var(--ui-border) 50%, transparent);
   background: var(--ui-bg);
-  box-shadow: 0 4px 20px color-mix(in oklch, var(--ui-text-highlighted) 4%, transparent);
+  box-shadow: none;
 }
 .profile-panel :deep([data-slot="header"]),
 .profile-panel :deep([data-slot="footer"]) { border-color: color-mix(in oklch, var(--ui-border) 55%, transparent); }
-.profile-icon { color: var(--profile-accent); background: color-mix(in oklch, var(--profile-accent) 12%, var(--ui-bg)); }
-.profile-metric { background: radial-gradient(ellipse at 100% 0%, color-mix(in oklch, var(--profile-accent) 7%, transparent), transparent 75%), var(--ui-bg); }
-.profile-metric--0 { --profile-accent: var(--ui-success); }
-.profile-metric--2 { --profile-accent: var(--ui-info); }
-.profile-metric--3 { --profile-accent: var(--ui-warning); }
+.profile-icon { color: var(--ui-primary); background: color-mix(in oklch, var(--ui-primary) 8%, var(--ui-bg)); }
 </style>
