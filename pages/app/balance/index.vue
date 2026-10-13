@@ -40,7 +40,7 @@
             <p v-if="resetAllowance && !resetLoadError" class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ resetAllowance.mode === 'monthly' ? `${resetAllowance.amount} resets per month · Unused resets do not carry over.` : resetAllowance.mode === 'one_time' ? 'One-time reset allowance.' : 'No reset allowance has been granted.' }}</p>
             <p v-if="!resetLoadError && (resetAllowance?.renews_at || resetAllowance?.expires_at)" class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ resetAllowance?.mode === 'monthly' ? 'Renews' : 'Expires' }} {{ formatDate(resetAllowance?.renews_at || resetAllowance?.expires_at || '') }}</p>
           </div>
-          <AppButton icon="i-tabler-refresh" :disabled="resetPending || resetLoading || !!resetLoadError || !enabledPeriodWindows.length || !resetAllowance || resetAllowance.available <= 0" @click="resetError = ''; resetConfirmOpen = true">Reset limits</AppButton>
+          <AppButton v-if="!resetLoading && !resetLoadError && resetAllowance && resetAllowance.available > 0" icon="i-tabler-refresh" :disabled="resetPending || !enabledPeriodWindows.length" @click="resetError = ''; resetConfirmOpen = true">Reset limits</AppButton>
         </div>
         <p class="text-xs text-[var(--ui-text-muted)]">Reset all enabled period limits at once. Credits and usage history stay unchanged.</p>
         <p v-if="!resetLoading && !resetLoadError && periodLimits && !enabledPeriodWindows.length" class="text-xs text-[var(--ui-text-muted)]">There are no enabled period limits to reset.</p>
