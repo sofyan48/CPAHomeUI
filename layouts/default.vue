@@ -105,7 +105,7 @@
           </div>
         </header>
 
-        <main class="workbench-main min-h-0 flex-1 overflow-y-auto !px-2 !py-4 sm:!p-5 lg:!p-6">
+        <main class="workbench-main min-h-0 min-w-0 flex-1 overflow-y-auto !px-2 !py-4 sm:!p-5 lg:!p-6">
           <UAlert
             v-if="capabilitiesError"
             class="mb-6"
