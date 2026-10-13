@@ -25,6 +25,7 @@
       </div>
     </section>
 
+
     <section v-if="section === 'dashboard' && activePeriodWindows.length" class="dashboard-limit-grid grid grid-cols-1 gap-4" :style="dashboardGridStyle" aria-label="Account period limits">
       <AppCard v-for="window in activePeriodWindows" :key="window.id" class="dashboard-panel dashboard-limit" tinted>
         <div class="flex items-start justify-between gap-3">
@@ -417,6 +418,7 @@ const chargesTotal = useWorkspaceState('user:workspace:charges-total', () => 0)
 const billingLoading = useWorkspaceState('user:workspace:billing-loading', () => false)
 const billingError = useWorkspaceState('user:workspace:billing-error', () => '')
 const periodLimits = useWorkspaceState<PeriodLimitsStatus | null>('user:workspace:period-limits', () => null)
+
 let billingRequest = 0
 
 const rangeOptions = [
@@ -570,6 +572,7 @@ async function loadPeriodLimits() {
   try { periodLimits.value = await fetchAPI<PeriodLimitsStatus>('/period-limits') }
   catch (error: any) { if (error?.statusCode !== 404) throw error; periodLimits.value = null }
 }
+
 
 async function loadKeys() {
   keysLoading.value = true

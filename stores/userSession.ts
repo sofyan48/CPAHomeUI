@@ -48,6 +48,7 @@ export interface UserSessionResponse {
 }
 
 export interface UserCapabilities {
+  user_reset_allowance?: boolean
   topup_approval?: boolean
   request_logs?: boolean
   email_registration?: boolean

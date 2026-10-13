@@ -17,17 +17,15 @@
       </dl>
     </section>
 
-    <AppCard class="balance-panel min-w-0" :ui="{ body: 'grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] lg:items-start' }">
-      <template #header><div class="flex items-center gap-3"><span class="balance-icon flex size-9 shrink-0 items-center justify-center rounded-xl"><UIcon name="i-tabler-coins" class="size-5" aria-hidden="true" /></span><div><h2 class="text-sm font-semibold">Add credits</h2><p class="mt-0.5 text-xs text-[var(--ui-text-muted)]">Top up your available balance.</p></div></div></template>
-      <div class="rounded-xl border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] p-4">
-        <p class="flex items-center gap-2 text-sm font-medium"><UIcon name="i-tabler-info-circle" class="size-4 text-[var(--ui-primary)]" aria-hidden="true" />{{ topupApprovalEnabled ? 'Approval-based topups' : 'Account topups' }}</p>
-        <p class="mt-2 text-xs leading-relaxed text-[var(--ui-text-muted)]">{{ topupApprovalEnabled ? 'An administrator reviews each request before credits are added. Pending requests appear here so you can follow their status.' : 'Enter the number of credits you want to add. Completed topups appear in your balance history below.' }}</p>
-      </div>
+    <AppCard class="balance-panel min-w-0" :ui="{ body: resetAllowanceSupported ? 'grid gap-5 lg:grid-cols-2 lg:items-stretch' : 'grid gap-5' }">
+      <template #header><div class="flex items-center gap-3"><span class="balance-icon flex size-9 shrink-0 items-center justify-center rounded-xl"><UIcon name="i-tabler-coins" class="size-5" aria-hidden="true" /></span><div><h2 class="text-sm font-semibold">{{ resetAllowanceSupported ? 'Topup & reset allowance' : 'Add credits' }}</h2><p class="mt-0.5 text-xs text-[var(--ui-text-muted)]">{{ resetAllowanceSupported ? 'Request credits and manage your period-limit resets.' : 'Top up your available balance.' }}</p></div></div></template>
+      <div class="min-w-0 space-y-3">
+        <h3 class="text-sm font-semibold">{{ topupApprovalEnabled ? 'Request topup' : 'Add credits' }}</h3>
         <form class="space-y-4" @submit.prevent="recharge">
           <UAlert v-if="pendingTopup" color="warning" variant="subtle" icon="i-tabler-clock" title="Topup awaiting approval" :description="`Your request for ${formatCredits(pendingTopup.amount)} credits is waiting for administrator approval. Your balance has not changed. You cannot request another topup while this request is pending.`" />
-          <p v-if="topupApprovalEnabled && !pendingTopup" class="text-sm text-[var(--ui-text-muted)]">Topup requests require administrator approval before credits are added to your balance.</p>
+
           <UAlert v-if="rechargeError" color="error" variant="subtle" title="Recharge failed" :description="rechargeError" />
-          <UFormField label="Recharge amount (credits)" required hint="Enter any positive amount.">
+          <UFormField label="Amount (credits)" required>
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
               <UInput v-model="amount" type="number" min="0" step="any" placeholder="100" class="min-w-0 flex-1" :disabled="saving || loading || !requestStateLoaded || !!pendingTopup" required />
               <AppButton type="submit" icon="i-tabler-plus" class="shrink-0" :loading="saving" :disabled="!validAmount || !token || loading || !requestStateLoaded || !!pendingTopup">{{ topupApprovalEnabled ? 'Request topup' : 'Topup' }} {{ validAmount ? formatCredits(Number(amount)) : '' }}</AppButton>
@@ -35,7 +33,24 @@
           </UFormField>
           <AppButton v-if="pendingTopup || !requestStateLoaded" type="button" color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" :disabled="saving" @click="refresh">Refresh status</AppButton>
         </form>
+      </div>
+      <section v-if="resetAllowanceSupported" class="min-w-0 space-y-3 border-t border-[var(--ui-border)] pt-5 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-5" aria-labelledby="reset-allowance-title" :aria-busy="resetLoading">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div><h3 id="reset-allowance-title" class="flex items-center gap-2 text-sm font-semibold"><UIcon name="i-tabler-refresh" class="size-4 text-[var(--ui-primary)]" aria-hidden="true" /> Reset Available: {{ resetLoading ? '…' : resetLoadError ? '—' : resetAllowance?.available ?? '—' }}</h3>
+            <p v-if="resetAllowance && !resetLoadError" class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ resetAllowance.mode === 'monthly' ? `${resetAllowance.amount} resets per month · Unused resets do not carry over.` : resetAllowance.mode === 'one_time' ? 'One-time reset allowance.' : 'No reset allowance has been granted.' }}</p>
+            <p v-if="!resetLoadError && (resetAllowance?.renews_at || resetAllowance?.expires_at)" class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ resetAllowance?.mode === 'monthly' ? 'Renews' : 'Expires' }} {{ formatDate(resetAllowance?.renews_at || resetAllowance?.expires_at || '') }}</p>
+          </div>
+          <AppButton icon="i-tabler-refresh" :disabled="resetPending || resetLoading || !!resetLoadError || !enabledPeriodWindows.length || !resetAllowance || resetAllowance.available <= 0" @click="resetError = ''; resetConfirmOpen = true">Reset limits</AppButton>
+        </div>
+        <p class="text-xs text-[var(--ui-text-muted)]">Reset all enabled period limits at once. Credits and usage history stay unchanged.</p>
+        <p v-if="!resetLoading && !resetLoadError && periodLimits && !enabledPeriodWindows.length" class="text-xs text-[var(--ui-text-muted)]">There are no enabled period limits to reset.</p>
+        <UAlert v-if="resetLoadError" color="error" variant="subtle" title="Reset allowance could not be loaded" :description="resetLoadError" />
+        <AppButton v-if="resetLoadError" size="sm" color="neutral" variant="outline" :loading="resetLoading" @click="loadResetLimits">Retry</AppButton>
+      </section>
     </AppCard>
+    <AppModal v-model:open="resetConfirmOpen" title="Reset all enabled period limits?" :dismissible="!resetPending">
+      <template #body><div class="space-y-4"><p class="text-sm">This uses one reset to clear usage for every enabled period window on your account. Your configured limits, credits, and usage history will not change.</p><UAlert v-if="resetError" color="error" variant="subtle" :description="resetError" /><div class="flex justify-end gap-2"><AppButton color="neutral" variant="outline" :disabled="resetPending" @click="resetConfirmOpen = false">Cancel</AppButton><AppButton :loading="resetPending" :disabled="resetPending" @click="useResetAllowance">Use Reset</AppButton></div></div></template>
+    </AppModal>
     <AppUserWorkspace section="billing" class="min-w-0">
       <template #balance-history>
       <AppCard class="balance-panel flex min-w-0 flex-col overflow-hidden" :ui="{ header: 'min-h-24', body: 'flex-1 p-0' }">
@@ -68,6 +83,47 @@ import type { BillingBalanceRecord, BillingOverview, BillingRechargeRequest } fr
 definePageMeta({ layout: 'app' })
 const { currentUser, token, hydrateSession, fetchAPI, loadCurrentUser, capabilities, loadCapabilities } = useUserApi()
 const topupApprovalEnabled = computed(() => capabilities.value.topup_approval === true)
+const resetAllowanceSupported = computed(() => capabilities.value.user_reset_allowance === true)
+type ResetAllowanceStatus = { mode: string; amount: number; available: number; expires_at: string | null; renews_at: string | null }
+type PeriodLimitsStatus = { windows?: { id: string; enabled: boolean; limit: number | null }[]; reset_allowance?: ResetAllowanceStatus }
+const periodLimits = useWorkspaceState<PeriodLimitsStatus | null>('user:balance:period-limits', () => null)
+const resetAllowance = computed(() => periodLimits.value?.reset_allowance)
+const enabledPeriodWindows = computed(() => (periodLimits.value?.windows || []).filter(window => window.enabled && window.limit != null))
+const resetLoading = ref(false)
+const resetLoadError = ref('')
+const resetConfirmOpen = ref(false)
+const resetPending = ref(false)
+const resetError = ref('')
+const resetController = new AbortController()
+onScopeDispose(() => resetController.abort())
+async function loadResetLimits() {
+  if (!resetAllowanceSupported.value || resetController.signal.aborted) return
+  resetLoading.value = true
+  resetLoadError.value = ''
+  try {
+    const response = await fetchAPI<PeriodLimitsStatus>('/period-limits', { signal: resetController.signal })
+    if (!response.reset_allowance) throw new Error('The server did not return reset allowance information. Update Home and refresh this page.')
+    if (!resetController.signal.aborted) periodLimits.value = response
+  } catch (cause: any) {
+    if (!resetController.signal.aborted) resetLoadError.value = cause?.message || 'Unable to load reset allowance.'
+  } finally { resetLoading.value = false }
+}
+async function useResetAllowance() {
+  if (resetPending.value || !resetAllowanceSupported.value) return
+  resetPending.value = true
+  resetError.value = ''
+  try {
+    const response = await fetchAPI<{ limits: PeriodLimitsStatus }>('/period-limits/reset', { method: 'POST', signal: resetController.signal })
+    if (resetController.signal.aborted) return
+    periodLimits.value = response.limits
+    resetConfirmOpen.value = false
+    toast.add({ title: 'All enabled period limits reset.', description: 'One reset has been used. Your credits are unchanged.', color: 'success' })
+  } catch (cause: any) {
+    if (resetController.signal.aborted) return
+    resetError.value = cause?.message || 'Unable to reset period limits.'
+    await loadResetLimits()
+  } finally { resetPending.value = false }
+}
 const requestStateLoaded = useWorkspaceState('user:balance:request-state-loaded', () => false)
 const pendingTopup = useWorkspaceState<BillingRechargeRequest | null>('user:balance:pending-topup', () => null)
 const loading = useWorkspaceState('user:balance:loading', () => false)
@@ -124,7 +180,7 @@ async function refresh() {
   pageError.value = ''
   try {
     const results = await Promise.allSettled([
-      loadTopupRequest(),
+      loadTopupRequest().then(loadResetLimits),
       fetchAPI<{ overview: BillingOverview }>('/billing/overview').then(response => { overview.value = response.overview }),
       loadCurrentUser(), loadRecords()
     ])

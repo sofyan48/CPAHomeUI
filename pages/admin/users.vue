@@ -137,6 +137,14 @@
               >{{ periodWindows(row.original).length }} windows</span
             ><span v-else class="text-[var(--ui-text-muted)]">—</span></template
           >
+          <template #resetAllowance-cell="{ row }">
+            <div v-if="resetAllowanceSupported && row.original.reset_allowance" class="space-y-1">
+              <p class="tabular-nums">{{ row.original.reset_allowance.available }} available</p>
+              <p class="text-xs text-[var(--ui-text-muted)]">{{ row.original.reset_allowance.mode === 'monthly' ? `${row.original.reset_allowance.amount} / month` : 'One-time' }}</p>
+              <p v-if="row.original.reset_allowance.renews_at || row.original.reset_allowance.expires_at" class="text-xs text-[var(--ui-text-muted)]">{{ row.original.reset_allowance.mode === 'monthly' ? 'Renews' : 'Expires' }} {{ formatDate(row.original.reset_allowance.renews_at || row.original.reset_allowance.expires_at) }}</p>
+            </div>
+            <span v-else class="text-[var(--ui-text-muted)]">—</span>
+          </template>
           <template #keys-cell="{ row }">{{
             keysForUser(row.original.id).length
           }}</template>
@@ -154,11 +162,7 @@
               >{{ scopeSummary(effectiveModelScopes(row.original.id)) }}</span
             ></template
           >
-          <template #updatedAt-cell="{ row }"
-            ><span class="whitespace-nowrap text-[var(--ui-text-muted)]">{{
-              formatDate(row.original.updated_at)
-            }}</span></template
-          >
+
           <template #actions-cell="{ row }"
             ><div class="flex items-center justify-end gap-1">
               <AppButton
@@ -199,6 +203,13 @@
                 label="Balance operation"
                 :disabled="!isOperableUser(row.original)"
                 @click="openBalance([row.original])"
+              /><AdminTableAction
+                v-if="resetAllowanceSupported"
+                action="edit"
+                icon="i-tabler-refresh"
+                label="Configure reset allowance"
+                :disabled="!isOperableUser(row.original)"
+                @click="openResetAllowance(row.original)"
               /><AdminTableAction
                 action="delete"
                 label="Delete user"
@@ -1326,6 +1337,8 @@
       </template>
     </AppModal>
 
+    <UsersResetAllowance v-model:open="resetAllowanceOpen" :user="resetAllowanceUser" @saved="syncAll" />
+
     <AppModal v-model:open="deleteOpen" title="Confirm deletion"
       ><template #body
         ><div class="space-y-4">
@@ -1355,6 +1368,7 @@ import UnsupportedScopes from "@/components/admin/users/UsersUnsupportedScopes.v
 import SummaryRow from "@/components/admin/users/UsersSummaryRow.vue";
 import DetailSection from "@/components/admin/users/UsersDetailSection.vue";
 import PeriodCard from "@/components/admin/users/UsersPeriodCard.vue";
+import UsersResetAllowance from "~/components/admin/users/UsersResetAllowance.vue";
 import ScopePicker from "@/components/admin/users/UsersScopePicker.vue";
 import CandidatePicker from "@/components/admin/users/UsersCandidatePicker.vue";
 import GroupCards from "@/components/admin/users/UsersGroupCards.vue";
@@ -1407,6 +1421,13 @@ const unassignedKeyCount = computed(
 );
 const rowValue = (row) => row?.original ?? row;
 const userStatus = (user) => user.deleted_at ? "Deleted" : user.approval_pending ? "Pending approval" : "Active";
+const resetAllowanceSupported = computed(() => supports("user_reset_allowance", false));
+const resetAllowanceOpen = ref(false), resetAllowanceUser = ref(null);
+function openResetAllowance(user) {
+  if (!resetAllowanceSupported.value || !isOperableUser(user)) return;
+  resetAllowanceUser.value = user;
+  resetAllowanceOpen.value = true;
+}
 const topupApprovalSupported = computed(() => supports("topup_approval", false));
 const topupApprovalOpen = ref(false),
   topupApprovalUser = ref(null),
@@ -1481,10 +1502,11 @@ const userColumns = [
   { accessorKey: "credits", header: "Credits" },
   { accessorKey: "pendingTopup", header: "Pending topup" },
   { accessorKey: "periodLimits", header: "Period limits" },
+  { accessorKey: "resetAllowance", header: "Reset Available" },
   { accessorKey: "keys", header: "Client keys" },
   { accessorKey: "credentialScope", header: "Credential scope" },
   { accessorKey: "modelScope", header: "Model scope" },
-  { accessorKey: "updatedAt", header: "Updated" },
+
   {
     id: "actions",
     header: "Actions",
