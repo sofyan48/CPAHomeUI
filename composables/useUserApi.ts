@@ -15,6 +15,7 @@ export type {
   BillingTopItem,
   BillingOverview,
   BillingBalanceRecord,
+  BillingRechargeRequest,
   BillingCharge,
   UserModel
 } from '~/stores/userSession'

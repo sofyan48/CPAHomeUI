@@ -1,5 +1,5 @@
 <template>
-  <AppCard :ui="{ body: 'p-0' }" :aria-label="title || 'Data table'">
+  <AppCard class="min-w-0 max-w-full" :ui="{ body: 'min-w-0 p-0' }" :aria-label="title || 'Data table'">
     <template v-if="title || description || $slots.actions" #header>
       <div class="flex min-h-8 items-center gap-3">
         <div class="min-w-0 flex-1">
@@ -20,7 +20,7 @@
       <slot name="bulk" />
     </div>
 
-    <div class="min-w-0 overflow-x-auto" :class="contentClass">
+    <div class="min-w-0 max-w-full overflow-x-auto" :class="contentClass">
       <slot />
     </div>
 

@@ -1,5 +1,16 @@
 <template>
-  <div class="space-y-7">
+  <div class="model-workspace min-w-0 space-y-5">
+    <section class="catalog-hero grid gap-4 rounded-2xl border p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-6" aria-labelledby="catalog-title">
+      <div class="min-w-0">
+        <p class="flex items-center gap-2 text-xs font-medium text-[var(--ui-text-muted)]"><UIcon name="i-tabler-sparkles" class="size-4 text-primary" aria-hidden="true" /> Discover your next model</p>
+        <h1 id="catalog-title" class="mt-2 text-2xl font-semibold tracking-tight text-[var(--ui-text-highlighted)]">Model catalog</h1>
+        <p class="mt-2 max-w-xl text-sm leading-relaxed text-[var(--ui-text-muted)]">Explore models, compare capabilities, and find the right fit for your apps.</p>
+      </div>
+      <div v-if="!catalogUnsupported" class="catalog-count flex items-center gap-3 rounded-xl border p-4">
+        <span class="catalog-icon flex size-10 shrink-0 items-center justify-center rounded-xl"><UIcon name="i-tabler-box-multiple" class="size-5" aria-hidden="true" /></span>
+        <div><p class="text-xs text-[var(--ui-text-muted)]">Models in your catalog</p><p class="mt-1 text-2xl font-semibold tabular-nums tracking-tight">{{ loading || !catalogReady ? '—' : models.length }}</p></div>
+      </div>
+    </section>
     <UAlert v-if="catalogUnsupported" color="warning" variant="subtle" title="Model catalog unavailable" description="This Home server does not support the public model catalog endpoint." />
 
     <template v-else>
@@ -7,26 +18,38 @@
       <UAlert v-if="error" color="error" variant="subtle" title="Unable to load models" :description="error" />
       <UAlert v-if="accessibleWarning" color="warning" variant="subtle" title="Your key access could not be loaded" :description="accessibleWarning" />
 
-      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <UInput v-model="search" aria-label="Search models" icon="i-tabler-search" placeholder="Search models or capabilities..." />
-        <USelect :model-value="inputModality || noFilterValue" @update:model-value="inputModality = $event === noFilterValue ? '' : String($event)" aria-label="Input modality" :items="modalityOptions" value-key="value" label-key="label" />
-        <USelect v-model="sortBy" aria-label="Sort models" :items="sortOptions" value-key="value" label-key="label" />
-      </div>
+      <AppCard class="catalog-panel" :ui="{ body: 'space-y-4' }">
+        <template #header><div class="flex items-center gap-3"><span class="catalog-icon flex size-9 shrink-0 items-center justify-center rounded-lg"><UIcon name="i-tabler-adjustments-horizontal" class="size-5" aria-hidden="true" /></span><div><h2 class="text-sm font-semibold">Find a model</h2><p class="mt-0.5 text-xs text-[var(--ui-text-muted)]">Narrow the catalog by input and supported features.</p></div></div></template>
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <UFormField label="Search" class="sm:col-span-2 lg:col-span-1">
+            <UInput v-model="search" aria-label="Search models" icon="i-tabler-search" placeholder="Search models or capabilities..." class="w-full" />
+          </UFormField>
+          <UFormField label="Input modality">
+            <USelect :model-value="inputModality || noFilterValue" @update:model-value="inputModality = $event === noFilterValue ? '' : String($event)" aria-label="Input modality" :items="modalityOptions" value-key="value" label-key="label" class="w-full" />
+          </UFormField>
+          <UFormField label="Sort by"><USelect v-model="sortBy" aria-label="Sort models" :items="sortOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
+        </div>
 
       <fieldset class="flex flex-wrap items-center gap-1.5 rounded-xl border border-[var(--ui-border)] px-3 py-2.5">
         <legend class="px-1 text-xs font-semibold uppercase tracking-wide text-[var(--ui-text-dimmed)]">Required capabilities</legend>
         <AppButton v-for="option in capabilityOptions" :key="option.value" type="button" size="xs" :color="selectedCapabilities.includes(option.value) ? 'primary' : 'neutral'" :variant="selectedCapabilities.includes(option.value) ? 'soft' : 'outline'" :icon="selectedCapabilities.includes(option.value) ? 'i-tabler-check' : undefined" :aria-pressed="selectedCapabilities.includes(option.value)" @click="setCapability(option.value, !selectedCapabilities.includes(option.value))">{{ option.label }}</AppButton>
       </fieldset>
 
-      <p class="text-xs text-[var(--ui-text-muted)]">{{ filteredModels.length }} of {{ models.length }} models · Unknown modalities and capabilities do not match support filters. Availability is observed cluster-wide, not a guarantee.</p>
+      <p class="text-xs leading-relaxed text-[var(--ui-text-muted)]">Unknown modalities and capabilities do not match support filters. Availability is observed cluster-wide, not a guarantee.</p>
+      </AppCard>
 
-      <div v-if="(loading || !catalogReady) && !models.length" class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h2 class="flex items-center gap-2 text-sm font-semibold"><UIcon name="i-tabler-grid-dots" class="size-4 text-[var(--ui-text-muted)]" aria-hidden="true" /> Explore models</h2>
+        <span class="rounded-full bg-[var(--ui-bg-muted)] px-3 py-1 text-xs tabular-nums text-[var(--ui-text-muted)]">{{ filteredModels.length }} of {{ models.length }} models</span>
+      </div>
+
+      <div v-if="(loading || !catalogReady) && !models.length" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         <USkeleton v-for="index in 12" :key="index" class="h-52 rounded-xl" />
       </div>
-      <div v-else class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-        <AppCard v-for="model in filteredModels" :key="model.id" class="min-w-0" :ui="{ body: 'flex h-full flex-col p-3 sm:p-3' }">
+      <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <AppCard v-for="model in filteredModels" :key="model.id" class="catalog-panel catalog-model min-w-0" :ui="{ body: 'flex h-full flex-col p-4 sm:p-4' }">
           <div class="flex items-start justify-between gap-2">
-            <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--ui-bg-muted)] text-[var(--ui-text-highlighted)]">
+            <div class="catalog-icon flex size-10 shrink-0 items-center justify-center rounded-xl">
               <UIcon :name="modelLogoIcon(model)" class="size-6" aria-hidden="true" />
             </div>
             <UBadge v-if="token" color="success" variant="subtle" size="sm">Available</UBadge>
@@ -38,10 +61,13 @@
               <AppButton color="neutral" variant="ghost" size="xs" icon="i-tabler-copy" :aria-label="`Copy model ID ${model.id}`" @click.stop="copyModelId(model.id)" />
             </div>
           </div>
-          <p v-if="model.pricing?.status === 'published'" class="mt-3 text-xs font-medium leading-5">From {{ credits(lowestPrice(model, 'input')) }} in / {{ credits(lowestPrice(model, 'output')) }} out / 1M tokens</p>
-          <p v-else class="mt-3 text-xs text-[var(--ui-text-muted)]">Price not published</p>
+          <div v-if="capabilityLabels(model).length" class="mt-3 flex flex-wrap gap-1.5">
+            <UBadge v-for="label in capabilityLabels(model)" :key="label" color="neutral" variant="soft" size="sm" class="rounded-full">{{ label }}</UBadge>
+          </div>
+          <p v-if="model.pricing?.status === 'published'" class="mt-4 rounded-lg bg-[var(--ui-bg-muted)] px-3 py-2 text-xs font-medium leading-5">From {{ credits(lowestPrice(model, 'input')) }} in / {{ credits(lowestPrice(model, 'output')) }} out / 1M tokens</p>
+          <p v-else class="mt-4 rounded-lg bg-[var(--ui-bg-muted)] px-3 py-2 text-xs leading-5 text-[var(--ui-text-muted)]">Price not published</p>
           <div class="mt-auto pt-3">
-            <AppButton block color="neutral" variant="outline" size="xs" :aria-label="`View details for ${model.display_name || model.id}`" @click="openDetails(model, $event)">Details</AppButton>
+            <AppButton block color="neutral" variant="outline" size="sm" trailing-icon="i-tabler-arrow-up-right" :aria-label="`View details for ${model.display_name || model.id}`" @click="openDetails(model, $event)">Details</AppButton>
           </div>
         </AppCard>
       </div>
@@ -50,9 +76,9 @@
 
     <USlideover v-model:open="detailOpen" :title="selectedModel?.display_name || selectedModel?.id || 'Model details'" :description="selectedModel?.id" :ui="{ content: 'sm:max-w-xl' }">
       <template #body>
-        <div v-if="selectedModel" class="space-y-6 text-sm">
+        <div v-if="selectedModel" class="catalog-details space-y-5 text-sm">
           <div class="flex items-center gap-3">
-            <div class="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[var(--ui-bg-muted)] text-[var(--ui-text-highlighted)]">
+            <div class="catalog-icon flex size-12 shrink-0 items-center justify-center rounded-xl">
               <UIcon :name="modelLogoIcon(selectedModel)" class="size-7" aria-hidden="true" />
             </div>
             <div class="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] px-3 py-2">
@@ -60,10 +86,22 @@
               <AppButton color="neutral" variant="outline" size="xs" icon="i-tabler-copy" @click="copyModelId(selectedModel.id)">Copy ID</AppButton>
             </div>
           </div>
-          <p class="text-[var(--ui-text-muted)]">{{ selectedModel.description || 'No description has been published.' }}</p>
+          <div v-if="capabilityLabels(selectedModel).length" class="flex flex-wrap gap-2"><UBadge v-for="label in capabilityLabels(selectedModel)" :key="label" color="primary" variant="subtle" class="rounded-full">{{ label }}</UBadge></div>
+          <p class="leading-relaxed text-[var(--ui-text-muted)]">{{ selectedModel.description || 'No description has been published.' }}</p>
           <dl class="grid gap-3 sm:grid-cols-2">
-            <div v-for="item in modelFacts(selectedModel)" :key="item.label"><dt class="text-xs text-[var(--ui-text-muted)]">{{ item.label }}</dt><dd class="break-words font-medium">{{ item.value }}</dd></div>
+            <div v-for="item in modelFacts(selectedModel)" :key="item.label" class="rounded-xl border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] p-3"><dt class="text-xs text-[var(--ui-text-muted)]">{{ item.label }}</dt><dd class="mt-1 break-words font-medium">{{ item.value }}</dd></div>
           </dl>
+
+          <section v-if="selectedModel.provider_limits?.length" class="space-y-3">
+            <h3 class="font-semibold">Provider limits</h3>
+            <div v-for="(limit, index) in selectedModel.provider_limits" :key="`${limit.provider}:${index}`" class="rounded-lg border border-[var(--ui-border)] p-3">
+              <p class="break-words font-medium">{{ limit.provider }}</p>
+              <dl class="mt-2 grid gap-3 sm:grid-cols-2">
+                <div><dt class="text-xs text-[var(--ui-text-muted)]">Context tokens</dt><dd class="font-mono tabular-nums">{{ providerLimit(limit.context_length) }}</dd></div>
+                <div><dt class="text-xs text-[var(--ui-text-muted)]">Maximum output tokens</dt><dd class="font-mono tabular-nums">{{ providerLimit(limit.max_output_tokens) }}</dd></div>
+              </dl>
+            </div>
+          </section>
 
           <section><h3 class="font-semibold">Modalities</h3><p class="mt-1">Input: {{ modalityText(selectedModel, 'input') }}</p><p>Output: {{ modalityText(selectedModel, 'output') }}</p></section>
           <section class="space-y-1"><h3 class="font-semibold">Capabilities</h3>
@@ -357,6 +395,7 @@ function capabilityText(status?: string) { return status === 'supported' ? 'Supp
 function budgetText(budget: Record<string, unknown>) { return Object.entries(budget).map(([key, value]) => `${key.replaceAll('_', ' ')}: ${value}`).join(' · ') }
 function duration(ms?: number) { return ms == null ? 'Not published' : `${ms.toLocaleString()} ms` }
 function dateText(value?: string) { return value ? new Date(value).toLocaleString() : 'Not published' }
+function providerLimit(value?: number) { return typeof value === 'number' && Number.isFinite(value) ? value.toLocaleString() : 'Not published' }
 function modelLimit(model: UserModel, field: 'context_length' | 'max_output_tokens') {
   if (model[field]) return formatTokens(model[field])
   const published = (model.provider_limits || []).map(limit => limit[field]).filter((value): value is number => Boolean(value))
@@ -374,3 +413,42 @@ onMounted(() => {
   void refreshCatalog()
 })
 </script>
+
+<style scoped>
+.model-workspace {
+  max-width: 90rem;
+  margin-inline: auto;
+}
+.catalog-hero,
+.catalog-count {
+  border-color: color-mix(in oklch, var(--ui-primary) 16%, var(--ui-border));
+  background: radial-gradient(ellipse at 0% 0%, color-mix(in oklch, var(--ui-primary) 10%, transparent), transparent 70%), var(--ui-bg);
+}
+.catalog-icon {
+  color: var(--ui-primary);
+  background: color-mix(in oklch, var(--ui-primary) 12%, var(--ui-bg));
+}
+.catalog-panel {
+  border-radius: 1.25rem;
+  border-color: color-mix(in oklch, var(--ui-border) 75%, transparent);
+  background: var(--ui-bg);
+  box-shadow: 0 4px 20px color-mix(in oklch, var(--ui-text-highlighted) 4%, transparent);
+}
+.catalog-model {
+  background: linear-gradient(145deg, color-mix(in oklch, var(--ui-primary) 4%, var(--ui-bg)), var(--ui-bg) 55%);
+}
+.catalog-details section {
+  padding: 1rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 1rem;
+  background: color-mix(in oklch, var(--ui-bg-muted) 35%, var(--ui-bg));
+  overflow-wrap: anywhere;
+}
+.catalog-details section h3 {
+  margin-bottom: 0.75rem;
+  color: var(--ui-text-highlighted);
+}
+.catalog-details section p {
+  line-height: 1.75;
+}
+</style>

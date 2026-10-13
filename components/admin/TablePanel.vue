@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="min-w-0 max-w-full space-y-4">
     <div v-if="$slots.filters || $slots.actions" class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div v-if="$slots.filters" class="min-w-0 flex-1">
         <slot name="filters" />

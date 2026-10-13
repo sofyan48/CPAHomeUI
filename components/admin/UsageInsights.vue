@@ -1,17 +1,17 @@
 <template>
   <section class="space-y-5">
     <h2 class="text-xl font-semibold">Advanced usage insights</h2>
+    <UAlert v-if="capabilityError" color="warning" variant="subtle" title="Capabilities unavailable" description="Optional usage endpoints will be checked when requested." />
+    <UAlert v-if="unavailableFeatures.length" color="warning" variant="subtle" title="Some usage features are unavailable" :description="unavailableFeatures.join(', ')" />
     <UAlert v-if="error" color="error" variant="subtle" :description="error" />
     <div class="flex flex-wrap gap-3">
       <USelect v-model="groupBy" :items="['model', 'provider', 'user', 'client_key', 'credential', 'endpoint', 'home_ip']" class="w-44" />
       <USelect v-model="metric" :items="['request_count', 'total_tokens', 'total_amount', 'failed_count', 'avg_latency_ms', 'p95_latency_ms']" class="w-48" />
-      <AppButton :loading="loading" @click="refresh">Load insights</AppButton>
-      <AppButton color="neutral" variant="outline" :loading="exporting" @click="exportRecords('csv')">Export CSV</AppButton>
-      <AppButton color="neutral" variant="outline" :loading="exporting" @click="exportRecords('jsonl')">Export JSONL</AppButton>
-      <span class="text-xs text-[var(--ui-text-muted)]">Exports use applied record filters and sort (up to 10,000 rows). Overview and insights support only date, provider, model, endpoint, and Home IP filters; without dates they default to 24 hours. Realtime uses the last 15 minutes.</span>
+      <AppButton :loading="loading" :disabled="loading || !canLoadInsights" @click="refresh">Load insights</AppButton>
+      <span class="text-xs text-[var(--ui-text-muted)]">Overview and insights support only date, provider, model, endpoint, and Home IP filters; without dates they default to 24 hours. Realtime uses the last 15 minutes.</span>
     </div>
     <div class="grid gap-4 xl:grid-cols-2">
-      <AppCard>
+      <AppCard v-if="available('usage_aggregates')">
         <template #header><h3 class="font-semibold">Ranking by {{ groupBy }}</h3></template>
         <div v-for="item in aggregates?.items || []" :key="JSON.stringify(item)" class="flex justify-between gap-3 border-b border-[var(--ui-border)] py-2 text-sm">
           <span class="truncate">{{ item.label || item.name || item.id || item.key || 'Unknown' }}</span>
@@ -19,7 +19,7 @@
         </div>
         <p v-if="!aggregates?.items?.length" class="text-sm text-[var(--ui-text-muted)]">No ranking data.</p>
       </AppCard>
-      <AppCard>
+      <AppCard v-if="available('usage_realtime')">
         <template #header><h3 class="font-semibold">Realtime snapshot (last 15 minutes)</h3></template>
         <div v-if="realtime" class="space-y-4 text-sm">
           <p class="text-xs text-[var(--ui-text-muted)]">Grouped by {{ realtime.group_by }} · Updated {{ new Date(realtime.updated_at).toLocaleString() }}</p>
@@ -52,39 +52,51 @@
         <p v-if="!health.items.length" class="text-sm text-[var(--ui-text-muted)]">No health data available.</p>
       </AppCard>
     </div>
-    <AppCard>
-      <template #header><h3 class="font-semibold">Session tree</h3></template>
-      <form class="flex flex-wrap gap-2" @submit.prevent="loadTree"><UInput v-model="sessionID" placeholder="Session or request ID" class="min-w-64 flex-1" /><AppButton type="submit" :loading="loadingTree">Find session</AppButton></form>
-      <UAlert v-if="treeError" class="mt-3" color="error" variant="subtle" :description="treeError" />
-      <pre v-if="tree" class="mt-4 max-h-96 overflow-auto whitespace-pre-wrap text-xs">{{ JSON.stringify(tree, null, 2) }}</pre>
-    </AppCard>
   </section>
 </template>
 
 <script setup lang="ts">
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
-const props = defineProps<{ commonQuery: string, recordQuery: string }>()
-const { fetchAPI } = useApi()
+const props = defineProps<{ commonQuery: string }>()
+const { fetchAPI, token } = useApi()
+const { supports, error: capabilityError, refreshCapabilities } = useCapabilities()
+const unavailable = ref<string[]>([])
+const featureLabels: Record<string, string> = {
+  usage_aggregates: 'Rankings', usage_realtime: 'Realtime', usage_provider_health: 'Provider health',
+  usage_credential_health: 'Credential health'
+}
+const available = (feature: string) => supports(feature) && !unavailable.value.includes(feature)
+const unavailableFeatures = computed(() => Object.entries(featureLabels).filter(([feature]) => !available(feature)).map(([, label]) => label))
+const canLoadInsights = computed(() => ['usage_aggregates', 'usage_realtime', 'usage_provider_health', 'usage_credential_health'].some(available))
+const controller = new AbortController()
+onScopeDispose(() => controller.abort())
+onMounted(() => { void refreshCapabilities().catch(() => {}) })
+watch(token, () => { unavailable.value = [] })
+function endpointUnavailable(cause: any) { return [404, 405, 501].includes(cause?.statusCode) }
+async function optionalRequest<T>(feature: string, path: string, query?: Record<string, string | number>) {
+  if (!available(feature)) return null
+  try { return await fetchAPI<T>(path, { query, signal: controller.signal }) }
+  catch (cause: any) {
+    if (endpointUnavailable(cause)) { unavailable.value = [...new Set([...unavailable.value, feature])]; return null }
+    throw cause
+  }
+}
 const groupBy = ref('model')
 const metric = ref('request_count')
 const loading = useWorkspaceState('admin:usage-insights:loading', () => (false))
-const exporting = useWorkspaceState('admin:usage-insights:exporting', () => (false))
-const loadingTree = useWorkspaceState('admin:usage-insights:loadingTree', () => (false))
 const error = useWorkspaceState('admin:usage-insights:error', () => (''))
-const treeError = useWorkspaceState('admin:usage-insights:treeError', () => (''))
-const sessionID = ref('')
 const aggregates = useWorkspaceState<any>('admin:usage-insights:aggregates', () => (null))
 const realtime = useWorkspaceState<any>('admin:usage-insights:realtime', () => (null))
 const providerHealth = useWorkspaceState<any>('admin:usage-insights:providerHealth', () => (null))
 const credentialHealth = useWorkspaceState<any>('admin:usage-insights:credentialHealth', () => (null))
-const tree = useWorkspaceState<any>('admin:usage-insights:tree', () => (null))
 const latestVelocity = computed(() => realtime.value?.velocity?.at(-1))
 const realtimeGroupBy = computed(() => ['model', 'provider', 'client_key', 'credential'].includes(groupBy.value) ? groupBy.value : 'model')
 const healthSections = computed(() => [
-  { label: 'Provider', items: providerHealth.value?.items || [] },
-  { label: 'Credential', items: credentialHealth.value?.items || [] }
-])
+  { feature: 'usage_provider_health', label: 'Provider', items: providerHealth.value?.items || [] },
+  { feature: 'usage_credential_health', label: 'Credential', items: credentialHealth.value?.items || [] }
+].filter(section => available(section.feature)))
 async function refresh() {
+  if (loading.value || !canLoadInsights.value) return
   loading.value = true
   error.value = ''
   try {
@@ -92,9 +104,9 @@ async function refresh() {
     realtimeFilters.delete('from')
     realtimeFilters.delete('to')
     const [ranking, snapshot, providers, credentials] = await Promise.all([
-      fetchAPI(`/usage/aggregates?${props.commonQuery}`, { query: { group_by: groupBy.value, metric: metric.value, limit: 20 } }),
-      fetchAPI(`/usage/realtime?${realtimeFilters.toString()}`, { query: { window_seconds: 900, bucket_seconds: 60, group_by: realtimeGroupBy.value } }),
-      fetchAPI(`/usage/health/providers?${props.commonQuery}`), fetchAPI(`/usage/health/credentials?${props.commonQuery}`)
+      optionalRequest('usage_aggregates', `/usage/aggregates?${props.commonQuery}`, { group_by: groupBy.value, metric: metric.value, limit: 20 }),
+      optionalRequest('usage_realtime', `/usage/realtime?${realtimeFilters.toString()}`, { window_seconds: 900, bucket_seconds: 60, group_by: realtimeGroupBy.value }),
+      optionalRequest('usage_provider_health', `/usage/health/providers?${props.commonQuery}`), optionalRequest('usage_credential_health', `/usage/health/credentials?${props.commonQuery}`)
     ])
     aggregates.value = ranking
     realtime.value = snapshot
@@ -102,27 +114,5 @@ async function refresh() {
     credentialHealth.value = credentials
   } catch (cause: any) { error.value = cause?.message || 'Unable to load usage insights.' }
   finally { loading.value = false }
-}
-async function loadTree() {
-  if (!sessionID.value.trim()) return
-  loadingTree.value = true
-  treeError.value = ''
-  try { tree.value = await fetchAPI('/usage/session-tree', { query: { id: sessionID.value.trim() } }) }
-  catch (cause: any) { treeError.value = cause?.message || 'Unable to load session tree.' }
-  finally { loadingTree.value = false }
-}
-async function exportRecords(format: 'csv' | 'jsonl') {
-  exporting.value = true
-  error.value = ''
-  try {
-    const blob = await fetchAPI<Blob>(`/usage/export?${props.recordQuery}`, { query: { format }, responseType: 'blob' })
-    const url = URL.createObjectURL(blob)
-    const anchor = document.createElement('a')
-    anchor.href = url
-    anchor.download = `usage.${format}`
-    anchor.click()
-    URL.revokeObjectURL(url)
-  } catch (cause: any) { error.value = cause?.message || 'Unable to export usage.' }
-  finally { exporting.value = false }
 }
 </script>

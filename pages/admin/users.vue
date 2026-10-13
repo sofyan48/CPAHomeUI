@@ -108,9 +108,9 @@
           >
           <template #status-cell="{ row }"
             ><UBadge
-              :color="row.original.deleted_at ? 'warning' : 'success'"
+              :color="row.original.deleted_at || row.original.approval_pending ? 'warning' : 'success'"
               variant="subtle"
-              >{{ row.original.deleted_at ? "Deleted" : "Active" }}</UBadge
+              >{{ userStatus(row.original) }}</UBadge
             ></template
           >
           <template #credits-cell="{ row }"
@@ -118,6 +118,10 @@
               formatCredits(row.original.credits)
             }}</span></template
           >
+          <template #pendingTopup-cell="{ row }">
+            <UBadge v-if="row.original.pending_topup" color="warning" variant="subtle">{{ formatCredits(row.original.pending_topup.amount) }} credits</UBadge>
+            <span v-else class="text-[var(--ui-text-muted)]">—</span>
+          </template>
           <template #periodLimits-cell="{ row }"
             ><span
               v-if="zeroPeriodWindows(row.original).length"
@@ -133,6 +137,14 @@
               >{{ periodWindows(row.original).length }} windows</span
             ><span v-else class="text-[var(--ui-text-muted)]">—</span></template
           >
+          <template #resetAllowance-cell="{ row }">
+            <div v-if="resetAllowanceSupported && row.original.reset_allowance" class="space-y-1">
+              <p class="tabular-nums">{{ row.original.reset_allowance.available }} available</p>
+              <p class="text-xs text-[var(--ui-text-muted)]">{{ row.original.reset_allowance.mode === 'monthly' ? `${row.original.reset_allowance.amount} / month` : 'One-time' }}</p>
+              <p v-if="row.original.reset_allowance.renews_at || row.original.reset_allowance.expires_at" class="text-xs text-[var(--ui-text-muted)]">{{ row.original.reset_allowance.mode === 'monthly' ? 'Renews' : 'Expires' }} {{ formatDate(row.original.reset_allowance.renews_at || row.original.reset_allowance.expires_at) }}</p>
+            </div>
+            <span v-else class="text-[var(--ui-text-muted)]">—</span>
+          </template>
           <template #keys-cell="{ row }">{{
             keysForUser(row.original.id).length
           }}</template>
@@ -150,13 +162,33 @@
               >{{ scopeSummary(effectiveModelScopes(row.original.id)) }}</span
             ></template
           >
-          <template #updatedAt-cell="{ row }"
-            ><span class="whitespace-nowrap text-[var(--ui-text-muted)]">{{
-              formatDate(row.original.updated_at)
-            }}</span></template
-          >
+
           <template #actions-cell="{ row }"
             ><div class="flex items-center justify-end gap-1">
+              <AppButton
+                v-if="row.original.approval_pending && !row.original.deleted_at"
+                icon="i-tabler-user-check"
+                color="success"
+                variant="soft"
+                size="xs"
+                :loading="approvingUserId === row.original.id"
+                :disabled="approvingUserId !== null"
+                :aria-label="`Approve user ${row.original.username}`"
+                title="Approve user"
+                @click="openApproval(row.original)"
+              />
+              <AppButton
+                v-if="topupApprovalSupported && row.original.pending_topup && !row.original.deleted_at"
+                icon="i-tabler-coins"
+                color="warning"
+                variant="soft"
+                size="xs"
+                :loading="approvingTopupUserId === row.original.id"
+                :disabled="approvingTopupUserId !== null"
+                :aria-label="`Approve topup for ${row.original.username}`"
+                title="Approve topup"
+                @click="openTopupApproval(row.original)"
+              />
               <AdminTableAction
                 action="view"
                 label="View user"
@@ -171,6 +203,13 @@
                 label="Balance operation"
                 :disabled="!isOperableUser(row.original)"
                 @click="openBalance([row.original])"
+              /><AdminTableAction
+                v-if="resetAllowanceSupported"
+                action="edit"
+                icon="i-tabler-refresh"
+                label="Configure reset allowance"
+                :disabled="!isOperableUser(row.original)"
+                @click="openResetAllowance(row.original)"
               /><AdminTableAction
                 action="delete"
                 label="Delete user"
@@ -680,9 +719,9 @@
           <div class="rounded-md border border-[var(--ui-border)] p-4">
             <div class="flex flex-wrap gap-2">
               <UBadge
-                :color="userDetail.deleted_at ? 'warning' : 'success'"
+                :color="userDetail.deleted_at || userDetail.approval_pending ? 'warning' : 'success'"
                 variant="subtle"
-                >{{ userDetail.deleted_at ? "Deleted" : "Active" }}</UBadge
+                >{{ userStatus(userDetail) }}</UBadge
               ><UBadge
                 v-if="userDetail.password_set || userDetail.has_password"
                 color="neutral"
@@ -1242,6 +1281,64 @@
       ></AppModal
     >
 
+    <AppModal
+      v-model:open="approvalOpen"
+      title="Approve user"
+      description="Choose the model scope for this account before approving access."
+      :dismissible="approvingUserId === null"
+      :close="approvingUserId === null"
+    >
+      <template #body>
+        <form class="space-y-4" @submit.prevent="approveUser">
+          <p class="text-sm">User: <span class="font-semibold">{{ approvalUser?.username }}</span></p>
+          <UAlert v-if="approvalError" color="error" variant="subtle" :description="approvalError" />
+          <UAlert v-if="!accessGroupsSupported" color="warning" variant="subtle" title="Model scopes unavailable" description="This server does not support model scopes. Approval with a model scope is unavailable." />
+          <fieldset v-else :disabled="approvingUserId !== null">
+            <ScopePicker
+              title="Model scope"
+              empty-label="No enabled model scopes are available. Create or enable one in Model scopes first."
+              :items="approvalModelOptions"
+              :selected="approvalModelGroups"
+              @toggle="toggleId(approvalModelGroups, $event)"
+            />
+          </fieldset>
+          <p class="text-xs text-[var(--ui-text-muted)]">Select at least one scope. It will be applied to the user's client keys. If the user has no key, an initial key will be created and available in their API keys dashboard.</p>
+          <div class="flex justify-end gap-2">
+            <AppButton type="button" color="neutral" variant="outline" :disabled="approvingUserId !== null" @click="approvalOpen = false">Cancel</AppButton>
+            <AppButton type="submit" color="success" icon="i-tabler-user-check" :loading="approvingUserId !== null" :disabled="!accessGroupsSupported || loading || !approvalModelGroups.length">Approve user</AppButton>
+          </div>
+        </form>
+      </template>
+    </AppModal>
+
+    <AppModal
+      v-model:open="topupApprovalOpen"
+      title="Approve topup"
+      description="Confirm this topup request to credit the user's balance."
+      :dismissible="approvingTopupUserId === null"
+      :close="approvingTopupUserId === null"
+    >
+      <template #body>
+        <form v-if="topupApprovalUser" class="space-y-4" @submit.prevent="approveTopup">
+          <UAlert v-if="topupApprovalError" color="error" variant="subtle" :description="topupApprovalError" />
+          <div class="space-y-2 rounded-md border border-[var(--ui-border)] p-3">
+            <SummaryRow label="User" :value="topupApprovalUser.username" />
+            <SummaryRow label="Request ID" :value="String(topupApprovalUser.request.id)" />
+            <SummaryRow label="Amount" :value="`${formatCredits(topupApprovalUser.request.amount)} credits`" />
+            <SummaryRow label="Requested" :value="formatDate(topupApprovalUser.request.created_at)" />
+          </div>
+          <p v-if="topupApprovalUser.request.note" class="break-words text-sm text-[var(--ui-text-muted)]">{{ topupApprovalUser.request.note }}</p>
+          <p class="text-xs text-[var(--ui-text-muted)]">Verify the topup before approving. Credits are added only after approval.</p>
+          <div class="flex justify-end gap-2">
+            <AppButton type="button" color="neutral" variant="outline" :disabled="approvingTopupUserId !== null" @click="topupApprovalOpen = false">Cancel</AppButton>
+            <AppButton type="submit" color="success" icon="i-tabler-coins" :loading="approvingTopupUserId !== null">Approve topup</AppButton>
+          </div>
+        </form>
+      </template>
+    </AppModal>
+
+    <UsersResetAllowance v-model:open="resetAllowanceOpen" :user="resetAllowanceUser" @saved="syncAll" />
+
     <AppModal v-model:open="deleteOpen" title="Confirm deletion"
       ><template #body
         ><div class="space-y-4">
@@ -1271,6 +1368,7 @@ import UnsupportedScopes from "@/components/admin/users/UsersUnsupportedScopes.v
 import SummaryRow from "@/components/admin/users/UsersSummaryRow.vue";
 import DetailSection from "@/components/admin/users/UsersDetailSection.vue";
 import PeriodCard from "@/components/admin/users/UsersPeriodCard.vue";
+import UsersResetAllowance from "~/components/admin/users/UsersResetAllowance.vue";
 import ScopePicker from "@/components/admin/users/UsersScopePicker.vue";
 import CandidatePicker from "@/components/admin/users/UsersCandidatePicker.vue";
 import GroupCards from "@/components/admin/users/UsersGroupCards.vue";
@@ -1322,16 +1420,93 @@ const unassignedKeyCount = computed(
       .length,
 );
 const rowValue = (row) => row?.original ?? row;
+const userStatus = (user) => user.deleted_at ? "Deleted" : user.approval_pending ? "Pending approval" : "Active";
+const resetAllowanceSupported = computed(() => supports("user_reset_allowance", false));
+const resetAllowanceOpen = ref(false), resetAllowanceUser = ref(null);
+function openResetAllowance(user) {
+  if (!resetAllowanceSupported.value || !isOperableUser(user)) return;
+  resetAllowanceUser.value = user;
+  resetAllowanceOpen.value = true;
+}
+const topupApprovalSupported = computed(() => supports("topup_approval", false));
+const topupApprovalOpen = ref(false),
+  topupApprovalUser = ref(null),
+  approvingTopupUserId = ref(null),
+  topupApprovalError = ref("");
+function openTopupApproval(user) {
+  if (approvingTopupUserId.value !== null || !user.pending_topup || user.deleted_at) return;
+  topupApprovalUser.value = { id: user.id, username: user.username, request: { ...user.pending_topup } };
+  topupApprovalError.value = "";
+  topupApprovalOpen.value = true;
+}
+async function approveTopup() {
+  const user = topupApprovalUser.value;
+  if (!user || approvingTopupUserId.value !== null || !topupApprovalSupported.value) return;
+  approvingTopupUserId.value = user.id;
+  topupApprovalError.value = "";
+  try {
+    await fetchAPI(`/users/${encodeURIComponent(user.id)}/topup/approve`, {
+      method: "POST", body: { request_id: user.request.id },
+    });
+    topupApprovalOpen.value = false;
+    await syncAll();
+    toast.add({ title: "Topup approved.", description: `${user.username}'s request for ${formatCredits(user.request.amount)} credits has been approved.`, color: "success" });
+  } catch (error) {
+    topupApprovalError.value = errorMessage(error);
+  } finally {
+    approvingTopupUserId.value = null;
+  }
+}
+const approvingUserId = ref(null);
+const approvalOpen = ref(false),
+  approvalUser = ref(null),
+  approvalModelGroups = ref([]),
+  approvalError = ref("");
+const approvalModelOptions = computed(() => modelGroups.value
+  .filter((group) => !group.disabled && !group.deleted_at)
+  .map((group) => ({ label: group.group_name, value: Number(group.id) })));
+function openApproval(user) {
+  if (approvingUserId.value !== null || !user.approval_pending || user.deleted_at) return;
+  approvalUser.value = user;
+  const existing = new Set(keysForUser(user.id).flatMap((key) => key.model_groups));
+  approvalModelGroups.value = approvalModelOptions.value.filter((option) => existing.has(option.value)).map((option) => option.value);
+  approvalError.value = "";
+  approvalOpen.value = true;
+}
+async function approveUser() {
+  const user = approvalUser.value;
+  if (approvingUserId.value !== null || loading.value || !user?.approval_pending || user.deleted_at) return;
+  approvalError.value = "";
+  if (!accessGroupsSupported.value || !approvalModelGroups.value.length) {
+    approvalError.value = "Select at least one enabled model scope.";
+    return;
+  }
+  approvingUserId.value = user.id;
+  try {
+    await fetchAPI(`/users/${encodeURIComponent(user.id)}/approve`, {
+      method: "POST", body: { model_groups: [...approvalModelGroups.value] },
+    });
+    approvalOpen.value = false;
+    await syncAll();
+    toast.add({ title: "User approved.", description: `${user.username} can now sign in with the selected model scope.`, color: "success" });
+  } catch (error) {
+    approvalError.value = errorMessage(error);
+  } finally {
+    approvingUserId.value = null;
+  }
+}
 const userColumns = [
   { id: "select", header: "" },
   { accessorKey: "user", header: "User" },
   { accessorKey: "status", header: "Status" },
   { accessorKey: "credits", header: "Credits" },
+  { accessorKey: "pendingTopup", header: "Pending topup" },
   { accessorKey: "periodLimits", header: "Period limits" },
+  { accessorKey: "resetAllowance", header: "Reset Available" },
   { accessorKey: "keys", header: "Client keys" },
   { accessorKey: "credentialScope", header: "Credential scope" },
   { accessorKey: "modelScope", header: "Model scope" },
-  { accessorKey: "updatedAt", header: "Updated" },
+
   {
     id: "actions",
     header: "Actions",
@@ -1366,7 +1541,7 @@ const matches = (values) => {
   return !query || values.some((value) => normalize(value).includes(query));
 };
 const filteredUsers = computed(() =>
-  users.value.filter((user) => matches([user.id, user.username])),
+  users.value.filter((user) => matches([user.id, user.username, userStatus(user)])),
 );
 
 const filteredKeys = computed(() =>

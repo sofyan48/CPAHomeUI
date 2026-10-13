@@ -1,10 +1,33 @@
 <template>
-  <div class="space-y-8">
+  <div :class="section === 'dashboard' ? 'user-dashboard space-y-6' : 'space-y-8'">
 
     <UAlert v-if="pageError" color="error" variant="subtle" icon="i-tabler-alert-triangle" title="Some workspace data could not be loaded" :description="pageError" />
 
+    <section v-if="section === 'dashboard'" class="dashboard-hero rounded-2xl border p-5 sm:p-6" aria-labelledby="dashboard-title">
+      <div class="relative grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,0.55fr)] lg:items-center">
+        <div class="min-w-0">
+          <p class="flex items-center gap-2 text-xs font-medium text-[var(--ui-text-muted)]"><UIcon name="i-tabler-sparkles" class="size-4 text-[var(--ui-primary)]" aria-hidden="true" /> Your workspace, at a glance</p>
+          <h1 id="dashboard-title" class="mt-2 break-words text-2xl font-semibold tracking-tight text-[var(--ui-text-highlighted)] sm:text-3xl">Welcome back{{ user?.username ? `, ${user.username}` : '' }}.</h1>
+          <p class="mt-3 max-w-lg text-sm leading-relaxed text-[var(--ui-text-muted)]">A little clarity for your next big idea. Your credits, usage, and account, all in one place.</p>
+                    <div class="mt-5 flex flex-wrap gap-2">
+                      <AppButton to="/app/api-keys" icon="i-tabler-key" size="sm" class="rounded-full">Manage API keys</AppButton>
+                      <AppButton to="/app/models" color="neutral" variant="ghost" size="sm" trailing-icon="i-tabler-arrow-up-right" class="rounded-full">Explore models</AppButton>
+                    </div>
+        </div>
+        <div class="dashboard-balance relative flex min-w-0 items-center gap-4 rounded-2xl border p-5 sm:p-6">
+          <span class="dashboard-icon flex size-11 shrink-0 items-center justify-center rounded-xl"><UIcon name="i-tabler-wallet" class="size-6" aria-hidden="true" /></span>
+          <div class="min-w-0">
+            <p class="text-xs font-medium text-[var(--ui-text-muted)]">Available credits</p>
+            <p class="mt-2 break-all text-4xl font-semibold tabular-nums tracking-tight text-[var(--ui-text-highlighted)]">{{ user ? formatCredits(user.credits) : '—' }}</p>
+            <AppButton to="/app/balance" size="xs" variant="link" class="mt-1 p-0" trailing-icon="i-tabler-arrow-up-right">Manage balance</AppButton>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
     <section v-if="section === 'dashboard' && activePeriodWindows.length" class="dashboard-limit-grid grid grid-cols-1 gap-4" :style="dashboardGridStyle" aria-label="Account period limits">
-      <AppCard v-for="window in activePeriodWindows" :key="window.id" tinted>
+      <AppCard v-for="window in activePeriodWindows" :key="window.id" class="dashboard-panel dashboard-limit" tinted>
         <div class="flex items-start justify-between gap-3">
           <div class="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
             <p class="shrink-0 text-sm font-semibold">{{ periodWindowLabel(window.id) }}</p>
@@ -18,13 +41,14 @@
       </AppCard>
     </section>
 
-    <section v-if="section === 'dashboard'" class="grid min-w-0 gap-5" :class="serverInfo.cpa_public_url ? 'lg:grid-cols-2' : ''" aria-label="CPA endpoint and usage summary">
-    <AppCard v-if="serverInfo.cpa_public_url" class="min-w-0" :ui="{ body: 'space-y-4' }">
-      <template #header><h2 class="text-sm font-semibold">Endpoint</h2></template>
+    <section v-if="section === 'dashboard'" class="dashboard-overview grid min-w-0 gap-5" aria-label="CPA endpoint and usage summary">
+    <AppCard v-if="serverInfo.cpa_public_url" class="dashboard-panel dashboard-endpoint min-w-0" :ui="{ body: 'space-y-4' }">
+      <template #header><div class="flex items-center gap-3"><span class="dashboard-icon flex size-9 items-center justify-center rounded-lg"><UIcon name="i-tabler-terminal-2" class="size-5" aria-hidden="true" /></span><div><h2 class="text-sm font-semibold">Connect your app</h2><p class="text-xs text-[var(--ui-text-muted)]">Your CPA endpoint and a ready-to-copy example.</p></div></div></template>
+      <div class="space-y-2"><h3 class="text-xs font-medium text-[var(--ui-text-muted)]">Endpoint</h3>
       <div class="flex min-w-0 items-start gap-3 rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] p-4 shadow-inner">
         <code class="min-w-0 flex-1 break-all font-mono text-sm leading-6 text-[var(--ui-text-highlighted)]">{{ serverInfo.cpa_public_url }}</code>
         <AppButton type="button" size="xs" class="shrink-0" color="neutral" variant="ghost" icon="i-tabler-copy" aria-label="Copy endpoint" title="Copy endpoint" @click="copyText(serverInfo.cpa_public_url, 'Endpoint copied')" />
-      </div>
+      </div></div>
       <div class="space-y-2">
         <h3 class="text-sm font-semibold">Example</h3>
         <div class="relative rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] shadow-inner">
@@ -33,8 +57,8 @@
         </div>
       </div>
     </AppCard>
-    <AppCard class="min-w-0" :ui="{ body: 'space-y-4' }">
-      <template #header><h2 class="text-sm font-semibold">Usage summary</h2></template>
+    <AppCard class="dashboard-panel dashboard-usage min-w-0" :ui="{ body: 'space-y-4' }">
+      <template #header><div class="flex items-center gap-3"><span class="dashboard-icon flex size-9 items-center justify-center rounded-lg"><UIcon name="i-tabler-chart-bar" class="size-5" aria-hidden="true" /></span><div><h2 class="text-sm font-semibold">Usage summary</h2><p class="text-xs text-[var(--ui-text-muted)]">A closer look at your requests and spending.</p></div></div></template>
       <form class="flex flex-wrap items-end gap-3" @submit.prevent="applyBillingRange">
         <UFormField label="Time range">
           <USelect v-model="rangePreset" :items="rangeOptions" value-key="value" label-key="label" class="w-44" @update:model-value="selectRange" />
@@ -46,9 +70,9 @@
         </template>
         <AppButton type="button" class="ml-auto" color="neutral" variant="outline" icon="i-tabler-refresh" :loading="billingLoading" @click="loadBilling">Refresh report</AppButton>
       </form>
-    <div class="grid min-w-0 gap-4 sm:grid-cols-2" aria-label="Usage summary" :aria-busy="billingLoading">
-      <AppCard v-for="metric in billingMetrics" :key="metric.label" class="min-w-0" tinted>
-        <p class="text-sm text-[var(--ui-text-muted)]">{{ metric.label }}</p>
+    <div class="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Usage summary" :aria-busy="billingLoading">
+      <AppCard v-for="(metric, index) in billingMetrics" :key="metric.label" class="dashboard-metric min-w-0" :class="`dashboard-metric--${index}`" tinted>
+        <div class="flex items-center justify-between gap-2"><p class="text-xs font-medium text-[var(--ui-text-muted)]">{{ metric.label }}</p><span class="dashboard-icon flex size-8 shrink-0 items-center justify-center rounded-lg"><UIcon :name="dashboardMetricIcons[index]" class="size-4" aria-hidden="true" /></span></div>
         <p class="mt-2 break-words text-2xl font-bold tabular-nums text-[var(--ui-text-highlighted)]">{{ billingLoading ? '—' : metric.value }}</p>
         <p class="mt-1 text-xs text-[var(--ui-text-dimmed)]">{{ metric.detail }}</p>
       </AppCard>
@@ -57,9 +81,31 @@
     </section>
     <UAlert v-if="section === 'dashboard' && billingError" color="error" variant="subtle" title="Usage summary could not be loaded" :description="billingError" />
 
+    <section v-if="section === 'dashboard'" class="grid min-w-0 gap-5 lg:grid-cols-2" aria-label="Quick actions and account activity">
+      <AppCard class="dashboard-panel min-w-0">
+        <template #header><h2 class="text-sm font-semibold">Quick actions</h2><p class="mt-1 text-xs text-[var(--ui-text-muted)]">Pick up where you left off.</p></template>
+        <div class="grid gap-2 sm:grid-cols-2">
+          <AppButton v-for="(action, index) in dashboardActions" :key="action.to" :class="`dashboard-action--${index}`" :to="action.to" color="neutral" variant="ghost" class="dashboard-action w-full justify-start rounded-xl p-3">
+            <span class="dashboard-icon flex size-9 shrink-0 items-center justify-center rounded-lg"><UIcon :name="action.icon" class="size-5" aria-hidden="true" /></span>
+            <span class="min-w-0 whitespace-normal text-left"><span class="block text-sm font-medium">{{ action.label }}</span><span class="mt-0.5 block text-xs font-normal text-[var(--ui-text-muted)]">{{ action.detail }}</span></span>
+            <UIcon name="i-tabler-arrow-up-right" class="ml-auto size-4 shrink-0 text-[var(--ui-text-dimmed)]" aria-hidden="true" />
+          </AppButton>
+        </div>
+      </AppCard>
+      <AppCard class="dashboard-panel min-w-0">
+        <template #header><div class="flex items-center justify-between gap-3"><div><h2 class="text-sm font-semibold">Account overview</h2><p class="mt-1 text-xs text-[var(--ui-text-muted)]">Your recovery details and current session.</p></div><AppButton to="/app/profile" size="xs" color="neutral" variant="ghost" trailing-icon="i-tabler-arrow-up-right">Profile</AppButton></div></template>
+        <dl class="divide-y divide-[var(--ui-border)]">
+          <div class="flex items-start gap-3 pb-3"><UIcon name="i-tabler-mail" class="mt-0.5 size-4 shrink-0 text-[var(--ui-text-muted)]" aria-hidden="true" /><div class="min-w-0"><dt class="text-xs font-medium text-[var(--ui-text-muted)]">Recovery email</dt><dd class="mt-1 break-words text-sm">{{ user ? emailDetail : '—' }}</dd></div></div>
+          <div class="flex items-start gap-3 pt-3"><UIcon name="i-tabler-clock" class="mt-0.5 size-4 shrink-0 text-[var(--ui-text-muted)]" aria-hidden="true" /><div class="min-w-0"><dt class="text-xs font-medium text-[var(--ui-text-muted)]">Session expiry</dt><dd class="mt-1 break-words text-sm">{{ sessionExpiryValue }}<span class="mt-1 block text-xs text-[var(--ui-text-dimmed)]">{{ sessionExpiryDetail }}</span></dd></div></div>
+        </dl>
+        <template #footer><AppButton to="/app/settings" size="sm" color="neutral" variant="link" icon="i-tabler-shield-lock" class="p-0">Manage account security</AppButton></template>
+      </AppCard>
+    </section>
 
-    <section v-if="section === 'billing'" class="space-y-5" aria-labelledby="billing-title">
-       <div>
+
+    <section v-if="section === 'billing'" class="workspace-finance space-y-5" aria-labelledby="billing-title">
+      <AppCard class="finance-panel">
+        <template #header><div class="flex items-center gap-3"><span class="finance-icon flex size-9 shrink-0 items-center justify-center rounded-xl"><UIcon name="i-tabler-chart-bar" class="size-5" aria-hidden="true" /></span><div><h2 id="billing-title" class="text-sm font-semibold">Usage & spending</h2><p class="mt-0.5 text-xs text-[var(--ui-text-muted)]">Explore your usage and charges by time range.</p></div></div></template>
         <form class="flex flex-wrap items-end gap-3" @submit.prevent="applyBillingRange">
           <UFormField label="Time range">
             <USelect v-model="rangePreset" :items="rangeOptions" value-key="value" label-key="label" class="w-44" @update:model-value="selectRange" />
@@ -72,21 +118,22 @@
           <AppButton type="button" class="ml-auto shrink-0" color="neutral" variant="outline" icon="i-tabler-refresh" :loading="billingLoading" @click="loadBilling">Refresh report</AppButton>
         </form>
         <UAlert v-if="billingError" class="mt-4" color="error" variant="subtle" title="Billing request failed" :description="billingError" />
-      </div>
+      </AppCard>
 
       <div class="grid min-w-0 gap-5 lg:grid-cols-2">
         <div class="grid min-w-0 gap-4 sm:grid-cols-2" aria-label="Usage summary">
-          <AppCard v-for="metric in billingMetrics" :key="metric.label" class="min-w-0" tinted>
+          <AppCard v-for="metric in billingMetrics" :key="metric.label" class="finance-panel finance-metric min-w-0" tinted>
             <p class="text-sm text-[var(--ui-text-muted)]">{{ metric.label }}</p>
             <p class="mt-2 break-words text-2xl font-bold tabular-nums text-[var(--ui-text-highlighted)]">{{ metric.value }}</p>
             <p class="mt-1 text-xs text-[var(--ui-text-dimmed)]">{{ metric.detail }}</p>
           </AppCard>
         </div>
-        <AppCard class="min-w-0">
+        <AppCard class="finance-panel min-w-0">
           <template #header>
-            <div>
-              <h3 class="font-semibold">Top models</h3>
-              <p class="text-xs text-[var(--ui-text-muted)]">Up to five models in the selected range</p>
+            <div class="flex items-center gap-3">
+              <span class="finance-icon flex size-9 shrink-0 items-center justify-center rounded-xl"><UIcon name="i-tabler-stack-2" class="size-5" aria-hidden="true" /></span>
+              <div><h3 class="text-sm font-semibold">Top models</h3>
+              <p class="mt-0.5 text-xs text-[var(--ui-text-muted)]">Up to five models in the selected range</p></div>
             </div>
           </template>
           <div v-if="topModels.length" class="space-y-4">
@@ -102,13 +149,13 @@
         </AppCard>
       </div>
 
-        <div class="grid min-w-0 grid-cols-1 items-stretch gap-5 xl:grid-cols-2">
+        <div class="grid min-w-0 grid-cols-1 items-stretch gap-5 2xl:grid-cols-2">
 
-        <AppCard class="flex min-w-0 flex-col" :ui="{ header: 'min-h-24', body: 'flex-1 p-0' }">
+        <AppCard class="finance-panel flex min-w-0 flex-col overflow-hidden" :ui="{ header: 'min-h-24', body: 'flex-1 p-0' }">
           <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h3 class="font-semibold">Recent charges</h3>
+                <h3 class="flex items-center gap-2 text-sm font-semibold"><UIcon name="i-tabler-receipt" class="size-4 text-[var(--ui-primary)]" aria-hidden="true" /> Recent charges</h3>
                 <p class="text-xs text-[var(--ui-text-muted)]">{{ formatNumber(chargesTotal) }} matching records</p>
               </div>
               <UFormField label="Rows per page">
@@ -116,7 +163,7 @@
               </UFormField>
             </div>
           </template>
-          <div class="min-h-80 overflow-x-auto">
+          <div class="min-h-64 overflow-x-auto">
             <AppTable :data="charges" :columns="chargeColumns" :loading="billingLoading" empty="No billing charges found." class="min-w-[800px]">
               <template #created_at-cell="{ row }"><span class="whitespace-nowrap text-sm">{{ formatDate(rowValue(row).created_at) }}</span></template>
               <template #provider-cell="{ row }"><span class="text-sm">{{ rowValue(row).provider || '—' }}</span></template>
@@ -142,50 +189,62 @@
         </div>
     </section>
 
-    <section v-if="section === 'api-keys'" class="space-y-4" aria-labelledby="keys-title">
-      <div class="flex items-center justify-between gap-3">
+    <section v-if="section === 'api-keys'" class="workspace-finance space-y-5" aria-labelledby="keys-title">
+      <div class="finance-hero grid gap-5 rounded-2xl border p-5 sm:p-6 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+        <div class="min-w-0">
+          <p class="flex items-center gap-2 text-xs font-medium text-[var(--ui-text-muted)]"><UIcon name="i-tabler-key" class="size-4 text-[var(--ui-primary)]" aria-hidden="true" /> Client access</p>
+          <h1 id="keys-title" class="mt-2 text-2xl font-semibold tracking-tight text-[var(--ui-text-highlighted)]">API keys</h1>
+          <p class="mt-2 max-w-lg text-sm leading-relaxed text-[var(--ui-text-muted)]">Manage the keys that connect your apps to CPA. Keep a separate key for each client so access stays easy to manage.</p>
+        </div>
+        <div class="flex items-center gap-4 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-bg)] p-4">
+          <span class="finance-icon flex size-10 items-center justify-center rounded-xl"><UIcon name="i-tabler-key" class="size-5" aria-hidden="true" /></span>
+          <div><p class="text-xs text-[var(--ui-text-muted)]">Client access keys</p><p class="mt-1 text-3xl font-semibold tabular-nums tracking-tight">{{ keysLoading ? '—' : formatNumber(keys.length) }}</p></div>
+        </div>
+      </div>
+      <AppCard class="finance-panel overflow-hidden" :ui="{ body: 'p-0' }">
+      <template #header><div class="flex flex-wrap items-center justify-between gap-3">
         <UInput v-model="keySearch" icon="i-tabler-search" placeholder="Search API keys..." aria-label="Search API keys" class="min-w-0 flex-1 sm:max-w-sm" />
         <AppButton icon="i-tabler-plus" class="shrink-0" @click="openKeyForm()">Create key</AppButton>
+      </div></template>
+      <div v-if="keysLoading" class="flex items-center justify-center gap-2 py-12 text-sm text-[var(--ui-text-muted)]" role="status"><UIcon name="i-tabler-loader-2" class="size-5 animate-spin" aria-hidden="true" />Loading client access keys...</div>
+            <AppTable v-else-if="filteredKeys.length" native>
+        <table class="min-w-[680px]">
+          <thead><tr><th scope="col">Name & key</th><th scope="col">Created</th><th scope="col">Updated</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+          <tbody>
+            <tr v-for="key in filteredKeys" :key="key.api_key">
+              <td><div class="flex items-center gap-3"><span class="finance-icon flex size-9 shrink-0 items-center justify-center rounded-xl"><UIcon name="i-tabler-key" class="size-4" aria-hidden="true" /></span><div class="min-w-0"><p class="max-w-xs break-words font-medium text-[var(--ui-text-highlighted)]">{{ key.display_name || 'Unnamed key' }}</p><div class="mt-1 flex items-center gap-2"><code class="text-xs text-[var(--ui-text-muted)]">{{ maskKey(key.api_key) }}</code><AppButton type="button" size="xs" color="neutral" variant="ghost" icon="i-tabler-copy" :aria-label="`Copy ${maskKey(key.api_key)}`" @click="copyKey(key.api_key)" /></div></div></div></td>
+              <td class="whitespace-nowrap text-xs">{{ formatDate(key.created_at) }}</td>
+              <td class="whitespace-nowrap text-xs">{{ formatDate(key.updated_at || key.created_at) }}</td>
+              <td><div class="flex justify-end gap-1"><AdminTableAction action="edit" :label="`Edit ${maskKey(key.api_key)}`" @click="openKeyForm(key)" /><AdminTableAction action="delete" :label="`Delete ${maskKey(key.api_key)}`" destructive @click="confirmKeyDelete(key)" /></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </AppTable>
+      <div v-else class="flex flex-col items-center px-5 py-12 text-center">
+        <span class="finance-icon mb-4 flex size-12 items-center justify-center rounded-2xl"><UIcon :name="keys.length ? 'i-tabler-search' : 'i-tabler-key'" class="size-6" aria-hidden="true" /></span>
+        <h2 class="text-sm font-semibold">{{ keys.length ? 'No matching keys' : 'Connect your first app' }}</h2>
+        <p class="mt-2 max-w-sm text-sm text-[var(--ui-text-muted)]">{{ keys.length ? 'Try another name or key value to find what you need.' : 'Create a client access key to authenticate requests to your CPA endpoint.' }}</p>
+        <AppButton v-if="!keys.length" class="mt-5 rounded-full" icon="i-tabler-plus" size="sm" @click="openKeyForm()">Create your first key</AppButton>
       </div>
-      <div v-if="keysLoading" class="py-10 text-center text-sm text-[var(--ui-text-muted)]" role="status">Loading client access keys...</div>
-      <div v-else-if="filteredKeys.length" class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <AppCard v-for="key in filteredKeys" :key="key.api_key" class="min-w-0">
-          <div class="space-y-4">
-            <div class="flex items-start gap-3">
-              <UIcon name="i-tabler-key" class="size-5 shrink-0 text-primary" />
-              <h3 class="min-w-0 break-words font-semibold text-[var(--ui-text-highlighted)]">{{ key.display_name || 'Unnamed key' }}</h3>
-            </div>
-            <div class="flex items-center gap-2 rounded-md bg-[var(--ui-bg-muted)] px-3 py-2">
-              <code class="min-w-0 flex-1 break-all text-xs text-[var(--ui-text-muted)]">{{ maskKey(key.api_key) }}</code>
-              <AppButton type="button" size="xs" color="neutral" variant="ghost" icon="i-tabler-copy" class="shrink-0" :aria-label="`Copy ${maskKey(key.api_key)}`" @click="copyKey(key.api_key)" />
-            </div>
-            <dl class="space-y-2 text-xs">
-              <div class="flex justify-between gap-3">
-                <dt class="text-[var(--ui-text-muted)]">Created</dt>
-                <dd class="text-right">{{ formatDate(key.created_at) }}</dd>
-              </div>
-              <div class="flex justify-between gap-3">
-                <dt class="text-[var(--ui-text-muted)]">Updated</dt>
-                <dd class="text-right">{{ formatDate(key.updated_at || key.created_at) }}</dd>
-              </div>
-            </dl>
-            <div class="flex items-center justify-end gap-1 border-t border-[var(--ui-border)] pt-3">
-
-              <AdminTableAction action="edit" :label="`Edit ${maskKey(key.api_key)}`" @click="openKeyForm(key)" />
-              <AdminTableAction action="delete" :label="`Delete ${maskKey(key.api_key)}`" destructive @click="confirmKeyDelete(key)" />
-            </div>
-          </div>
-        </AppCard>
-      </div>
-      <AppCard v-else>
-        <p class="py-6 text-center text-sm text-[var(--ui-text-muted)]">{{ keys.length ? 'No API keys match your search.' : 'No client access keys. Create a key to authenticate client requests.' }}</p>
+      <template #footer><p class="flex items-start gap-2 text-xs leading-relaxed text-[var(--ui-text-muted)]"><UIcon name="i-tabler-shield-lock" class="size-4 shrink-0" aria-hidden="true" />Treat API keys like passwords. Store them securely and never share them in public code.</p></template>
       </AppCard>
     </section>
 
-    <section v-if="section === 'settings'" class="space-y-4" aria-labelledby="security-title">
-      <div class="grid gap-5 lg:grid-cols-2">
-        <AppCard>
-          <template #header><div><h3 class="font-semibold">Password</h3><p class="text-xs text-[var(--ui-text-muted)]">Changing your password refreshes the active session.</p></div></template>
+    <section v-if="section === 'settings'" class="workspace-settings min-w-0 space-y-5" aria-labelledby="security-title">
+      <div class="settings-hero grid min-w-0 gap-5 rounded-2xl border p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+        <div class="min-w-0">
+          <p class="flex items-center gap-2 text-xs font-medium text-[var(--ui-text-muted)]"><UIcon name="i-tabler-shield-lock" class="size-4 text-[var(--ui-primary)]" aria-hidden="true" /> Account protection</p>
+          <h1 id="security-title" class="mt-2 text-2xl font-semibold tracking-tight text-[var(--ui-text-highlighted)]">Settings</h1>
+          <p class="mt-2 max-w-lg text-sm leading-relaxed text-[var(--ui-text-muted)]">Your account, your peace of mind. Manage your sign-in methods and recovery email from one place.</p>
+        </div>
+        <dl class="grid gap-3 sm:grid-cols-2">
+          <div class="rounded-xl border border-[var(--ui-border)] bg-[var(--ui-bg)] p-4"><dt class="flex items-center gap-2 text-xs text-[var(--ui-text-muted)]"><UIcon name="i-tabler-device-mobile" class="size-4" aria-hidden="true" />Authenticator</dt><dd class="mt-2 text-sm font-semibold">{{ user ? (user.totp_enabled ? 'Enabled' : 'Not enabled') : '—' }}</dd></div>
+          <div class="rounded-xl border border-[var(--ui-border)] bg-[var(--ui-bg)] p-4"><dt class="flex items-center gap-2 text-xs text-[var(--ui-text-muted)]"><UIcon name="i-tabler-fingerprint" class="size-4" aria-hidden="true" />Registered passkeys</dt><dd class="mt-2 text-sm font-semibold tabular-nums">{{ user ? formatNumber(user.passkeys?.length || 0) : '—' }}</dd></div>
+        </dl>
+      </div>
+      <div class="grid min-w-0 items-start gap-5 lg:grid-cols-2">
+        <AppCard class="settings-panel min-w-0">
+          <template #header><div class="flex items-start gap-3"><span class="settings-icon flex size-9 shrink-0 items-center justify-center rounded-xl"><UIcon name="i-tabler-lock" class="size-5" aria-hidden="true" /></span><div><h2 class="text-sm font-semibold">Password</h2><p class="mt-1 text-xs leading-relaxed text-[var(--ui-text-muted)]">Changing your password refreshes the active session.</p></div></div></template>
           <form class="space-y-4" @submit.prevent="changePassword">
             <UAlert v-if="passwordError" color="error" variant="subtle" :description="passwordError" />
             <UFormField label="New password" required><UInput v-model="passwordForm.password" type="password" autocomplete="new-password" class="w-full" /></UFormField>
@@ -194,8 +253,8 @@
           </form>
         </AppCard>
 
-        <AppCard>
-          <template #header><div><h3 class="font-semibold">Recovery email</h3><p class="text-xs text-[var(--ui-text-muted)]">{{ emailDetail }}</p></div></template>
+        <AppCard class="settings-panel min-w-0">
+          <template #header><div class="flex items-start gap-3"><span class="settings-icon flex size-9 shrink-0 items-center justify-center rounded-xl"><UIcon name="i-tabler-mail" class="size-5" aria-hidden="true" /></span><div><h2 class="text-sm font-semibold">Recovery email</h2><p class="mt-1 text-xs leading-relaxed text-[var(--ui-text-muted)]">{{ emailDetail }}</p></div></div></template>
           <form class="space-y-4" @submit.prevent="updateEmail">
             <UAlert v-if="emailError" color="error" variant="subtle" :description="emailError" />
             <UFormField label="Email address" required><UInput v-model="email" type="email" autocomplete="email" class="w-full" :disabled="capabilities.email_verification === false" /></UFormField>
@@ -207,10 +266,10 @@
           </form>
         </AppCard>
 
-        <AppCard>
+        <AppCard class="settings-panel min-w-0">
           <template #header>
             <div class="flex flex-wrap items-start justify-between gap-3">
-              <div><h3 class="font-semibold">Authenticator app</h3><p class="text-xs text-[var(--ui-text-muted)]">{{ user?.totp_enabled ? 'TOTP is enabled for this account.' : 'Add a time-based one-time password.' }}</p></div>
+              <div class="flex min-w-0 flex-1 items-start gap-3"><span class="settings-icon flex size-9 shrink-0 items-center justify-center rounded-xl"><UIcon name="i-tabler-device-mobile" class="size-5" aria-hidden="true" /></span><div class="min-w-0"><h2 class="text-sm font-semibold">Authenticator app</h2><p class="mt-1 text-xs leading-relaxed text-[var(--ui-text-muted)]">{{ user?.totp_enabled ? 'TOTP is enabled for this account.' : 'Add a time-based one-time password.' }}</p></div></div>
               <UBadge :color="user?.totp_enabled ? 'success' : 'neutral'" variant="subtle">{{ user?.totp_enabled ? 'Enabled' : 'Not enabled' }}</UBadge>
             </div>
           </template>
@@ -221,7 +280,7 @@
               <AppButton color="neutral" variant="outline" :loading="totpLoading" @click="showTOTP(true)">Regenerate setup</AppButton>
               <AppButton v-if="user?.totp_enabled" color="error" variant="soft" @click="openTOTPDelete">Disable TOTP</AppButton>
             </div>
-            <form v-if="totpSetup" class="space-y-4 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] app-surface p-4" @submit.prevent="bindTOTP">
+            <form v-if="totpSetup" class="settings-setup min-w-0 space-y-4 rounded-xl border p-4" @submit.prevent="bindTOTP">
               <p class="text-sm text-[var(--ui-text-muted)]">Open the setup link in a compatible authenticator or enter the raw secret manually, then confirm a current code.</p>
               <div>
                 <p class="text-xs font-medium text-[var(--ui-text-dimmed)]">Raw secret</p>
@@ -238,8 +297,8 @@
           </div>
         </AppCard>
 
-        <AppCard :ui="{ body: 'p-0' }">
-          <template #header><div><h3 class="font-semibold">Passkeys</h3><p class="text-xs text-[var(--ui-text-muted)]">Use a device authenticator or hardware security key.</p></div></template>
+        <AppCard class="settings-panel min-w-0 overflow-hidden" :ui="{ body: 'p-0' }">
+          <template #header><div class="flex items-start gap-3"><span class="settings-icon flex size-9 shrink-0 items-center justify-center rounded-xl"><UIcon name="i-tabler-fingerprint" class="size-5" aria-hidden="true" /></span><div><h2 class="text-sm font-semibold">Passkeys</h2><p class="mt-1 text-xs leading-relaxed text-[var(--ui-text-muted)]">Use a device authenticator or hardware security key.</p></div></div></template>
           <div class="p-4 sm:p-6">
             <form class="flex flex-col gap-3 sm:flex-row sm:items-end" @submit.prevent="addPasskey">
               <UFormField label="Passkey name" hint="Optional" class="flex-1"><UInput v-model="passkeyName" class="w-full" placeholder="MacBook Touch ID" /></UFormField>
@@ -249,6 +308,7 @@
           </div>
           <div class="overflow-x-auto">
             <AppTable :data="user?.passkeys || []" :columns="passkeyColumns" empty="No passkeys registered." class="min-w-[560px]">
+              <template #empty><div class="flex flex-col items-center gap-2 py-6 text-center"><span class="settings-icon mb-1 flex size-10 items-center justify-center rounded-xl"><UIcon name="i-tabler-fingerprint" class="size-5" aria-hidden="true" /></span><p class="text-sm font-medium text-[var(--ui-text-highlighted)]">No passkeys yet</p><p class="max-w-xs text-xs leading-relaxed text-[var(--ui-text-muted)]">Add a passkey above to sign in with your device or a hardware security key.</p></div></template>
               <template #name-cell="{ row }"><span class="font-medium">{{ row.original.name || 'Unnamed passkey' }}</span></template>
               <template #created_at-cell="{ row }">{{ formatDate(row.original.created_at) }}</template>
               <template #updated_at-cell="{ row }">{{ formatDate(row.original.updated_at) }}</template>
@@ -264,10 +324,11 @@
     <AppModal v-model:open="keyFormOpen" :title="editingKey ? 'Edit client access key' : 'Create client access key'" :description="editingKey ? 'Rename the key or change its value. Existing scopes remain unchanged.' : 'Give the key a name; leave its value blank to generate a secure one.'">
       <template #body>
         <form class="space-y-5" @submit.prevent="saveKey">
+          <div class="flex items-start gap-3 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] p-4"><UIcon name="i-tabler-shield-lock" class="mt-0.5 size-5 shrink-0 text-[var(--ui-primary)]" aria-hidden="true" /><p class="text-xs leading-relaxed text-[var(--ui-text-muted)]">Use a descriptive name to identify this client. Keep the key private; anyone with its value can use it to authenticate requests.</p></div>
           <UAlert v-if="keyFormError" color="error" variant="subtle" :description="keyFormError" />
-          <UFormField label="Name" hint="Optional; up to 128 characters"><UInput v-model="keyName" class="w-full" maxlength="128" placeholder="e.g. My laptop" /></UFormField>
+          <UFormField label="Name" hint="Optional; up to 128 characters"><UInput v-model="keyName" icon="i-tabler-tag" class="w-full" maxlength="128" placeholder="e.g. My laptop" /></UFormField>
           <UFormField label="Key" :hint="editingKey ? 'Leave unchanged to keep this key' : 'Optional; blank is generated by the server'">
-            <UInput v-model="keyValue" class="w-full font-mono" autocomplete="off" />
+            <UInput v-model="keyValue" icon="i-tabler-key" class="w-full font-mono" autocomplete="off" />
           </UFormField>
 
           <div class="flex justify-end gap-2"><AppButton type="button" color="neutral" variant="ghost" @click="closeKeyForm">Cancel</AppButton><AppButton type="submit" :loading="keySaving">{{ editingKey ? 'Save key' : 'Create key' }}</AppButton></div>
@@ -307,6 +368,14 @@ type TOTPSetup = { secret: string; otp_auth_url?: string; issuer?: string; enabl
 type WorkspaceKey = Omit<UserApiKey, 'id'> & { id: number | null; index: number }
 type PeriodWindowStatus = { id: string; enabled: boolean; limit: number | null; used: number; remaining: number | null; active: boolean; reset_at?: string | null }
 type PeriodLimitsStatus = { windows?: PeriodWindowStatus[] }
+
+const dashboardMetricIcons = ['i-tabler-calendar-stats', 'i-tabler-sun', 'i-tabler-calendar-month', 'i-tabler-activity']
+const dashboardActions = computed(() => [
+  { label: 'API keys', detail: 'Manage client access', to: '/app/api-keys', icon: 'i-tabler-key' },
+  { label: 'Model catalog', detail: 'Explore available models', to: '/app/models', icon: 'i-tabler-box-multiple' },
+  { label: 'Balance', detail: 'Credits and billing history', to: '/app/balance', icon: 'i-tabler-wallet' },
+  ...(capabilities.value.request_logs === true ? [{ label: 'Request logs', detail: 'Review account activity', to: '/app/logs', icon: 'i-tabler-list-details' }] : [])
+])
 
 const toast = useToast()
 const { currentUser: user, tokenExpiresAt, fetchAPI, loadCurrentUser, saveSession, capabilities, serverInfo, loadCapabilities, registerPasskey } = useUserApi()
@@ -349,6 +418,7 @@ const chargesTotal = useWorkspaceState('user:workspace:charges-total', () => 0)
 const billingLoading = useWorkspaceState('user:workspace:billing-loading', () => false)
 const billingError = useWorkspaceState('user:workspace:billing-error', () => '')
 const periodLimits = useWorkspaceState<PeriodLimitsStatus | null>('user:workspace:period-limits', () => null)
+
 let billingRequest = 0
 
 const rangeOptions = [
@@ -502,6 +572,7 @@ async function loadPeriodLimits() {
   try { periodLimits.value = await fetchAPI<PeriodLimitsStatus>('/period-limits') }
   catch (error: any) { if (error?.statusCode !== 404) throw error; periodLimits.value = null }
 }
+
 
 async function loadKeys() {
   keysLoading.value = true
@@ -844,8 +915,131 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.dashboard-card-icon {
-  color: color-mix(in oklch, var(--color-emerald-700) 70%, var(--ui-text-highlighted));
+.workspace-settings .settings-hero {
+  border-color: color-mix(in oklch, var(--ui-primary) 15%, var(--ui-border));
+  background: radial-gradient(ellipse at 0% 0%, color-mix(in oklch, var(--ui-primary) 9%, transparent), transparent 70%), var(--ui-bg);
+  box-shadow: 0 6px 24px color-mix(in oklch, var(--ui-primary) 4%, transparent);
+}
+
+.workspace-settings .settings-panel {
+  border-radius: 1.25rem;
+  border-color: color-mix(in oklch, var(--ui-border) 75%, transparent);
+  background: var(--ui-bg);
+  box-shadow: 0 4px 20px color-mix(in oklch, var(--ui-text-highlighted) 4%, transparent);
+}
+
+.workspace-settings .settings-panel :deep([data-slot="header"]) {
+  border-color: color-mix(in oklch, var(--ui-border) 55%, transparent);
+}
+
+.workspace-settings .settings-icon {
+  color: var(--ui-primary);
+  background: color-mix(in oklch, var(--ui-primary) 10%, var(--ui-bg));
+}
+
+.workspace-settings .settings-setup {
+  border-color: color-mix(in oklch, var(--ui-primary) 18%, var(--ui-border));
+  background: color-mix(in oklch, var(--ui-primary) 4%, var(--ui-bg));
+}
+
+.workspace-finance .finance-panel {
+  border-radius: 1.25rem;
+  border-color: color-mix(in oklch, var(--ui-border) 75%, transparent);
+  background: var(--ui-bg);
+  box-shadow: 0 4px 20px color-mix(in oklch, var(--ui-text-highlighted) 4%, transparent);
+}
+
+.workspace-finance .finance-hero,
+.workspace-finance .finance-metric {
+  background: radial-gradient(ellipse at 0% 0%, color-mix(in oklch, var(--ui-primary) 9%, transparent), transparent 70%), var(--ui-bg);
+  border-color: color-mix(in oklch, var(--ui-primary) 15%, var(--ui-border));
+}
+
+.workspace-finance .finance-icon {
+  color: var(--ui-primary);
+  background: color-mix(in oklch, var(--ui-primary) 10%, var(--ui-bg));
+}
+
+.user-dashboard {
+  --dashboard-accent: var(--ui-primary);
+  max-width: 90rem;
+  margin-inline: auto;
+}
+
+.user-dashboard .dashboard-hero {
+  position: relative;
+  overflow: hidden;
+  border-color: color-mix(in oklch, var(--ui-primary) 14%, var(--ui-border));
+  background:
+    radial-gradient(ellipse at 0% 0%, color-mix(in oklch, var(--ui-primary) 10%, transparent), transparent 65%),
+    var(--ui-bg);
+  box-shadow: 0 8px 32px color-mix(in oklch, var(--ui-primary) 4%, transparent);
+}
+
+.user-dashboard .dashboard-balance {
+  --dashboard-accent: var(--ui-success);
+  border-color: color-mix(in oklch, var(--dashboard-accent) 22%, var(--ui-border));
+  background:
+    radial-gradient(ellipse at 100% 0%, color-mix(in oklch, var(--dashboard-accent) 16%, transparent), transparent 75%),
+    linear-gradient(135deg, var(--ui-bg), color-mix(in oklch, var(--dashboard-accent) 6%, var(--ui-bg)));
+  box-shadow: 0 6px 20px color-mix(in oklch, var(--dashboard-accent) 7%, transparent);
+}
+
+.user-dashboard .dashboard-icon {
+  color: var(--dashboard-accent);
+  background: color-mix(in oklch, var(--dashboard-accent) 12%, var(--ui-bg));
+}
+
+.user-dashboard .dashboard-panel,
+.user-dashboard .dashboard-metric {
+  border-radius: 1.25rem;
+  border-color: color-mix(in oklch, var(--ui-border) 75%, transparent);
+  background: var(--ui-bg);
+  box-shadow: 0 4px 20px color-mix(in oklch, var(--ui-text-highlighted) 4%, transparent);
+}
+
+.user-dashboard .dashboard-panel :deep([data-slot="header"]),
+.user-dashboard .dashboard-panel :deep([data-slot="footer"]) {
+  border-color: color-mix(in oklch, var(--ui-border) 55%, transparent);
+}
+
+.user-dashboard .dashboard-metric {
+  border-radius: 1rem;
+  background: linear-gradient(145deg, color-mix(in oklch, var(--dashboard-accent) 7%, var(--ui-bg)), var(--ui-bg));
+  box-shadow: none;
+}
+
+.dashboard-metric--0, .dashboard-action--0 { --dashboard-accent: var(--ui-primary); }
+.dashboard-metric--1, .dashboard-action--2 { --dashboard-accent: var(--ui-success); }
+.dashboard-metric--2, .dashboard-action--1 { --dashboard-accent: var(--color-violet-500); }
+.dashboard-metric--3, .dashboard-action--3 { --dashboard-accent: var(--ui-info); }
+
+.user-dashboard .dashboard-action {
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid transparent;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.user-dashboard .dashboard-action:is(:hover, :focus-visible) {
+  border-color: color-mix(in oklch, var(--dashboard-accent) 20%, var(--ui-border));
+  background: color-mix(in oklch, var(--dashboard-accent) 5%, var(--ui-bg));
+}
+
+.dashboard-usage { order: -1; }
+
+@media (min-width: 1280px) {
+  .dashboard-overview:has(.dashboard-endpoint) {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    align-items: start;
+  }
+  .dashboard-overview:has(.dashboard-endpoint) .dashboard-usage :deep([aria-label="Usage summary"]) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 640px) {
+  .user-dashboard .dashboard-hero { padding: 2rem; }
 }
 
 .period-progress-track {

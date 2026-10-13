@@ -195,6 +195,13 @@
           ></template>
 
           <template #payload>
+            <AdminConfigSharedUpstream
+              v-model:draft="draft"
+              :sections="sharedConfigSections"
+              :validation-errors="validationErrors"
+              :loading="loading || saving"
+              class="mb-6"
+            />
             <AppCard
               id="config-payload"
               class="border-white/40 bg-white/40 dark:border-white/10 dark:bg-neutral-900/40"
@@ -488,6 +495,51 @@ const channelOptions = [
   ["antigravity", "Antigravity"],
   ["xai", "xAI"],
 ].map(([value, label]) => ({ value, label }));
+const sharedConfigSections = [
+  {
+    id: "upstream-claude", title: "Claude shared upstream", description: "Applies to OAuth and API-key routes under their existing execution conditions. Explicit credential options keep precedence.",
+    fields: [
+      { key: "claudeToolSearch", path: ["upstream", "claude", "tool-search"], label: "Tool search", type: "boolean", description: "Enable Codex tool_search on Claude Responses routes. Native Anthropic tool search is used on api.anthropic.com or keys with native-tool-search; other credentials use plain translation. Default: false." },
+      { key: "claudeModelLevelCooling", path: ["upstream", "claude", "model-level-cooling"], label: "Model-level cooling", type: "boolean", description: "Scope quota cooldowns to the requested model. CPA compatibility option: Home cooldown scheduling remains authoritative. Default: false." },
+      { key: "claudeDisableCloakMode", path: ["upstream", "claude", "disable-claude-cloak-mode"], label: "Disable request cloaking", type: "boolean", description: "Pass through the original system prompt on OAuth and API-key CLI profiles. Credential attributes and explicit per-key cloak modes override this shared default. Default: false (per-client auto behavior)." },
+      { key: "claudeDisableCloakingModelList", path: ["upstream", "claude", "disable-cloaking-model-list"], label: "Disable model-list cloaking", type: "boolean", description: "Return original model IDs in Anthropic model-list responses. Default: false." },
+      ...[
+        ["UserAgent", "user-agent", "User-Agent", "Unconfirmed clients use this Claude CLI baseline; update only after measuring a release."],
+        ["PackageVersion", "package-version", "Package version", "Shared Claude CLI package baseline."],
+        ["RuntimeVersion", "runtime-version", "Runtime version", "Shared Claude CLI runtime baseline."],
+        ["Os", "os", "Operating system", "Verified native OS values are preserved unless device-profile stabilization is enabled."],
+        ["Arch", "arch", "Architecture", "Verified native architecture is preserved unless device-profile stabilization is enabled."],
+        ["Timeout", "timeout", "Timeout header", "Claude timeout header fallback, not a proxy request timeout."],
+        ["Timezone", "timezone", "Timezone", "Fallback IANA timezone for cloaked currentDate; credential JSON timezone takes priority."],
+      ].map(([suffix, name, label, description]) => ({ key: `claudeHeader${suffix}`, path: ["upstream", "claude", "header-defaults", name], label, description, type: "text" })),
+      { key: "claudeHeaderStabilizeDeviceProfile", path: ["upstream", "claude", "header-defaults", "stabilize-device-profile"], label: "Stabilize device profile", type: "boolean", description: "Pin OS/architecture and cached profiles to the configured software baseline. Unset retains the backend fallback; explicit false disables pinning." },
+    ],
+  },
+  {
+    id: "upstream-codex", title: "Codex shared upstream", description: "Shared behavior for OAuth and API-key credentials; these are not OAuth-only settings.",
+    fields: [
+      { key: "codexResponseSteering", path: ["upstream", "codex", "response-steering"], label: "Response steering", type: "boolean", description: "Experimental full-duplex Responses WebSocket steering. One account/model per socket; accepted input is never replayed. Default: false." },
+      { key: "codexDisableCloaking", path: ["upstream", "codex", "disable-codex-cloaking"], label: "Disable identity cloaking", type: "boolean", description: "Stop forcing official Codex User-Agent and Originator headers on HTTP/SSE and WebSocket requests. Explicit credential overrides retain precedence. Default: false." },
+      { key: "codexStreamBootstrapBuffering", path: ["upstream", "codex", "stream-bootstrap-buffering"], label: "Stream bootstrap buffering", type: "boolean", description: "Hold handshake, heartbeat and early empty frames until generation to allow overload/rate-limit failover before stream commitment. Delays headers; review client and reverse-proxy timeouts. Default: false." },
+      { key: "codexStreamBootstrapTimeout", path: ["upstream", "codex", "stream-bootstrap-timeout"], label: "Stream bootstrap timeout", type: "duration", description: "Optional buffering ceiling, e.g. 20s. Evaluated as upstream frames arrive; never aborts the upstream connection. Translators may still wait for generated text before committing headers. Empty, 0, 0s, none, unlimited, disabled, off or never means no time ceiling (frame/byte budgets only)." },
+      { key: "codexOrphanDelegationCompatibility", path: ["upstream", "codex", "orphan-delegation-compatibility"], label: "Orphan delegation compatibility", type: "boolean", description: "Convert orphan codex_app/create_thread and send_message_to_thread outputs into user messages when X-Openai-Subagent is collab_spawn. Default: false." },
+      { key: "codexModelLevelCooling", path: ["upstream", "codex", "model-level-cooling"], label: "Model-level cooling", type: "boolean", description: "Scope usage_limit_reached cooldowns to the requested model. CPA compatibility option: Home cooldown scheduling remains authoritative. Default: false." },
+    ],
+  },
+  {
+    id: "client-codex", title: "Codex client compatibility", description: "Client-facing compatibility across OAuth and API-key routes, including non-Codex upstream protocols.",
+    fields: [
+      { key: "codexOptimizeMultiAgentV2", path: ["client", "codex", "optimize-multi-agent-v2"], label: "Optimize multi-agent v2", type: "boolean", description: "Refresh spawn_agent model details, remove message parameter encryption, normalize encrypted agent_message content, and translate agent_message inputs for non-Codex protocols. Default: false." },
+    ],
+  },
+  {
+    id: "upstream-xai", title: "xAI shared upstream", description: "Native xAI behavior shared by OAuth and API-key routes.",
+    fields: [
+      { key: "xaiInjectXSearch", path: ["upstream", "xai", "inject-x-search"], label: "Inject X search", type: "boolean", description: "Inject native x_search when absent, also adding it to tool_choice.allowed_tools when applicable. Default: false." },
+    ],
+  },
+];
+const sharedConfigFields = sharedConfigSections.flatMap(section => section.fields);
 const outline = [
   { id: "server", short: "Server", keys: ["debug", "port", "cpaPublicUrl"] },
   { id: "tls", short: "TLS", keys: ["tlsEnable", "tlsCert", "tlsKey"] },
@@ -546,6 +598,7 @@ const outline = [
       "routingStrategy",
     ],
   },
+  ...sharedConfigSections.map(section => ({ id: section.id, short: section.title, keys: section.fields.map(field => field.key) })),
   { id: "payload", short: "Parameters", keys: ["payloadJson"] },
   {
     id: "antigravity",
@@ -627,6 +680,22 @@ const validationErrors = computed(() => {
       if (!/^\+?(?:(?:\d+(?:\.\d*)?|\.\d+)(?:ns|us|µs|μs|ms|s|m|h))+$/.test(value) || !/[1-9]/.test(value)) errors[key] = "Enter a positive Go duration, for example 24h or 30m.";
     }
   }
+  for (const field of sharedConfigFields) {
+    const value = draft.value[field.key];
+    if (value === null || value === undefined) continue;
+    if (field.type === "boolean") {
+      if (typeof value !== "boolean") errors[field.key] = "Select the backend default, enabled or disabled.";
+    } else if (typeof value !== "string") {
+      errors[field.key] = "Enter a string value or use the backend default.";
+    } else if (field.type === "duration") {
+      const text = value.trim().toLowerCase();
+      if (!["", "0", "0s", "none", "unlimited", "disabled", "off", "never"].includes(text) && !/^\+?(?:(?:\d+(?:\.\d*)?|\.\d+)(?:ns|us|µs|μs|ms|s|m|h))+$/.test(value.trim())) {
+        errors[field.key] = "Enter a non-negative Go duration (e.g. 20s or 1m30s), or an unlimited alias.";
+      }
+    } else if (/[\r\n\u0000]/.test(value)) {
+      errors[field.key] = "Header defaults must not contain line breaks or NUL characters.";
+    }
+  }
   return errors;
 });
 const validationCount = computed(
@@ -634,12 +703,12 @@ const validationCount = computed(
 );
 const changes = computed(() =>
   Object.keys(draft.value)
-    .filter((key) => String(draft.value[key]) !== String(baseline.value[key]))
+    .filter((key) => fieldChanged(key))
     .map((key) => ({
       key,
       label: labels[key] || key,
-      before: String(baseline.value[key] ?? ""),
-      after: String(draft.value[key] ?? ""),
+      before: formatChangeValue(key, baseline.value[key]),
+      after: formatChangeValue(key, draft.value[key]),
       section:
         outline.find((section) => section.keys.includes(key))?.id || "server",
     })),
@@ -685,10 +754,21 @@ function scrollToSection(id) {
     .getElementById(`config-${id}`)
     ?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
+function fieldChanged(key) {
+  if (sharedConfigFields.some(field => field.key === key)) {
+    return draft.value[key] !== baseline.value[key];
+  }
+  return String(draft.value[key]) !== String(baseline.value[key]);
+}
+function formatChangeValue(key, value) {
+  if (sharedConfigFields.some(field => field.key === key)) {
+    if (value === null || value === undefined) return "Backend default (unset)";
+    if (value === "") return '"" (explicit empty string)';
+  }
+  return String(value ?? "");
+}
 function sectionDirty(keys) {
-  return keys.some(
-    (key) => String(draft.value[key]) !== String(baseline.value[key]),
-  );
+  return keys.some(fieldChanged);
 }
 function lines(value) {
   return [
@@ -716,6 +796,8 @@ function buildDraft(config, yamlRoot) {
   const email = config["user-email"] || yamlRoot["user-email"] || {};
   const smtp = email.sender?.smtp || {};
   return {
+    // Read shared settings from YAML so omitted/null, false and empty strings stay distinct.
+    ...Object.fromEntries(sharedConfigFields.map(field => [field.key, field.path.reduce((value, part) => value?.[part], yamlRoot) ?? null])),
     debug: Boolean(logs.debug),
     port: Number(server.port || 8317),
     cpaPublicUrl: (config["user-panel"] || yamlRoot["user-panel"])?.["cpa-public-url"] || "",
@@ -964,6 +1046,7 @@ function savePayloadEditor() {
 }
 
 const v8YamlPaths = {
+  ...Object.fromEntries(sharedConfigFields.map(field => [field.key, field.path])),
   debug: ["observability", "logs", "debug"],
   port: ["server", "port"],
   cpaPublicUrl: ["user-panel", "cpa-public-url"],
@@ -1037,6 +1120,10 @@ async function saveWorkspace() {
       const path = v8YamlPaths[key];
       if (!path) continue;
       let value = draft.value[key];
+      if (sharedConfigFields.some(field => field.key === key) && value === null) {
+        document.deleteIn(path);
+        continue;
+      }
       if (
         [
           "port",

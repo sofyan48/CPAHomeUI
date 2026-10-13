@@ -46,12 +46,19 @@ export default defineAppConfig({
         variant: "outline",
       },
     },
-    modal: {
+    slideover: {
       slots: {
-        header: "px-4 py-3 sm:px-5",
-        body: "p-4 sm:p-5",
-        footer: "px-4 py-3 sm:px-5",
+        header: "shrink-0 px-4 py-3 sm:px-5",
+        body: "min-h-0 flex-1 overflow-y-auto p-4 sm:p-5",
+        footer: "shrink-0 px-4 py-3 sm:px-5",
         title: "text-base font-semibold text-highlighted",
+      },
+      variants: {
+        side: {
+          right: {
+            content: "max-w-full sm:max-w-lg",
+          },
+        },
       },
     },
     table: {
