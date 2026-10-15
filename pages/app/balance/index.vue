@@ -2,55 +2,43 @@
   <div class="balance-workspace min-w-0 space-y-6">
     <UAlert v-if="pageError" color="error" variant="subtle" title="Could not load balance information" :description="pageError" />
 
-    <section class="balance-hero grid min-w-0 gap-6 rounded-2xl border p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-center" aria-labelledby="balance-title">
+    <div class="balance-wallet-grid">
+    <section class="balance-hero min-w-0" aria-labelledby="balance-title">
       <div class="min-w-0">
         <p class="flex items-center gap-2 text-xs font-medium text-[var(--ui-text-muted)]"><UIcon name="i-tabler-wallet" class="size-4 text-[var(--ui-success)]" aria-hidden="true" /> Account credits</p>
-        <h1 id="balance-title" class="mt-2 text-2xl font-semibold tracking-tight text-[var(--ui-text-highlighted)]">Balance</h1>
-        <p class="mt-2 max-w-md text-sm leading-relaxed text-[var(--ui-text-muted)]">Keep your next request covered. Add credits, track spending, and review your account activity in one place.</p>
+        <h1 id="balance-title" class="mt-2 text-xl font-semibold tracking-tight text-[var(--ui-text-highlighted)]">Your balance</h1>
+
       </div>
-      <dl class="grid min-w-0 gap-3 sm:grid-cols-2" :aria-busy="loading">
-        <div v-for="(metric, index) in metrics" :key="metric.label" class="balance-summary min-w-0 rounded-xl border p-4">
+      <dl class="balance-totals min-w-0" :aria-busy="loading">
+        <div v-for="(metric, index) in metrics" :key="metric.label" class="balance-summary min-w-0">
           <dt class="flex items-center gap-2 text-xs font-medium text-[var(--ui-text-muted)]"><UIcon :name="index === 0 ? 'i-tabler-wallet' : 'i-tabler-arrow-down-left'" class="size-4 text-[var(--ui-success)]" aria-hidden="true" />{{ metric.label }}</dt>
-          <dd class="mt-3 break-words text-3xl font-semibold tracking-tight tabular-nums text-[var(--ui-text-highlighted)]">{{ metric.value }}<span class="ml-1 text-xs font-normal tracking-normal text-[var(--ui-text-muted)]">credits</span></dd>
+          <dd class="mt-3 break-words text-3xl font-semibold tracking-tight tabular-nums text-[var(--ui-text-highlighted)]">{{ loading ? '—' : metric.value }}<span class="ml-1 text-xs font-normal tracking-normal text-[var(--ui-text-muted)]">credits</span></dd>
           <dd class="mt-2 text-xs text-[var(--ui-text-muted)]">{{ metric.detail }}</dd>
         </div>
       </dl>
     </section>
 
-    <AppCard class="balance-panel min-w-0" :ui="{ body: resetAllowanceSupported ? 'grid gap-5 lg:grid-cols-2 lg:items-stretch' : 'grid gap-5' }">
-      <template #header><div class="flex items-center gap-3"><span class="balance-icon flex size-9 shrink-0 items-center justify-center rounded-xl"><UIcon name="i-tabler-coins" class="size-5" aria-hidden="true" /></span><div><h2 class="text-sm font-semibold">{{ resetAllowanceSupported ? 'Topup & reset allowance' : 'Add credits' }}</h2><p class="mt-0.5 text-xs text-[var(--ui-text-muted)]">{{ resetAllowanceSupported ? 'Request credits and manage your period-limit resets.' : 'Top up your available balance.' }}</p></div></div></template>
+    <section class="balance-topup min-w-0" aria-labelledby="topup-title">
+      <h2 id="topup-title" class="text-lg font-semibold tracking-tight">Add credits</h2>
+      <p class="mt-2 mb-6 text-sm leading-relaxed text-[var(--ui-text-muted)]">{{ topupApprovalEnabled ? 'Enter an amount to request a topup. Credits are added after administrator approval.' : 'Enter the amount you want to add to your balance.' }}</p>
       <div class="min-w-0 space-y-3">
-        <h3 class="text-sm font-semibold">{{ topupApprovalEnabled ? 'Request topup' : 'Add credits' }}</h3>
+
         <form class="space-y-4" @submit.prevent="recharge">
           <UAlert v-if="pendingTopup" color="warning" variant="subtle" icon="i-tabler-clock" title="Topup awaiting approval" :description="`Your request for ${formatCredits(pendingTopup.amount)} credits is waiting for administrator approval. Your balance has not changed. You cannot request another topup while this request is pending.`" />
 
           <UAlert v-if="rechargeError" color="error" variant="subtle" title="Recharge failed" :description="rechargeError" />
+
           <UFormField label="Amount (credits)" required>
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <UInput v-model="amount" type="number" min="0" step="any" placeholder="100" class="min-w-0 flex-1" :disabled="saving || loading || !requestStateLoaded || !!pendingTopup" required />
-              <AppButton type="submit" icon="i-tabler-plus" class="shrink-0" :loading="saving" :disabled="!validAmount || !token || loading || !requestStateLoaded || !!pendingTopup">{{ topupApprovalEnabled ? 'Request topup' : 'Topup' }} {{ validAmount ? formatCredits(Number(amount)) : '' }}</AppButton>
+            <div class="flex flex-col gap-4">
+              <UInput v-model="amount" type="number" min="0" step="any" placeholder="Enter credit amount" size="xl" class="w-full" :disabled="saving || loading || !requestStateLoaded || !!pendingTopup" required />
+              <AppButton type="submit" icon="i-tabler-plus" size="lg" class="justify-center rounded-full" :loading="saving" :disabled="!validAmount || !token || loading || !requestStateLoaded || !!pendingTopup">{{ topupApprovalEnabled ? 'Request topup' : 'Topup' }} {{ validAmount ? formatCredits(Number(amount)) : '' }}</AppButton>
             </div>
           </UFormField>
           <AppButton v-if="pendingTopup || !requestStateLoaded" type="button" color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" :disabled="saving" @click="refresh">Refresh status</AppButton>
         </form>
       </div>
-      <section v-if="resetAllowanceSupported" class="min-w-0 space-y-3 border-t border-[var(--ui-border)] pt-5 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-5" aria-labelledby="reset-allowance-title" :aria-busy="resetLoading">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <div><h3 id="reset-allowance-title" class="flex items-center gap-2 text-sm font-semibold"><UIcon name="i-tabler-refresh" class="size-4 text-[var(--ui-primary)]" aria-hidden="true" /> Reset Available: {{ resetLoading ? '…' : resetLoadError ? '—' : resetAllowance?.available ?? '—' }}</h3>
-            <p v-if="resetAllowance && !resetLoadError" class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ resetAllowance.mode === 'monthly' ? `${resetAllowance.amount} resets per month · Unused resets do not carry over.` : resetAllowance.mode === 'one_time' ? 'One-time reset allowance.' : 'No reset allowance has been granted.' }}</p>
-            <p v-if="!resetLoadError && (resetAllowance?.renews_at || resetAllowance?.expires_at)" class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ resetAllowance?.mode === 'monthly' ? 'Renews' : 'Expires' }} {{ formatDate(resetAllowance?.renews_at || resetAllowance?.expires_at || '') }}</p>
-          </div>
-          <AppButton v-if="!resetLoading && !resetLoadError && resetAllowance && resetAllowance.available > 0" icon="i-tabler-refresh" :disabled="resetPending || !enabledPeriodWindows.length" @click="resetError = ''; resetConfirmOpen = true">Reset limits</AppButton>
-        </div>
-        <p class="text-xs text-[var(--ui-text-muted)]">Reset all enabled period limits at once. Credits and usage history stay unchanged.</p>
-        <p v-if="!resetLoading && !resetLoadError && periodLimits && !enabledPeriodWindows.length" class="text-xs text-[var(--ui-text-muted)]">There are no enabled period limits to reset.</p>
-        <UAlert v-if="resetLoadError" color="error" variant="subtle" title="Reset allowance could not be loaded" :description="resetLoadError" />
-        <AppButton v-if="resetLoadError" size="sm" color="neutral" variant="outline" :loading="resetLoading" @click="loadResetLimits">Retry</AppButton>
-      </section>
-    </AppCard>
-    <AppModal v-model:open="resetConfirmOpen" title="Reset all enabled period limits?" :dismissible="!resetPending">
-      <template #body><div class="space-y-4"><p class="text-sm">This uses one reset to clear usage for every enabled period window on your account. Your configured limits, credits, and usage history will not change.</p><UAlert v-if="resetError" color="error" variant="subtle" :description="resetError" /><div class="flex justify-end gap-2"><AppButton color="neutral" variant="outline" :disabled="resetPending" @click="resetConfirmOpen = false">Cancel</AppButton><AppButton :loading="resetPending" :disabled="resetPending" @click="useResetAllowance">Use Reset</AppButton></div></div></template>
-    </AppModal>
+    </section>
+    </div>
     <AppUserWorkspace section="billing" class="min-w-0">
       <template #balance-history>
       <AppCard class="balance-panel flex min-w-0 flex-col overflow-hidden" :ui="{ header: 'min-h-24', body: 'flex-1 p-0' }">
@@ -83,47 +71,6 @@ import type { BillingBalanceRecord, BillingOverview, BillingRechargeRequest } fr
 definePageMeta({ layout: 'app' })
 const { currentUser, token, hydrateSession, fetchAPI, loadCurrentUser, capabilities, loadCapabilities } = useUserApi()
 const topupApprovalEnabled = computed(() => capabilities.value.topup_approval === true)
-const resetAllowanceSupported = computed(() => capabilities.value.user_reset_allowance === true)
-type ResetAllowanceStatus = { mode: string; amount: number; available: number; expires_at: string | null; renews_at: string | null }
-type PeriodLimitsStatus = { windows?: { id: string; enabled: boolean; limit: number | null }[]; reset_allowance?: ResetAllowanceStatus }
-const periodLimits = useWorkspaceState<PeriodLimitsStatus | null>('user:balance:period-limits', () => null)
-const resetAllowance = computed(() => periodLimits.value?.reset_allowance)
-const enabledPeriodWindows = computed(() => (periodLimits.value?.windows || []).filter(window => window.enabled && window.limit != null))
-const resetLoading = ref(false)
-const resetLoadError = ref('')
-const resetConfirmOpen = ref(false)
-const resetPending = ref(false)
-const resetError = ref('')
-const resetController = new AbortController()
-onScopeDispose(() => resetController.abort())
-async function loadResetLimits() {
-  if (!resetAllowanceSupported.value || resetController.signal.aborted) return
-  resetLoading.value = true
-  resetLoadError.value = ''
-  try {
-    const response = await fetchAPI<PeriodLimitsStatus>('/period-limits', { signal: resetController.signal })
-    if (!response.reset_allowance) throw new Error('The server did not return reset allowance information. Update Home and refresh this page.')
-    if (!resetController.signal.aborted) periodLimits.value = response
-  } catch (cause: any) {
-    if (!resetController.signal.aborted) resetLoadError.value = cause?.message || 'Unable to load reset allowance.'
-  } finally { resetLoading.value = false }
-}
-async function useResetAllowance() {
-  if (resetPending.value || !resetAllowanceSupported.value) return
-  resetPending.value = true
-  resetError.value = ''
-  try {
-    const response = await fetchAPI<{ limits: PeriodLimitsStatus }>('/period-limits/reset', { method: 'POST', signal: resetController.signal })
-    if (resetController.signal.aborted) return
-    periodLimits.value = response.limits
-    resetConfirmOpen.value = false
-    toast.add({ title: 'All enabled period limits reset.', description: 'One reset has been used. Your credits are unchanged.', color: 'success' })
-  } catch (cause: any) {
-    if (resetController.signal.aborted) return
-    resetError.value = cause?.message || 'Unable to reset period limits.'
-    await loadResetLimits()
-  } finally { resetPending.value = false }
-}
 const requestStateLoaded = useWorkspaceState('user:balance:request-state-loaded', () => false)
 const pendingTopup = useWorkspaceState<BillingRechargeRequest | null>('user:balance:pending-topup', () => null)
 const loading = useWorkspaceState('user:balance:loading', () => false)
@@ -180,7 +127,7 @@ async function refresh() {
   pageError.value = ''
   try {
     const results = await Promise.allSettled([
-      loadTopupRequest().then(loadResetLimits),
+      loadTopupRequest(),
       fetchAPI<{ overview: BillingOverview }>('/billing/overview').then(response => { overview.value = response.overview }),
       loadCurrentUser(), loadRecords()
     ])
@@ -249,22 +196,37 @@ onMounted(() => { hydrateSession(); void refresh() })
 </script>
 
 <style scoped>
-.balance-workspace .balance-hero {
-  border-color: color-mix(in oklch, var(--ui-success) 18%, var(--ui-border));
-  background: radial-gradient(ellipse at 0% 0%, color-mix(in oklch, var(--ui-success) 10%, transparent), transparent 70%), var(--ui-bg);
-  box-shadow: 0 6px 24px color-mix(in oklch, var(--ui-success) 4%, transparent);
+.balance-workspace { max-width: 76rem; margin-inline: auto; }
+.balance-wallet-grid { display: grid; gap: 1.5rem; }
+.balance-hero {
+  padding: 1.5rem;
+  border-radius: 1.25rem;
+  background: radial-gradient(ellipse at 0% 0%, color-mix(in oklch, var(--ui-success) 14%, transparent), transparent 75%), var(--ui-bg);
 }
-
-.balance-workspace .balance-summary {
-  border-color: color-mix(in oklch, var(--ui-success) 16%, var(--ui-border));
-  background: color-mix(in oklch, var(--ui-bg) 85%, transparent);
+.balance-totals { display: flex; flex-wrap: wrap; align-items: center; gap: 1.25rem 2rem; margin-top: 1.25rem; }
+.balance-summary:first-child dt { display: none; }
+.balance-summary:first-child dd:first-of-type { margin-top: 0; font-size: clamp(2.5rem, 4vw, 3rem); line-height: 1.15; letter-spacing: -0.05em; }
+.balance-summary:first-child dd:first-of-type span { margin-left: 0.5rem; font-size: 0.875rem; }
+.balance-summary + .balance-summary { padding-left: 1.25rem; border-left: 1px solid var(--ui-border); }
+.balance-summary + .balance-summary dd:first-of-type { margin-top: 0.5rem; font-size: 1.5rem; }
+.balance-summary + .balance-summary dd:last-child { display: none; }
+.balance-topup {
+  padding: 1.5rem;
+  border: 1px solid color-mix(in oklch, var(--ui-border) 50%, transparent);
+  border-radius: 1.25rem;
+  background: var(--ui-bg);
+}
+.balance-topup > p { margin-bottom: 1rem; }
+.balance-topup form > * + * { margin-top: 0.75rem; }
+@media (min-width: 768px) {
+  .balance-wallet-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: stretch; }
 }
 
 .balance-workspace .balance-panel {
   border-radius: 1.25rem;
-  border-color: color-mix(in oklch, var(--ui-border) 75%, transparent);
+  border-color: color-mix(in oklch, var(--ui-border) 50%, transparent);
   background: var(--ui-bg);
-  box-shadow: 0 4px 20px color-mix(in oklch, var(--ui-text-highlighted) 4%, transparent);
+  box-shadow: none;
 }
 
 .balance-workspace .balance-icon {
