@@ -1,8 +1,20 @@
 <template>
-  <USlideover v-model:open="open" side="right" title="Import model prices" description="Preview models.dev matches, review write fields, and manually confirm the import." :dismissible="!applying" :close="applying ? false : { 'aria-label': 'Close price import' }" :ui="{ content: 'w-full sm:max-w-4xl', body: 'min-h-0 overflow-y-auto', footer: 'shrink-0 bg-[var(--ui-bg)]' }">
+  <USlideover v-model:open="open" side="right" title="Import model prices" description="Preview models.dev matches, review write fields, and manually confirm the import." :dismissible="!applying" :close="!applying" :ui="{ content: 'w-full sm:max-w-4xl', body: 'min-h-0 overflow-y-auto', footer: 'shrink-0 bg-[var(--ui-bg)]' }">
     <template #body>
     <div class="space-y-5">
       <UAlert v-if="error" color="error" variant="subtle" :description="error" />
+      <UAlert v-if="recoveryError" color="warning" variant="subtle" title="Applying prices is disabled" :description="recoveryError" />
+      <UAlert v-else-if="applySupportError" color="warning" variant="subtle" title="New applies are unavailable" :description="applySupportError" />
+      <AppButton v-if="recoveryError && storageKey" color="error" variant="outline" :disabled="busy" @click="discardPendingOpen = true">Discard unreadable recovery request…</AppButton>
+      <section v-if="pendingApply" class="space-y-3 rounded-lg border border-[var(--ui-border)] p-4" aria-labelledby="pending-import-title">
+        <h3 id="pending-import-title" class="text-sm font-semibold">Saved apply request · outcome uncertain</h3>
+        <p class="text-sm">This request may already have been applied. Retry sends the exact saved selection and idempotency key, even after preview expiry, to recover the original result without duplicate writes. New previews and applies are blocked until this is resolved.</p>
+        <p class="break-all text-xs text-[var(--ui-text-muted)]">Saved {{ new Date(pendingApply.createdAt).toLocaleString() }} · {{ pendingApply.input.selected_keys.length }} rule(s) · Preview {{ pendingApply.input.preview_id }}</p>
+        <div class="flex flex-col gap-2 sm:flex-row">
+          <AppButton :loading="applying" :disabled="busy || !recoveryReady" @click="retryPendingApply">Retry saved request</AppButton>
+          <AppButton color="error" variant="outline" :disabled="busy" @click="discardPendingOpen = true">Discard recovery request…</AppButton>
+        </div>
+      </section>
       <UAlert v-if="importUnavailable" color="warning" variant="subtle" title="Catalog import unavailable" description="This Home instance does not expose the models.dev preview endpoint. Manual model-price editing remains available." />
       <section class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] p-4" aria-labelledby="import-context-title">
         <div class="flex flex-wrap items-center justify-between gap-2">
@@ -98,7 +110,7 @@
           <div><h3 id="import-preview-title" class="text-sm font-semibold">Preview results</h3><p class="text-xs text-[var(--ui-text-muted)]">Review exact write fields before confirming. Changes to targets or policy require a new preview.</p></div>
           <div class="flex flex-wrap gap-2">
             <AppButton size="sm" color="neutral" variant="outline" icon="i-tabler-download" :disabled="!preview || busy" @click="exportPreview">Export preview</AppButton>
-            <AppButton size="sm" color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" :disabled="busy || importUnavailable || !!validationError" @click="previewPrices(targetSet === 'synced')">{{ preview ? 'Refresh preview' : 'Generate preview' }}</AppButton>
+            <AppButton size="sm" color="neutral" variant="outline" icon="i-tabler-refresh" :loading="loading" :disabled="busy || !!pendingApply || importUnavailable || !!validationError" @click="previewPrices(targetSet === 'synced')">{{ preview ? 'Refresh preview' : 'Generate preview' }}</AppButton>
           </div>
         </div>
       <template v-if="preview">
@@ -136,6 +148,7 @@
       <p v-else class="rounded-lg border border-dashed border-[var(--ui-border)] p-6 text-center text-sm text-[var(--ui-text-muted)]">{{ loading ? 'Fetching and matching catalog prices…' : 'Generate a preview to review matches and price rules. Nothing is written until you confirm.' }}</p>
       </section>
       <UAlert v-if="operation" :color="operation.status === 'applied' ? 'success' : 'warning'" variant="subtle" :title="`Import ${operation.status}`" :description="`Operation ${operation.operation_id} · ${operation.rows?.length || 0} row(s) · ${operation.atomic ? 'Atomic' : 'Non-atomic'} · Applied ${operation.applied_at ? new Date(operation.applied_at).toLocaleString() : 'unknown'}`" />
+      <AppButton v-if="failedRows.length" color="neutral" variant="outline" :disabled="busy || !!pendingApply" @click="retryFailedRows">Preview failed/conflicting rows ({{ failedRows.length }})</AppButton>
       <pre v-if="operation?.summary" class="overflow-auto rounded-lg bg-[var(--ui-bg-muted)] p-3 text-xs">{{ JSON.stringify(operation.summary, null, 2) }}</pre>
       <div v-if="operation?.rows?.length" class="max-h-56 space-y-2 overflow-y-auto"><div v-for="result in operation.rows" :key="result.key" class="rounded-lg border border-[var(--ui-border)] p-3 text-xs"><strong>{{ result.key }}</strong><span> · {{ result.status || result.action }}</span><span v-if="result.resource_id" class="block font-mono text-[var(--ui-text-muted)]">{{ result.resource_id }}</span><span v-if="result.error_code || result.error_message" class="block text-[var(--ui-error)]">{{ result.error_code }} {{ result.error_message }}</span></div></div>
     </div>
@@ -147,16 +160,24 @@
           <p class="text-xs text-[var(--ui-text-muted)]">{{ selected.length }} rules selected · Future charges only</p>
           <div class="flex gap-2">
             <AppButton color="neutral" variant="outline" :disabled="applying" @click="open = false">Cancel</AppButton>
-            <AppButton :loading="applying" :disabled="busy || !preview || !selected.length || (requiresOverwrite && !confirmOverwrite)" @click="applyPrices">Confirm apply ({{ selected.length }})</AppButton>
+            <AppButton :loading="applying" :disabled="busy || !recoveryReady || !!applySupportError || !!pendingApply || !preview || !selected.length || (requiresOverwrite && !confirmOverwrite)" @click="applyPrices">Confirm apply ({{ selected.length }})</AppButton>
           </div>
         </div>
       </div>
     </template>
   </USlideover>
+  <UModal v-model:open="discardPendingOpen" title="Discard saved import request?" description="Discarding does not cancel or undo an import that Home may already have applied. Retry the saved request first when possible. A new import must use a fresh preview.">
+    <template #footer>
+      <div class="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
+        <AppButton color="neutral" variant="outline" @click="discardPendingOpen = false">Keep recovery request</AppButton>
+        <AppButton color="error" :disabled="busy" @click="discardPendingApply">Discard recovery request</AppButton>
+      </div>
+    </template>
+  </UModal>
 </template>
 
 <script setup lang="ts">
-import { useWorkspaceState } from '~/composables/useWorkspaceState'
+import { billingImportApplySupportError, createBillingImportIdempotencyKey, billingImportStorageKey, isDefinitiveBillingImportFailure, readBillingImportPending, validateBillingImportResult, writeBillingImportPending, type BillingImportPendingApply } from '~/composables/billingImport'
 type ImportTarget = { provider: string; model: string }
 const props = defineProps<{ providers: string[]; models: string[]; candidates: ImportTarget[]; availableTargets: ImportTarget[]; priceRules: { provider: string; model: string; source: string }[]; serviceTierSource: string }>()
 const open = ref(false)
@@ -189,7 +210,16 @@ const importUnavailable = ref(false)
 const checkingUpdates = ref(false)
 const syncTargets = computed(() => [...new Map(props.priceRules.filter(rule => rule.source === 'sync').map(rule => [`${rule.provider.toLowerCase()}::${rule.model}`, { provider: rule.provider, model: rule.model }])).values()])
 const emit = defineEmits<{ applied: [] }>()
-const { fetchAPI } = useApi()
+const { fetchAPI, apiBase, token } = useApi()
+const runtimeConfig = useRuntimeConfig()
+const effectiveToken = computed(() => String(token.value || runtimeConfig.public.secretKey || '').trim())
+const applySupportError = billingImportApplySupportError()
+const recoveryReady = ref(false)
+const recoveryError = ref('')
+const pendingApply = ref<BillingImportPendingApply | null>(null)
+const discardPendingOpen = ref(false)
+let storageKey = ''
+let sessionVersion = 0
 const emptyTarget = () => ({ provider: '', model: '' })
 const targets = reactive([emptyTarget()])
 const overwriteMode = ref('missing')
@@ -199,18 +229,32 @@ const aliases = reactive<{ target_model: string; source_models: string }[]>([])
 const multiplierRules = reactive<{ id: string; label: string; match_mode: string; pattern: string; multiplier: number }[]>([])
 const rowMultipliers = reactive<{ row_key: string; multiplier: number }[]>([])
 const matchOverrides = reactive<{ target_provider: string; target_model: string; source_provider: string; source_model: string }[]>([])
-const loading = useWorkspaceState('admin:billing-price-import:loading', () => (false))
-const applying = useWorkspaceState('admin:billing-price-import:applying', () => (false))
-const error = useWorkspaceState('admin:billing-price-import:error', () => (''))
-const preview = useWorkspaceState<any>('admin:billing-price-import:preview', () => (null))
-const operation = useWorkspaceState<any>('admin:billing-price-import:operation', () => (null))
+const loading = ref(false)
+const applying = ref(false)
+const error = ref('')
+const preview = ref<any>(null)
+const operation = ref<any>(null)
 const operationId = ref('')
 const operationLoading = ref(false)
 const operationError = ref('')
 let operationController: AbortController | null = null
 let previewController: AbortController | null = null
+let applyController: AbortController | null = null
 let disposed = false
-onScopeDispose(() => { disposed = true; operationController?.abort(); previewController?.abort() })
+function preventUnload(event: BeforeUnloadEvent) {
+  if (!applying.value) return
+  event.preventDefault()
+  event.returnValue = ''
+}
+onMounted(() => window.addEventListener('beforeunload', preventUnload))
+onScopeDispose(() => {
+  disposed = true
+  sessionVersion++
+  operationController?.abort()
+  previewController?.abort()
+  applyController?.abort()
+  window.removeEventListener('beforeunload', preventUnload)
+})
 const busy = computed(() => loading.value || applying.value || operationLoading.value)
 const automaticTargets = computed(() => {
   const candidates = targetSet.value === 'synced' ? syncTargets.value : targetSet.value === 'all' ? props.candidates : props.availableTargets
@@ -220,7 +264,7 @@ function openImport() {
   open.value = true
 }
 async function checkUpdates() {
-  if (busy.value || importUnavailable.value || !syncTargets.value.length) return
+  if (busy.value || pendingApply.value || importUnavailable.value || !syncTargets.value.length) return
   open.value = true
   providerFilter.value = '__all_providers__'
   targetSet.value = 'synced'
@@ -264,21 +308,23 @@ async function lookupOperation() {
   operationError.value = ''
   operation.value = null
   const controller = new AbortController()
+  const session = sessionVersion
   operationController = controller
   try {
     const result = await fetchAPI(`/billing/model-prices/import/operations/${encodeURIComponent(id)}`, { method: 'GET', signal: controller.signal })
-    if (!controller.signal.aborted) operation.value = result
+    if (!disposed && session === sessionVersion && !controller.signal.aborted) operation.value = result
   } catch (cause: any) {
-    if (!controller.signal.aborted) operationError.value = cause?.data?.message || cause?.data?.error || cause?.message || 'Unable to load the stored import operation.'
+    if (!disposed && session === sessionVersion && !controller.signal.aborted) operationError.value = cause?.message || 'Unable to load the stored import operation.'
   } finally {
-    operationLoading.value = false
-    operationController = null
+    if (!disposed && session === sessionVersion && operationController === controller) {
+      operationLoading.value = false
+      operationController = null
+    }
   }
 }
 const selected = ref<string[]>([])
 const confirmOverwrite = ref(false)
 let inputVersion = 0
-let applyRequest: { preview_id: string; preview_revision: string; selected_keys: string[]; confirm_overwrite: boolean; idempotency_key: string } | null = null
 function invalidatePreview() {
   inputVersion++
   previewController?.abort()
@@ -287,10 +333,36 @@ function invalidatePreview() {
   preview.value = null
   selected.value = []
   confirmOverwrite.value = false
-  applyRequest = null
 }
 watch([source, targets, overwriteMode, defaultMultiplier, includeZeroCost, aliases, multiplierRules, rowMultipliers, matchOverrides], invalidatePreview, { deep: true, flush: 'sync' })
-watch([selected, confirmOverwrite], () => { applyRequest = null }, { deep: true, flush: 'sync' })
+watch(effectiveToken, async () => {
+  const session = ++sessionVersion
+  operationController?.abort()
+  applyController?.abort()
+  invalidatePreview()
+  loading.value = false
+  applying.value = false
+  operationLoading.value = false
+  operation.value = null
+  operationId.value = ''
+  operationError.value = ''
+  importUnavailable.value = false
+  pendingApply.value = null
+  discardPendingOpen.value = false
+  recoveryReady.value = false
+  recoveryError.value = ''
+  storageKey = ''
+  if (!effectiveToken.value || !import.meta.client) return
+  try {
+    const key = await billingImportStorageKey(new URL(apiBase, window.location.origin).href, effectiveToken.value)
+    if (disposed || session !== sessionVersion) return
+    storageKey = key
+    pendingApply.value = readBillingImportPending(window.sessionStorage, key)
+    recoveryReady.value = true
+  } catch (cause: any) {
+    if (!disposed && session === sessionVersion) recoveryError.value = `${cause?.message || 'Import recovery storage is unavailable.'} No apply request will be sent. Previews and update checks remain available. If storage is blocked, enable session storage and reload this UI.`
+  }
+}, { immediate: true, flush: 'sync' })
 watch([targetSet, automaticTargets], () => {
   if (targetSet.value === 'manual') {
     if (advancedDetails.value) advancedDetails.value.open = true
@@ -316,14 +388,15 @@ const validationError = computed(() => {
   return ''
 })
 const requiresOverwrite = computed(() => (preview.value?.rows || []).some((row: any) => selected.value.includes(row.row_key) && row.action === 'overwrite'))
-async function previewPrices(updates = false) {
-  if (busy.value || importUnavailable.value) return
+async function previewPrices(updates = false, preferredSelection?: string[]) {
+  if (busy.value || pendingApply.value || importUnavailable.value) return
   loading.value = true
   error.value = ''
   invalidatePreview()
   checkingUpdates.value = updates
   operation.value = null
   const version = inputVersion
+  const session = sessionVersion
   const controller = new AbortController()
   previewController = controller
   try {
@@ -345,38 +418,113 @@ async function previewPrices(updates = false) {
         match_overrides: matchOverrides.map(item => ({ target_provider: item.target_provider.trim(), target_model: item.target_model.trim(), source_provider: item.source_provider.trim(), source_model: item.source_model.trim() }))
       }
     })
-    if (disposed || controller.signal.aborted || version !== inputVersion) return
+    if (disposed || session !== sessionVersion || controller.signal.aborted || version !== inputVersion) return
     preview.value = result
-    selected.value = (result.rows || []).filter(selectable).map((row: any) => row.row_key)
+    selected.value = (result.rows || []).filter((row: any) => selectable(row) && (!preferredSelection || preferredSelection.includes(row.row_key))).map((row: any) => row.row_key)
     confirmOverwrite.value = false
   } catch (cause: any) {
-    if (!disposed && !controller.signal.aborted && version === inputVersion) {
+    if (!disposed && session === sessionVersion && !controller.signal.aborted && version === inputVersion) {
       if ([404, 405, 501].includes(cause?.statusCode)) importUnavailable.value = true
       else error.value = cause?.message || 'Unable to preview model prices.'
     }
-  } finally { loading.value = false; previewController = null }
+  } finally {
+    if (!disposed && session === sessionVersion && previewController === controller) {
+      loading.value = false
+      previewController = null
+    }
+  }
 }
 async function applyPrices() {
-  if (!preview.value || !selected.value.length || busy.value) return
+  if (!preview.value || !selected.value.length || busy.value || pendingApply.value || (requiresOverwrite.value && !confirmOverwrite.value)) return
+  if (!recoveryReady.value || applySupportError) {
+    error.value = recoveryError.value || applySupportError || 'Import recovery is still initializing. Wait before applying prices.'
+    return
+  }
+  try {
+    const pending: BillingImportPendingApply = {
+      version: 1,
+      createdAt: new Date().toISOString(),
+      input: {
+        preview_id: preview.value.preview_id,
+        preview_revision: preview.value.preview_revision,
+        selected_keys: [...selected.value],
+        confirm_overwrite: confirmOverwrite.value,
+        idempotency_key: createBillingImportIdempotencyKey()
+      }
+    }
+    writeBillingImportPending(window.sessionStorage, storageKey, pending)
+    pendingApply.value = pending
+  } catch (cause: any) {
+    error.value = cause?.message || 'Unable to save the recovery request. Nothing was sent; enable session storage before applying.'
+    return
+  }
+  await retryPendingApply()
+}
+async function retryPendingApply() {
+  if (busy.value || !recoveryReady.value || !pendingApply.value) return
+  const pending = pendingApply.value
+  const session = sessionVersion
+  const controller = new AbortController()
+  applyController = controller
   applying.value = true
   error.value = ''
   try {
-    applyRequest ||= {
-      preview_id: preview.value.preview_id,
-      preview_revision: preview.value.preview_revision,
-      selected_keys: [...selected.value],
-      confirm_overwrite: confirmOverwrite.value,
-      idempotency_key: crypto.randomUUID()
-    }
-    const version = inputVersion
-    const result = await fetchAPI('/billing/model-prices/import/apply', { method: 'POST', body: applyRequest })
+    // Persist again before a retry, and never rebuild this body from editable controls.
+    writeBillingImportPending(window.sessionStorage, storageKey, pending)
+    const result = await fetchAPI('/billing/model-prices/import/apply', { method: 'POST', body: pending.input, signal: controller.signal })
+    if (disposed || session !== sessionVersion || controller.signal.aborted) return
+    validateBillingImportResult(result, pending.input)
     operation.value = result
+    writeBillingImportPending(window.sessionStorage, storageKey, null)
+    pendingApply.value = null
+    invalidatePreview()
     emit('applied')
-    if (version === inputVersion) {
-      preview.value = null
-      selected.value = []
+  } catch (cause: any) {
+    if (disposed || session !== sessionVersion || controller.signal.aborted) return
+    if (isDefinitiveBillingImportFailure(cause)) {
+      try {
+        writeBillingImportPending(window.sessionStorage, storageKey, null)
+        pendingApply.value = null
+        invalidatePreview()
+      } catch {
+        error.value = 'Unable to clear the saved recovery request. It has been retained.'
+        return
+      }
     }
-  } catch (cause: any) { error.value = cause?.message || 'Unable to apply model prices.' }
-  finally { applying.value = false }
+    error.value = cause?.message || 'Apply outcome is uncertain. Retry the saved request to recover the original result.'
+  } finally {
+    if (!disposed && session === sessionVersion && applyController === controller) {
+      applying.value = false
+      applyController = null
+    }
+  }
+}
+function discardPendingApply() {
+  if (busy.value || !storageKey) return
+  try {
+    writeBillingImportPending(window.sessionStorage, storageKey, null)
+    pendingApply.value = null
+    discardPendingOpen.value = false
+    recoveryError.value = ''
+    recoveryReady.value = true
+    invalidatePreview()
+  } catch {
+    error.value = 'Unable to remove the saved recovery request.'
+  }
+}
+const failedRows = computed<any[]>(() => (operation.value?.rows || []).filter((row: any) => ['failed', 'conflict'].includes(row.status)))
+async function retryFailedRows() {
+  if (busy.value || pendingApply.value || !failedRows.value.length) return
+  const rows = [...failedRows.value]
+  const retryTargets = rows.map(row => ({ provider: row.provider, model: row.model }))
+  if (retryTargets.some(target => typeof target.provider !== 'string' || !target.provider.trim() || typeof target.model !== 'string' || !target.model.trim())) {
+    error.value = 'The stored result has no valid target identities. Choose targets and generate a fresh preview manually.'
+    return
+  }
+  targetSet.value = 'manual'
+  const existingTargets = targets.filter(target => target.provider.trim() && target.model.trim())
+  targets.splice(0, targets.length, ...new Map([...existingTargets, ...retryTargets].map(target => [`${target.provider.toLowerCase()}::${target.model}`, target])).values())
+  // Preserve policy, but select only failed/conflicting exact row keys in the new preview.
+  await previewPrices(false, rows.map(row => row.key))
 }
 </script>

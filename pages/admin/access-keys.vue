@@ -56,11 +56,10 @@
           /></UFormField>
         </div>
       </template>
-      <template #actions
-        ><AppButton icon="i-tabler-plus" @click="openCreate"
-          >New access key</AppButton
-        ></template
-      >
+      <template #actions>
+        <AccessKeyReplaceList @replaced="handleListReplaced" />
+        <AppButton icon="i-tabler-plus" @click="openCreate">New access key</AppButton>
+      </template>
 
       <template v-if="selectedIDs.size" #bulk>
         <div
@@ -209,28 +208,12 @@
           >
         </template>
 
-        <template #actions-cell="{ row }"
-          ><div class="flex justify-end gap-1">
-            <AdminTableAction
-              action="view"
-              label="View access key"
-              @click="openDetail(rowValue(row))"
-            /><AdminTableAction
-              action="edit"
-              label="Edit access key"
-              @click="openEdit(rowValue(row))"
-            /><AdminTableAction
-              v-if="rowValue(row).identifier"
-              action="copy"
-              label="Copy identifier"
-              @click="copyText(rowValue(row).identifier, 'Identifier copied.')"
-            /><AdminTableAction
-              action="delete"
-              label="Delete access key"
-              destructive
-              @click="openDelete(rowValue(row))"
-            /></div
-        ></template>
+        <template #actions-cell="{ row }">
+          <AdminRowActions
+            :actions="rowActions(rowValue(row))"
+            :menu-label="`access key ${resourceSummary(rowValue(row))}`"
+          />
+        </template>
 
         <template #empty>
           <div
@@ -308,6 +291,55 @@
           >
             Generate key
           </AppButton>
+
+          <UFormField
+            v-if="supports('users', true)"
+            label="Owner"
+            :hint="ownerUnavailable ? 'The current owner is unavailable. Leave it unchanged to preserve the binding, or explicitly reassign or unassign it.' : undefined"
+          >
+            <USelect
+              :model-value="form.userId == null ? 'unassigned' : String(form.userId)"
+              :items="ownerOptions"
+              class="w-full"
+              :disabled="submitting"
+              @update:model-value="setFormOwner"
+            />
+          </UFormField>
+
+          <template v-if="supports('access_groups', true)">
+            <p v-if="supplementalError" role="status" class="text-sm text-[var(--ui-text-muted)]">
+              {{ supplementalError }} Existing bindings are preserved unless you change them.
+            </p>
+            <UFormField label="Credential scope" hint="No groups selected means unrestricted credential selection.">
+              <div class="grid gap-2">
+                <UCheckbox
+                  v-for="group in scopeOptions(channelGroups, form.channelGroupIds)"
+                  :key="group.id"
+                  :model-value="form.channelGroupIds.includes(group.id)"
+                  :label="group.label"
+                  :disabled="submitting"
+                  @update:model-value="toggleFormGroup('channelGroupIds', group.id, $event)"
+                />
+                <p v-if="!scopeOptions(channelGroups, form.channelGroupIds).length" class="text-sm text-[var(--ui-text-muted)]">No credential groups available.</p>
+              </div>
+            </UFormField>
+            <UFormField label="Model scope" hint="No groups selected means no model filtering. Model access is scoped to this key, not its owner.">
+              <div class="grid gap-2">
+                <UCheckbox
+                  v-for="group in scopeOptions(modelGroups, form.modelGroupIds)"
+                  :key="group.id"
+                  :model-value="form.modelGroupIds.includes(group.id)"
+                  :label="group.label"
+                  :disabled="submitting"
+                  @update:model-value="toggleFormGroup('modelGroupIds', group.id, $event)"
+                />
+                <p v-if="!scopeOptions(modelGroups, form.modelGroupIds).length" class="text-sm text-[var(--ui-text-muted)]">No model groups available.</p>
+              </div>
+            </UFormField>
+            <p class="text-xs text-[var(--ui-text-muted)]">
+              Model-specific credential groups intersect this key's credential scope. Disabled groups do not grant access. Deleting a group removes its bindings; removing the last binding makes that scope unrestricted.
+            </p>
+          </template>
 
           <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <AppButton
@@ -462,6 +494,7 @@
 </template>
 
 <script setup>
+import AccessKeyReplaceList from '~/components/admin/access-keys/ReplaceList.vue'
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
 import { useDataSync } from '~/composables/useDataSync'
 const { fetchAPI, fetchRaw } = useApi();
@@ -492,7 +525,20 @@ const formSecretVisible = ref(false);
 const submitting = useWorkspaceState('admin:access-keys:submitting', () => (false));
 const keyValueError = ref("");
 const displayNameError = ref("");
-const form = reactive({ value: "", displayName: "" });
+const form = reactive({ value: "", displayName: "", userId: null, channelGroupIds: [], modelGroupIds: [] });
+const supplementalError = useWorkspaceState('admin:access-keys:supplementalError', () => (""));
+const ownerOptions = computed(() => {
+  const options = [{ label: "Unassigned", value: "unassigned" }];
+  for (const user of users.value) {
+    if (!user.deletedAt || user.id === form.userId)
+      options.push({ label: `${user.name}${user.deletedAt ? ' (deleted)' : ''}`, value: String(user.id) });
+  }
+  if (form.userId != null && !users.value.some((user) => user.id === form.userId))
+    options.push({ label: `#${form.userId} (unavailable)`, value: String(form.userId) });
+  return options;
+});
+const ownerUnavailable = computed(() => form.userId != null &&
+  !users.value.some((user) => user.id === form.userId && !user.deletedAt));
 
 const confirmationOpen = ref(false);
 const confirmationType = ref(null);
@@ -678,6 +724,7 @@ function normalizeResource(raw, index) {
   const modelGroupValue = object
     ? (object.model_groups ?? object["model-groups"])
     : null;
+  const rawUserId = object ? firstNumber(object, ["user_id", "user-id"]) : null;
   return {
     id: numericId != null ? String(numericId) : `${index}:${value}`,
     index,
@@ -693,7 +740,7 @@ function normalizeResource(raw, index) {
     prefix: value.slice(0, 6),
     suffix: value.slice(-4),
     length: value.length,
-    userId: object ? firstNumber(object, ["user_id", "user-id"]) : null,
+    userId: rawUserId > 0 ? rawUserId : null,
     channelGroupIds: numericArray(object?.channels),
     modelGroupIds: numericArray(modelGroupValue),
     raw,
@@ -728,6 +775,7 @@ function normalizeUsers(payload) {
       if (id == null) return null;
       return {
         id,
+        deletedAt: item.deleted_at ?? null,
         name:
           firstString(item, [
             "username",
@@ -747,11 +795,12 @@ function normalizeGroups(payload, kind) {
       ? ["channel_name", "name", "label"]
       : ["group_name", "name", "label"];
   const fallbackPrefix = kind === "channel" ? "channel-group" : "model-group";
-  return topLevelArray(payload, [topLevelKey, "items"]).map((item, index) => {
+  return topLevelArray(payload, [topLevelKey, "items"]).filter((item) => !item?.deleted_at).map((item, index) => {
     const object = isPlainObject(item) ? item : {};
     const id = firstNumber(object, ["id"]) ?? index + 1;
     return {
       id,
+      disabled: Boolean(object.disabled),
       name:
         firstString(object, nameKeys)?.trim() ||
         `${fallbackPrefix}-${index + 1}`,
@@ -779,11 +828,13 @@ async function supplementalRequest(path) {
   try {
     return await fetchAPI(path);
   } catch {
+    supplementalError.value = "Some owner or group metadata could not be loaded.";
     return null;
   }
 }
 
 async function loadSupplemental() {
+  supplementalError.value = "";
   const tasks = [];
   let usersIndex = -1;
   let channelGroupsIndex = -1;
@@ -797,10 +848,10 @@ async function loadSupplemental() {
   if (supports("access_groups", true)) {
     channelGroupsIndex = tasks.length;
     tasks.push(supplementalRequest("/channel-groups"));
-    tasks.push(supplementalRequest("/channel-group-details"));
+
     modelGroupsIndex = tasks.length;
     tasks.push(supplementalRequest("/model-groups"));
-    tasks.push(supplementalRequest("/model-group-details"));
+
   }
 
   const results = await Promise.all(tasks);
@@ -848,6 +899,9 @@ function openCreate() {
   sheetMode.value = "create";
   form.value = "";
   form.displayName = "";
+  form.userId = null;
+  form.channelGroupIds = [];
+  form.modelGroupIds = [];
   resetFormState();
   detailOpen.value = true;
 }
@@ -864,6 +918,9 @@ function openEdit(resource) {
   sheetMode.value = "edit";
   form.value = resource.value;
   form.displayName = resource.displayName || "";
+  form.userId = resource.userId;
+  form.channelGroupIds = [...resource.channelGroupIds];
+  form.modelGroupIds = [...resource.modelGroupIds];
   resetFormState();
   detailOpen.value = true;
 }
@@ -905,6 +962,7 @@ function validateForm() {
 }
 
 async function submitKey() {
+  if (submitting.value) return;
   keyValueError.value = "";
   displayNameError.value = "";
   if (!validateForm()) return;
@@ -937,49 +995,27 @@ async function submitKey() {
   }
 }
 
+async function handleListReplaced() {
+  detailOpen.value = false;
+  selectedResource.value = null;
+  clearSelection();
+  await syncData();
+}
+
 async function createResource() {
-  const response = await fetchRaw("/access/api-keys");
-  const entries = selectAPIKeyEntries(response._data);
-  const existingResources = entries
-    .map(normalizeResource)
-    .filter((resource) => resource.value);
   const newResource = {
     value: form.value.trim(),
-    userId: 0,
-    channelGroupIds: [],
-    modelGroupIds: [],
+    userId: form.userId,
+    channelGroupIds: [...form.channelGroupIds],
+    modelGroupIds: [...form.modelGroupIds],
   };
   const newEntry = serializeEntry(
     newResource,
     supportsDisplayNames.value ? form.displayName : undefined,
   );
 
-  if (
-    existingResources.length === 0 ||
-    existingResources.every((resource) => resource.numericId != null)
-  ) {
-    try {
-      await fetchAPI("/access/api-keys", { method: "POST", body: newEntry });
-      return;
-    } catch (error) {
-      if (error?.statusCode !== 404 && error?.statusCode !== 405) throw error;
-    }
-  }
-
-  await fetchAPI("/access/api-keys", {
-    method: "PUT",
-    body: {
-      api_key_entries: [
-        ...existingResources.map((resource) =>
-          serializeEntry(
-            resource,
-            supportsDisplayNames.value ? resource.displayName || "" : undefined,
-          ),
-        ),
-        newEntry,
-      ],
-    },
-  });
+  // Creation must never silently become a whole-list replacement.
+  await fetchAPI("/access/api-keys", { method: "POST", body: newEntry });
 }
 
 async function updateResource(resource) {
@@ -989,7 +1025,14 @@ async function updateResource(resource) {
   const displayNameChanged =
     supportsDisplayNames.value &&
     nextDisplayName !== (resource.displayName || "");
-  if (!valueChanged && !displayNameChanged) return false;
+  // Omitted fields preserve stored bindings without revalidating a deleted owner
+  // or restoring group bindings removed since this form was opened.
+  const bindings = {
+    ...(form.userId === resource.userId ? {} : { user_id: form.userId ?? 0 }),
+    ...(sameGroupIds(form.channelGroupIds, resource.channelGroupIds) ? {} : { channels: [...form.channelGroupIds] }),
+    ...(sameGroupIds(form.modelGroupIds, resource.modelGroupIds) ? {} : { model_groups: [...form.modelGroupIds] }),
+  };
+  if (!valueChanged && !displayNameChanged && !Object.keys(bindings).length) return false;
 
   if (valueChanged) {
     await fetchAPI("/access/api-keys", {
@@ -1000,9 +1043,7 @@ async function updateResource(resource) {
           : { index: resource.index }),
         value: {
           api_key: nextValue,
-          user_id: resource.userId ?? 0,
-          channels: resource.channelGroupIds,
-          model_groups: resource.modelGroupIds,
+          ...bindings,
         },
         ...(displayNameChanged
           ? { display_name: nextDisplayName || null }
@@ -1016,7 +1057,8 @@ async function updateResource(resource) {
         ...(resource.numericId != null
           ? { id: resource.numericId }
           : { api_key: resource.value }),
-        display_name: nextDisplayName || null,
+        ...bindings,
+        ...(displayNameChanged ? { display_name: nextDisplayName || null } : {}),
       },
     });
   }
@@ -1105,34 +1147,34 @@ async function deleteSelected() {
 
 function rowActions(resource) {
   return [
-    [
-      {
-        label: "View",
-        icon: "i-tabler-eye",
-        onSelect: () => openDetail(resource),
-      },
-      {
-        label: "Edit",
-        icon: "i-tabler-pencil",
-        onSelect: () => openEdit(resource),
-      },
-      ...(resource.identifier
-        ? [
-            {
-              label: "Copy identifier",
-              icon: "i-tabler-clipboard",
-              onSelect: () =>
-                copyText(resource.identifier, "Identifier copied."),
-            },
-          ]
-        : []),
-      {
-        label: "Delete",
-        icon: "i-tabler-trash",
-        color: "error",
-        onSelect: () => openDelete(resource),
-      },
-    ],
+    {
+      id: "view",
+      label: "View",
+      ariaLabel: "View access key",
+      icon: "i-tabler-eye",
+      onSelect: () => openDetail(resource),
+    },
+    {
+      id: "edit",
+      label: "Edit",
+      ariaLabel: "Edit access key",
+      icon: "i-tabler-pencil",
+      onSelect: () => openEdit(resource),
+    },
+    resource.identifier && {
+      id: "copy",
+      label: "Copy identifier",
+      icon: "i-tabler-copy",
+      onSelect: () => copyText(resource.identifier, "Identifier copied."),
+    },
+    {
+      id: "delete",
+      label: "Delete",
+      ariaLabel: "Delete access key",
+      icon: "i-tabler-trash",
+      destructive: true,
+      onSelect: () => openDelete(resource),
+    },
   ];
 }
 
@@ -1186,6 +1228,38 @@ function resourceSummary(resource) {
   return resource.displayName
     ? `${resource.displayName} · ${identity}`
     : identity;
+}
+
+function setFormOwner(value) {
+  if (!value) return;
+  if (value === "unassigned") {
+    form.userId = null;
+    return;
+  }
+  const id = Number(value);
+  if (Number.isSafeInteger(id) && id > 0) form.userId = id;
+}
+
+function sameGroupIds(left, right) {
+  return left.length === right.length && left.every((id) => right.includes(id));
+}
+
+function scopeOptions(groups, selected) {
+  const options = groups.map((group) => ({
+    id: group.id,
+    label: `${group.name}${group.disabled ? ' (disabled)' : ''}`,
+  }));
+  for (const id of selected) {
+    if (!groups.some((group) => group.id === id))
+      options.push({ id, label: `#${id} (unavailable)` });
+  }
+  return options;
+}
+
+function toggleFormGroup(field, id, checked) {
+  form[field] = checked === true
+    ? [...new Set([...form[field], id])]
+    : form[field].filter((value) => value !== id);
 }
 
 function ownerName(resource) {

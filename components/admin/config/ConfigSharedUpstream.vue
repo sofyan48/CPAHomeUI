@@ -5,7 +5,7 @@
         <div>
           <h2 class="font-semibold text-[var(--ui-text-highlighted)]">{{ section.title }}</h2>
           <p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ section.description }}</p>
-          <p class="mt-1 text-xs text-[var(--ui-text-muted)]">Backend default removes the explicit setting. Configured empty strings and disabled booleans remain explicit values.</p>
+          <p class="mt-1 text-xs text-[var(--ui-text-muted)]">Backend default removes the explicit setting. Configured empty strings, zeroes, disabled booleans and empty objects remain explicit values.</p>
         </div>
       </template>
       <div class="divide-y divide-[var(--ui-border-muted)]">
@@ -34,16 +34,28 @@
               :disabled="loading"
               :aria-label="`${field.label} source`"
               class="w-full sm:w-48"
-              @update:model-value="updateField(field.key, $event === 'default' ? null : '')"
+              @update:model-value="updateField(field.key, $event === 'default' ? null : field.type === 'number' ? 0 : field.type === 'json' ? '{}' : '')"
             />
-            <UInput
-              v-if="draft[field.key] != null"
+            <UTextarea
+              v-if="field.type === 'json' && draft[field.key] != null"
               :model-value="String(draft[field.key])"
               :disabled="loading"
               :aria-label="field.label"
-              :placeholder="field.type === 'duration' ? '20s (empty means unlimited)' : 'Explicit value (may be empty)'"
-              class="min-w-0 flex-1"
+              :rows="8"
+              class="min-w-0 flex-1 font-mono text-xs"
+              spellcheck="false"
               @update:model-value="updateField(field.key, String($event ?? ''))"
+            />
+            <UInput
+              v-else-if="draft[field.key] != null"
+              :model-value="String(draft[field.key])"
+              :disabled="loading"
+              :aria-label="field.label"
+              :type="field.type === 'number' ? 'number' : 'text'"
+              :step="field.type === 'number' ? 1 : undefined"
+              :placeholder="field.placeholder || (field.type === 'duration' ? '20s (empty means unlimited)' : 'Explicit value (may be empty)')"
+              class="min-w-0 flex-1"
+              @update:model-value="updateField(field.key, field.type === 'number' && $event !== '' && $event != null ? Number($event) : String($event ?? ''))"
             />
           </div>
         </UFormField>
@@ -64,6 +76,7 @@ type SharedSection = {
     label: string
     description: string
     type: string
+    placeholder?: string
   }>
 }
 

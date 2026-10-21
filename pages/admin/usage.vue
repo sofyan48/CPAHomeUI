@@ -2,7 +2,11 @@
   <div class="space-y-6">
     <AppPanelTabs :model-value="activeView" :items="usageTabs" label="Usage & Requests" @update:model-value="setView" />
 
-    <AdminRequestRecords v-if="activeView === 'requests'" />
+    <template v-if="activeView === 'requests'">
+      <AdminUsageLegacyRecords v-if="legacyRecords" />
+      <AdminRequestRecords v-else-if="capabilitiesReady" />
+      <p v-else role="status" class="text-sm text-[var(--ui-text-muted)]">Checking request capabilities…</p>
+    </template>
 
     <template v-else>
     <div
@@ -12,6 +16,12 @@
       {{ errorMessage }}
     </div>
 
+    <div class="flex flex-wrap items-center gap-3">
+      <USwitch v-model="autoRefresh" aria-label="Automatically refresh usage overview and first-page attribution" />
+      <span class="text-xs text-[var(--ui-text-muted)]" role="status">{{ refreshStatus }} · Attribution pauses beyond page one.</span>
+      <AppButton size="sm" color="neutral" variant="outline" :loading="loading" @click="refreshAll()">Refresh overview</AppButton>
+    </div>
+    <UAlert v-if="!supports('usage_overview')" color="warning" variant="subtle" title="Usage overview unavailable" />
     <AppCard class="usage-filter-panel">
       <form @submit.prevent="applyFilters">
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -99,11 +109,22 @@
 
     <section>
       <AppCard :ui="{ body: 'p-0' }">
-      <div class="flex items-center justify-between border-b border-[var(--ui-border)] px-4 py-3"><div><h2 class="text-sm font-semibold">Execution credential usage</h2><p class="text-xs text-[var(--ui-text-muted)]">Requests, tokens, spend, success, and latest activity by execution credential.</p></div><AppButton size="sm" color="neutral" variant="ghost" icon="i-tabler-refresh" :loading="credentialsLoading" @click="loadCredentialUsage" /></div>
+      <div class="flex items-center justify-between border-b border-[var(--ui-border)] px-4 py-3"><div><h2 class="text-sm font-semibold">Execution credential usage</h2><p class="text-xs text-[var(--ui-text-muted)]">Requests, tokens, spend, success, and latest activity by execution credential.</p></div><AppButton size="sm" color="neutral" variant="ghost" icon="i-tabler-refresh" aria-label="Refresh execution credential usage" :loading="credentialsLoading" :disabled="!canAttribute" @click="loadCredentialUsage" /></div>
+      <UAlert v-if="!canAttribute" color="warning" variant="subtle" title="Execution credential attribution unavailable" />
+      <UAlert v-if="credentialError" color="error" variant="subtle" :description="credentialError" />
+      <div class="flex flex-wrap items-end gap-3 border-b border-[var(--ui-border)] px-4 py-3">
+        <UFormField label="Sort metric"><USelect v-model="credentialMetric" :items="rankingMetricOptions" value-key="value" label-key="label" class="w-44" /></UFormField>
+        <UFormField label="Direction"><USelect v-model="credentialDirection" :items="[{ label: 'Descending', value: 'desc' }, { label: 'Ascending', value: 'asc' }]" value-key="value" label-key="label" class="w-36" /></UFormField>
+        <UFormField label="Rows"><USelect v-model="credentialLimit" :items="[10, 20, 50, 100]" class="w-24" /></UFormField>
+      </div>
       <AppTable :columns="credentialColumns" :data="credentialUsage" :loading="credentialsLoading" class="min-w-[980px]"><template #credential-cell="{ row }"><div class="min-w-48"><p class="truncate text-sm font-medium">{{ rowValue(row).label || rowValue(row).id || 'Unknown credential' }}</p><p class="truncate font-mono text-xs text-[var(--ui-text-muted)]">{{ rowValue(row).id }}</p></div></template><template #provider-cell="{ row }"><span class="text-sm">{{ rowValue(row).metadata?.provider || 'Unknown' }}</span></template><template #status-cell="{ row }"><div><UBadge :color="Number(rowValue(row).error_rate) > 0.05 ? 'warning' : 'success'" variant="subtle">{{ formatPercent(rowValue(row).success_rate) }} success</UBadge><p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ formatNumber(rowValue(row).failed_count) }} failed</p></div></template><template #requests-cell="{ row }"><span class="tabular-nums">{{ formatNumber(rowValue(row).request_count) }}</span></template><template #tokens-cell="{ row }"><span class="tabular-nums">{{ formatCompactNumber(rowValue(row).total_tokens) }}</span></template><template #cost-cell="{ row }"><span class="whitespace-nowrap">{{ formatAmount(rowValue(row).total_amount, rowValue(row).currency || totals.currency) }}</span></template><template #lastUsed-cell="{ row }"><span class="whitespace-nowrap text-xs text-[var(--ui-text-muted)]">{{ formatDateTime(rowValue(row).last_used_at) }}</span></template><template #empty><div class="py-10 text-center text-sm text-[var(--ui-text-muted)]">No execution credential usage data.</div></template></AppTable>
       </AppCard>
     </section>
 
+    <div class="flex flex-wrap items-center justify-between gap-3 text-xs text-[var(--ui-text-muted)]">
+      <span>Page {{ credentialPage }} of {{ credentialPages }} · {{ formatNumber(credentialTotal) }} execution credentials</span>
+      <div class="flex gap-2"><AppButton size="sm" color="neutral" variant="outline" :disabled="credentialsLoading || credentialPage <= 1 || !canAttribute" @click="credentialPage--">Previous credentials</AppButton><AppButton size="sm" color="neutral" variant="outline" :disabled="credentialsLoading || credentialPage >= credentialPages || !canAttribute" @click="credentialPage++">Next credentials</AppButton></div>
+    </div>
     <AdminUsageInsights :common-query="insightQuery" />
 
     <AppModal v-model:open="rankingOpen" title="Usage ranking" description="Aggregated usage for the selected dimension and metric." :ui="{ content: 'sm:max-w-6xl' }"><template #body><div class="space-y-4"><div class="grid gap-3 sm:grid-cols-3"><UFormField label="Group by"><USelect v-model="rankingGroup" :items="rankingGroupOptions" value-key="value" label-key="label" class="w-full" @update:model-value="loadRanking" /></UFormField><UFormField label="Metric"><USelect v-model="rankingMetric" :items="rankingMetricOptions" value-key="value" label-key="label" class="w-full" @update:model-value="loadRanking" /></UFormField><UFormField label="Rows"><USelect v-model="rankingLimit" :items="rankingLimitOptions" value-key="value" label-key="label" class="w-full" @update:model-value="loadRanking" /></UFormField></div><AppCard :ui="{ body: 'p-0' }"><AppTable :columns="rankingColumns" :data="rankingItems" :loading="rankingLoading" class="min-w-[980px]"><template #rank-cell="{ row }">{{ rankingItems.indexOf(rowValue(row)) + 1 }}</template><template #name-cell="{ row }"><div class="min-w-48"><p class="truncate font-medium">{{ rowValue(row).label || rowValue(row).id || 'Unknown' }}</p><p class="truncate font-mono text-xs text-[var(--ui-text-muted)]">{{ rowValue(row).id }}</p></div></template><template #amount-cell="{ row }">{{ formatAmount(rowValue(row).total_amount, rowValue(row).currency || totals.currency) }}</template><template #requests-cell="{ row }">{{ formatNumber(rowValue(row).request_count) }}</template><template #tokens-cell="{ row }">{{ formatCompactNumber(rowValue(row).total_tokens) }}</template><template #success-cell="{ row }">{{ formatPercent(rowValue(row).success_rate) }}</template><template #cache-cell="{ row }">{{ formatPercent(rowValue(row).cache_rate) }}</template><template #latency-cell="{ row }">{{ formatMilliseconds(rowValue(row).avg_latency_ms) }}</template></AppTable></AppCard></div></template></AppModal>
@@ -194,7 +215,18 @@
 <script setup>
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
 import { useDataSync } from '~/composables/useDataSync'
-const { fetchAPI } = useApi()
+const { fetchAPI, token } = useApi()
+const { supports, capabilities, refreshCapabilities } = useCapabilities()
+const capabilitiesReady = ref(false)
+const legacyRecords = computed(() => (capabilities.value.request_events ?? capabilities.value.requestEvents) === false)
+const attributionUnavailable = ref(false)
+const canAttribute = computed(() => supports('usage_aggregates') && !attributionUnavailable.value)
+const credentialPage = ref(1), credentialLimit = ref(20), credentialMetric = ref('request_count'), credentialDirection = ref('desc')
+const credentialTotal = ref(0), credentialError = ref('')
+const credentialPages = computed(() => Math.max(1, Math.ceil(credentialTotal.value / credentialLimit.value)))
+let overviewVersion = 0, credentialVersion = 0, rankingVersion = 0
+let requestController = new AbortController()
+let disposed = false
 const route = useRoute()
 const router = useRouter()
 const allOptionValue = '__all__'
@@ -238,7 +270,7 @@ const rangeOptions = [
 ]
 const rangePreset = ref('7d')
 const showAdvancedFilters = ref(false)
-const credentialTypeOptions = [{ label: 'All credential types', value: allOptionValue }, { label: 'OAuth', value: 'oauth' }, { label: 'API key', value: 'api_key' }, { label: 'Token', value: 'token' }]
+const credentialTypeOptions = [{ label: 'All credential types', value: allOptionValue }, { label: 'OAuth', value: 'oauth' }, { label: 'Provider API key', value: 'provider_api_key' }, { label: 'File auth', value: 'file_auth' }, { label: 'Vertex', value: 'vertex' }, { label: 'Unknown', value: 'unknown' }]
 const defaultFilters = () => ({
   ...datesForRange('7d'),
   provider: '',
@@ -332,7 +364,7 @@ const rankingCards = computed(() => [
   { key: 'client_key', label: 'Client key ranking', items: Array.isArray(top.value.client_keys) ? top.value.client_keys.slice(0, 3) : [] }
 ])
 const chartOverlayValues = computed(() => chartOverlay.value === 'requests' ? trend.value.map(point => Number(point.request_count) || 0) : chartOverlay.value === 'spend' ? trend.value.map(point => Number(point.total_amount) || 0) : [])
-const rankingGroupOptions = [{ label: 'User', value: 'user' }, { label: 'Model', value: 'model' }, { label: 'Client key', value: 'client_key' }, { label: 'Execution credential', value: 'credential' }, { label: 'Provider', value: 'provider' }, { label: 'Endpoint', value: 'endpoint' }, { label: 'Home node', value: 'home_ip' }, { label: 'Executor', value: 'executor' }]
+const rankingGroupOptions = [{ label: 'User', value: 'user' }, { label: 'Model', value: 'model' }, { label: 'Client key', value: 'client_key' }, { label: 'Execution credential', value: 'credential' }, { label: 'Provider', value: 'provider' }, { label: 'Endpoint', value: 'endpoint' }, { label: 'Home node', value: 'home_ip' }, { label: 'Executor', value: 'executor_type' }]
 const rankingMetricOptions = [{ label: 'Spend', value: 'total_amount' }, { label: 'Requests', value: 'request_count' }, { label: 'Total tokens', value: 'total_tokens' }, { label: 'Failures', value: 'failed_count' }, { label: 'Average latency', value: 'avg_latency_ms' }, { label: 'P95 latency', value: 'p95_latency_ms' }]
 const rankingLimitOptions = [{ label: 'Top 10', value: 10 }, { label: 'Top 50', value: 50 }]
 const rankingColumns = [{ accessorKey: 'rank', header: '#' }, { accessorKey: 'name', header: 'Name' }, { accessorKey: 'amount', header: 'Spend' }, { accessorKey: 'requests', header: 'Requests' }, { accessorKey: 'tokens', header: 'Tokens' }, { accessorKey: 'success', header: 'Success' }, { accessorKey: 'cache', header: 'Cache rate' }, { accessorKey: 'latency', header: 'Avg latency' }]
@@ -346,7 +378,7 @@ const pageStart = computed(() => recordsTotal.value === 0 ? 0 : ((page.value - 1
 const pageEnd = computed(() => Math.min(page.value * pageSize.value, recordsTotal.value))
 const overviewScopeLabel = computed(() => {
   const source = appliedFilters.value
-  const range = source.from || source.to ? `${source.from || 'Any start'} – ${source.to || 'Now'}` : 'All time'
+  const range = source.from || source.to ? `${source.from || 'Last 24 hours'} – ${source.to || 'Now'}` : 'Last 24 hours (server default)'
   const extras = [
     source.provider && `Provider: ${source.provider}`,
     source.model && `Model: ${source.model}`,
@@ -406,13 +438,16 @@ const selectRange = (preset) => {
 }
 
 const loadOverview = async () => {
+  if (!supports('usage_overview')) return
+  const version = ++overviewVersion
   overviewLoading.value = true
   try {
     const params = buildCommonParams(appliedFilters.value)
     params.set('interval', 'auto')
-    overview.value = await fetchAPI(`/usage/overview?${params.toString()}`)
+    const result = await fetchAPI(`/usage/overview?${params.toString()}`, { signal: requestController.signal })
+    if (!disposed && version === overviewVersion) overview.value = result
   } finally {
-    overviewLoading.value = false
+    if (!disposed && version === overviewVersion) overviewLoading.value = false
   }
 }
 
@@ -429,27 +464,45 @@ const loadRecords = async () => {
 }
 
 const loadRanking = async () => {
+  if (!supports('usage_aggregates')) return
+  const version = ++rankingVersion
   rankingLoading.value = true
-  try { const response = await fetchAPI(`/usage/aggregates?${insightQuery.value}`, { query: { group_by: rankingGroup.value, metric: rankingMetric.value, limit: rankingLimit.value } }); rankingItems.value = response?.items || [] }
-  catch (error) { errorMessage.value = apiErrorMessage(error, 'Failed to load usage ranking.') }
-  finally { rankingLoading.value = false }
+  try { const response = await fetchAPI(`/usage/aggregates?${insightQuery.value}`, { query: { group_by: rankingGroup.value, metric: rankingMetric.value, limit: rankingLimit.value }, signal: requestController.signal }); if (!disposed && version === rankingVersion) rankingItems.value = response?.items || [] }
+  catch (error) { if (!disposed && version === rankingVersion) errorMessage.value = apiErrorMessage(error, 'Failed to load usage ranking.') }
+  finally { if (!disposed && version === rankingVersion) rankingLoading.value = false }
 }
 const openRanking = async (group) => { rankingGroup.value = group; rankingOpen.value = true; await loadRanking() }
 const loadCredentialUsage = async () => {
+  if (!canAttribute.value) return
+  const version = ++credentialVersion
   credentialsLoading.value = true
-  try { const response = await fetchAPI(`/usage/aggregates?${insightQuery.value}`, { query: { group_by: 'credential', metric: 'request_count', limit: 50 } }); credentialUsage.value = response?.items || [] }
-  catch (error) { errorMessage.value = apiErrorMessage(error, 'Failed to load execution credential usage.') }
-  finally { credentialsLoading.value = false }
+  credentialError.value = ''
+  try {
+    const response = await fetchAPI(`/usage/aggregates?${insightQuery.value}`, { query: { group_by: 'credential', metric: credentialMetric.value, direction: credentialDirection.value, limit: credentialLimit.value, offset: (credentialPage.value - 1) * credentialLimit.value }, signal: requestController.signal })
+    if (disposed || version !== credentialVersion) return
+    credentialTotal.value = Number(response?.total) || 0
+    if (credentialPage.value > credentialPages.value) { credentialPage.value = credentialPages.value; return }
+    credentialUsage.value = response?.items || []
+  } catch (error) {
+    if (disposed || version !== credentialVersion) return
+    if ([404, 405, 501].includes(error?.statusCode)) { attributionUnavailable.value = true; credentialUsage.value = [] }
+    else credentialError.value = apiErrorMessage(error, 'Failed to load execution credential usage.')
+  } finally { if (!disposed && version === credentialVersion) credentialsLoading.value = false }
 }
 
-const refreshAll = async () => {
+const refreshAll = async (automatic = false) => {
+  if (activeView.value !== 'overview' || disposed) return
   errorMessage.value = ''
+  const version = overviewVersion + 1
   try {
-    await Promise.all([loadOverview(), loadRecords(), loadCredentialUsage()])
+    await Promise.all([loadOverview(), ...(!automatic || credentialPage.value === 1 ? [loadCredentialUsage()] : [])])
   } catch (error) {
-    errorMessage.value = apiErrorMessage(error, 'Failed to load usage observability data.')
+    if (!disposed && version === overviewVersion) errorMessage.value = apiErrorMessage(error, 'Failed to load usage observability data.')
   }
 }
+const appliedPreset = ref('7d')
+const refreshEligible = computed(() => capabilitiesReady.value && activeView.value === 'overview' && !detailOpen.value && !rankingOpen.value && !['yesterday', 'custom'].includes(appliedPreset.value) && !loading.value && !credentialsLoading.value)
+const { enabled: autoRefresh, status: refreshStatus } = useUsageRefresh(refreshEligible, () => refreshAll(true))
 
 const changeRecordsView = async () => {
   page.value = 1
@@ -458,12 +511,16 @@ const changeRecordsView = async () => {
 
 const applyFilters = async () => {
   appliedFilters.value = { ...filters.value }
+  appliedPreset.value = rangePreset.value
+  credentialPage.value = 1
   page.value = 1
   await refreshAll()
 }
 
 const resetFilters = async () => {
   rangePreset.value = '7d'
+  appliedPreset.value = '7d'
+  credentialPage.value = 1
   filters.value = defaultFilters()
   appliedFilters.value = defaultFilters()
   sort.value = 'timestamp_desc'
@@ -558,6 +615,19 @@ const formatHost = (host, port) => host ? `${host}${port ? `:${port}` : ''}` : '
 
 const apiErrorMessage = (error, fallback) => error?.data?.message || error?.data?.error || error?.message || fallback
 
-useDataSync('admin:usage:sync', refreshAll)
-onMounted(refreshAll)
+watch([credentialMetric, credentialDirection, credentialLimit], () => { if (credentialPage.value !== 1) credentialPage.value = 1; else if (activeView.value === 'overview') void loadCredentialUsage() })
+watch(credentialPage, () => { if (activeView.value === 'overview') void loadCredentialUsage() })
+watch(activeView, () => { if (capabilitiesReady.value) void refreshAll() })
+watch(token, async () => {
+  overviewVersion++; credentialVersion++; rankingVersion++
+  requestController.abort(); requestController = new AbortController()
+  attributionUnavailable.value = false; credentialTotal.value = 0; credentialError.value = ''
+  overviewLoading.value = false; credentialsLoading.value = false; rankingLoading.value = false
+  detailOpen.value = false; rankingOpen.value = false; capabilitiesReady.value = false
+  await refreshCapabilities().catch(() => {})
+  if (!disposed) { capabilitiesReady.value = true; void refreshAll() }
+})
+useDataSync('admin:usage:sync', () => refreshAll())
+onMounted(async () => { await refreshCapabilities().catch(() => {}); if (!disposed) { capabilitiesReady.value = true; await refreshAll() } })
+onScopeDispose(() => { disposed = true; overviewVersion++; credentialVersion++; rankingVersion++; requestController.abort() })
 </script>

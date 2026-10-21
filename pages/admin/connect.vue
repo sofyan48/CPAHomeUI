@@ -2,7 +2,9 @@
   <div class="relative min-h-screen overflow-hidden bg-[var(--ui-bg)]">
     <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.16),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(99,102,241,0.14),transparent_42%)]" />
 
-    <div class="relative mx-auto grid min-h-screen max-w-6xl items-center gap-10 px-4 py-10 lg:grid-cols-[1.15fr_0.85fr] lg:px-8">
+    <div class="absolute right-4 top-4 z-10"><ConsoleLanguageSwitcher /></div>
+
+        <div class="relative mx-auto grid min-h-screen max-w-6xl items-center gap-10 px-4 py-10 lg:grid-cols-[1.15fr_0.85fr] lg:px-8">
       <section class="hidden lg:block">
         <div class="mb-8 inline-flex items-center gap-3 rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)]/80 px-4 py-3 shadow-sm backdrop-blur">
           <div class="flex size-10 items-center justify-center rounded-xl bg-primary-500 text-white shadow-lg shadow-primary-500/25">
@@ -10,15 +12,15 @@
           </div>
           <div>
             <p class="font-semibold text-[var(--ui-text-highlighted)]">CPAHome</p>
-            <p class="text-xs text-[var(--ui-text-muted)]">Management control plane</p>
+            <p class="text-xs text-[var(--ui-text-muted)]">{{ t('connect.controlPlane') }}</p>
           </div>
         </div>
 
         <h1 class="max-w-2xl text-5xl font-bold tracking-tight text-[var(--ui-text-highlighted)]">
-          Operate your CPA cluster with confidence.
+          {{ t('connect.heading') }}
         </h1>
         <p class="mt-5 max-w-xl text-lg leading-8 text-[var(--ui-text-muted)]">
-          Monitor topology, inspect usage, manage access, and keep every connected node visible from one secure console.
+          {{ t('connect.description') }}
         </p>
 
         <div class="mt-10 grid max-w-xl grid-cols-2 gap-4">
@@ -36,8 +38,8 @@
             <div class="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl bg-primary-500 text-white lg:hidden">
               <UIcon name="i-tabler-terminal-2" class="size-7" />
             </div>
-            <h2 class="text-2xl font-bold text-[var(--ui-text-highlighted)]">Management sign in</h2>
-            <p class="mt-2 text-sm text-[var(--ui-text-muted)]">Validate your management key against this Home instance.</p>
+            <h2 class="text-2xl font-bold text-[var(--ui-text-highlighted)]">{{ t('connect.signIn') }}</h2>
+            <p class="mt-2 text-sm text-[var(--ui-text-muted)]">{{ t('connect.signInDescription') }}</p>
           </div>
         </template>
 
@@ -47,18 +49,18 @@
             color="error"
             variant="subtle"
             icon="i-tabler-alert-triangle"
-            title="Connection failed"
-            :description="errorMessage"
+            :title="t('connection.failed')"
+            :description="localizedErrorMessage"
           />
 
-          <UAlert color="info" variant="subtle" title="Management endpoint" :description="apiBase" />
+          <UAlert color="info" variant="subtle" :title="t('connect.endpoint')" :description="apiBase" />
 
-          <UFormField label="Management key" required>
+          <UFormField :label="t('connect.key')" required>
             <UInput
               v-model="token"
               :type="keyVisible ? 'text' : 'password'"
               autocomplete="current-password"
-              placeholder="Enter the management secret"
+              :placeholder="t('connect.keyPlaceholder')"
               icon="i-tabler-key"
               size="lg"
               class="w-full"
@@ -67,19 +69,19 @@
               autofocus
             >
               <template #trailing>
-                <AppButton type="button" size="xs" color="neutral" variant="ghost" :icon="keyVisible ? 'i-tabler-eye-off' : 'i-tabler-eye'" :aria-label="keyVisible ? 'Hide management key' : 'Show management key'" :title="keyVisible ? 'Hide management key' : 'Show management key'" :aria-pressed="keyVisible" :disabled="loading" @click="keyVisible = !keyVisible" />
+                <AppButton type="button" size="xs" color="neutral" variant="ghost" :icon="keyVisible ? 'i-tabler-eye-off' : 'i-tabler-eye'" :aria-label="keyVisible ? t('connect.hideKey') : t('connect.showKey')" :title="keyVisible ? t('connect.hideKey') : t('connect.showKey')" :aria-pressed="keyVisible" :disabled="loading" @click="keyVisible = !keyVisible" />
               </template>
             </UInput>
           </UFormField>
 
-          <UCheckbox v-model="remember" label="Keep this management connection for 30 days" />
+          <UCheckbox v-model="remember" :label="t('connect.remember')" />
 
           <AppButton type="submit" color="primary" size="lg" block :loading="loading" :disabled="!token.trim()">
-            Connect to Home
+            {{ t('connect.submit') }}
           </AppButton>
 
           <p class="text-center text-xs leading-5 text-[var(--ui-text-dimmed)]">
-            Without persistence, the same-site cookie ends with this browser session. The key is sent only to the configured Management API path.
+            {{ t('connect.privacy') }}
           </p>
         </form>
       </AppCard>
@@ -89,18 +91,20 @@
 
 <script setup lang="ts">
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
+import { useConsoleLocale } from '~/composables/useConsoleLocale'
 import { storeToRefs } from 'pinia'
 import { useManagementSessionStore } from '~/stores/managementSession'
 import { useCapabilities as useManagementCapabilities } from '~/composables/useCapabilities'
 
 definePageMeta({ layout: false })
 
-const highlights = [
-  { icon: 'i-tabler-antenna-bars-5', title: 'Live topology', description: 'See Home and CPA health at a glance.' },
-  { icon: 'i-tabler-chart-bar', title: 'Usage insights', description: 'Track requests, tokens, and failures.' },
-  { icon: 'i-tabler-shield-check', title: 'Access control', description: 'Manage users, keys, and routing scopes.' },
-  { icon: 'i-tabler-tools', title: 'Operations', description: 'Inspect capabilities, nodes, and logs.' }
-]
+const { t } = useConsoleLocale()
+const highlights = computed(() => [
+  { icon: 'i-tabler-antenna-bars-5', title: t('connect.topology'), description: t('connect.topologyDescription') },
+  { icon: 'i-tabler-chart-bar', title: t('connect.usage'), description: t('connect.usageDescription') },
+  { icon: 'i-tabler-shield-check', title: t('connect.access'), description: t('connect.accessDescription') },
+  { icon: 'i-tabler-tools', title: t('connect.operations'), description: t('connect.operationsDescription') }
+])
 
 const router = useRouter()
 const route = useRoute()
@@ -112,6 +116,14 @@ const keyVisible = ref(false)
 const remember = ref(false)
 const loading = useWorkspaceState('admin:connect:loading', () => (false))
 const errorMessage = useWorkspaceState('admin:connect:errorMessage', () => (''))
+const localizedErrorMessage = computed(() => {
+  switch (errorMessage.value) {
+    case 'connect.rejected': return t('connect.rejected')
+    case 'connect.unavailable': return t('connect.unavailable')
+    case 'connect.unreachable': return t('connect.unreachable')
+    default: return errorMessage.value
+  }
+})
 
 onMounted(() => {
   if (storedToken.value) token.value = storedToken.value
@@ -140,11 +152,11 @@ const handleLogin = async () => {
     storedToken.value = null
     remembered.value = false
     if (error?.statusCode === 401 || error?.statusCode === 403) {
-      errorMessage.value = 'The management key was rejected. Check the key and remote-management settings.'
+      errorMessage.value = 'connect.rejected'
     } else if (error?.statusCode === 404) {
-      errorMessage.value = 'The Management API is unavailable or disabled on this Home instance.'
+      errorMessage.value = 'connect.unavailable'
     } else {
-      errorMessage.value = error?.message || 'Unable to reach the Management API.'
+      errorMessage.value = error?.message || 'connect.unreachable'
     }
   } finally {
     loading.value = false

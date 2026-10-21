@@ -54,17 +54,18 @@
         <template #quota-cell="{ row }">
           <button type="button" class="min-w-44 space-y-1 text-left" :aria-label="`View quota for ${value(row).label || value(row).id}`" @click="openAccountQuota(value(row))">
             <template v-if="quotaByID.get(value(row).id)">
+              <p v-if="quotaByID.get(value(row).id).plan?.name" class="text-xs font-medium">{{ quotaByID.get(value(row).id).plan.name }}</p>
               <div class="flex flex-wrap gap-1">
                 <UBadge :color="quotaColor(quotaByID.get(value(row).id).quota_status)" variant="subtle">{{ quotaByID.get(value(row).id).quota_status || 'unknown' }}</UBadge>
                 <UBadge color="neutral" variant="subtle">{{ quotaByID.get(value(row).id).freshness || 'never' }}</UBadge>
                 <UBadge v-if="quotaByID.get(value(row).id).collection_status" color="neutral" variant="subtle">{{ quotaByID.get(value(row).id).collection_status }}</UBadge>
               </div>
-              <div v-for="window in (quotaByID.get(value(row).id).primary_windows || []).slice(0, 2)" :key="window.id" class="grid grid-cols-[minmax(6.5rem,9rem)_minmax(2.5rem,1fr)_2.25rem] items-center gap-2 text-[11px]">
+              <div v-for="window in quotaDisplayWindows(quotaByID.get(value(row).id))" :key="window.id" class="grid grid-cols-[minmax(6.5rem,9rem)_minmax(2.5rem,1fr)_2.25rem] items-center gap-2 text-[11px]">
                 <span class="truncate" :title="window.label || window.id">{{ window.label || window.id }}</span>
                 <div class="h-1.5 overflow-hidden rounded-full bg-[var(--ui-bg-muted)]"><div v-if="quotaWindowRatio(window) !== null" class="h-full rounded-full bg-[var(--ui-primary)]" :style="{ width: `${Math.round(quotaWindowRatio(window) * 100)}%` }" /></div>
                 <span class="text-right tabular-nums text-[var(--ui-text-muted)]">{{ quotaWindowRatio(window) === null ? '—' : `${Math.round(quotaWindowRatio(window) * 100)}%` }}</span>
               </div>
-              <p v-if="quotaByID.get(value(row).id).window_count > 2" class="text-xs text-[var(--ui-text-muted)]">+{{ quotaByID.get(value(row).id).window_count - 2 }} more</p>
+              <p v-if="quotaByID.get(value(row).id).window_count > quotaDisplayWindows(quotaByID.get(value(row).id)).length" class="text-xs text-[var(--ui-text-muted)]">+{{ quotaByID.get(value(row).id).window_count - quotaDisplayWindows(quotaByID.get(value(row).id)).length }} more</p>
             </template>
             <span v-else class="text-xs text-[var(--ui-text-muted)]">{{ quotaPending ? 'Loading…' : quotaError ? 'Unavailable' : 'Not collected' }}</span>
           </button>
@@ -110,8 +111,9 @@
             <fieldset :disabled="savingFields || savingPolicy || Boolean(credentialAction)" class="space-y-4">
             <p class="text-xs text-[var(--ui-text-muted)]">Only changed fields are saved. Leave optional text blank to clear it.</p>
             <div class="grid gap-3 sm:grid-cols-2"><UFormField label="Prefix"><UInput v-model="fields.prefix" class="w-full" /></UFormField><UFormField label="Proxy URL"><UInput v-model="fields.proxy_url" class="w-full" placeholder="socks5://..." /></UFormField><UFormField label="Priority"><UInput v-model="fields.priority" type="number" step="1" class="w-full" /></UFormField><UFormField label="Request retries"><UInput v-model="fields.request_retry" type="number" min="0" step="1" class="w-full" placeholder="Default" /></UFormField></div>
+            <UFormField label="Weight" description="Only applies to weighted-round-robin routing. Zero excludes this credential. Unset removes the explicit weight and restores the default of 1."><div class="flex gap-2"><UInput v-model="fields.weight" :disabled="!exclusionsLoaded" type="number" step="1" max="1000000" class="w-full" placeholder="Unset (default 1)" /><AppButton type="button" size="sm" color="neutral" variant="outline" :disabled="!exclusionsLoaded" @click="fields.weight = ''">Unset</AppButton></div></UFormField>
             <UFormField label="Note"><UTextarea v-model="fields.note" class="w-full" /></UFormField>
-            <UFormField label="OAuth excluded models" description="JSON array of model IDs or wildcard patterns. Empty clears credential-specific exclusions; global exclusions still apply."><UTextarea v-model="excludedModels" class="w-full font-mono" :disabled="!exclusionsLoaded || savingFields" placeholder='["model-id", "model-prefix-*"]' /></UFormField>
+            <AdminCredentialExcludedModels v-if="exclusionsLoaded" :key="detailsTarget.id" v-model="excludedModels" :credential-id="detailsTarget.id" :disabled="savingFields || savingPolicy || Boolean(credentialAction)" />
             <p v-if="exclusionsLoading" class="text-xs text-[var(--ui-text-muted)]">Reading stored exclusions…</p>
             <UAlert v-if="exclusionsError" color="warning" variant="subtle" :description="exclusionsError" />
             <AppButton v-if="!exclusionsLoaded && !exclusionsLoading" type="button" size="sm" variant="outline" @click="loadExclusions">Read exclusions</AppButton>
@@ -129,12 +131,13 @@
             <p v-if="accountQuotaLoading" class="py-8 text-center text-[var(--ui-text-muted)]">Loading quota windows…</p>
             <template v-else-if="accountQuotaDetail">
               <div class="flex flex-wrap items-center gap-2"><UBadge color="neutral" variant="subtle">{{ accountQuotaDetail.credential?.provider || detailsTarget?.provider || 'Unknown provider' }}</UBadge><UBadge :color="quotaColor(accountQuotaDetail.credential?.quota_status)" variant="subtle">{{ accountQuotaDetail.credential?.quota_status || 'unknown' }}</UBadge><UBadge color="neutral" variant="subtle">{{ accountQuotaDetail.collection?.freshness || 'never' }}</UBadge><UBadge v-if="accountQuotaDetail.collection?.status" color="neutral" variant="subtle">{{ accountQuotaDetail.collection.status }}</UBadge></div>
-              <div v-for="window in accountQuotaDetail.windows || []" :key="window.id" class="rounded-md border border-[var(--ui-border)] p-3"><div class="flex items-start justify-between gap-3"><p class="font-medium">{{ window.label || window.id }}</p><UBadge :color="quotaColor(window.status)" variant="subtle">{{ window.status }}</UBadge></div><p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ quotaWindowRemaining(window) }} · Used: {{ window.used ?? '—' }} · Reset: {{ window.reset_at ? new Date(window.reset_at).toLocaleString() : '—' }}</p><div v-if="quotaWindowRatio(window) !== null" class="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--ui-bg-muted)]"><div class="h-full bg-[var(--ui-primary)]" :style="{ width: `${Math.round(quotaWindowRatio(window) * 100)}%` }" /></div></div>
-              <p v-if="accountQuotaDetail.collection?.error?.message" class="text-xs text-red-500">{{ accountQuotaDetail.collection.error.message }}</p><p v-if="!accountQuotaDetail.windows?.length" class="text-[var(--ui-text-muted)]">No quota windows recorded.</p>
-              <div v-if="accountQuotaDetail.reset_credits || resetCreditSupported" class="rounded-md border border-[var(--ui-border)] p-3"><p class="font-medium">Reset credits: {{ accountQuotaDetail.reset_credits?.available_count ?? '—' }} available</p><p v-if="accountQuotaDetail.reset_credits?.observed_at" class="text-xs text-[var(--ui-text-muted)]">Observed {{ new Date(accountQuotaDetail.reset_credits.observed_at).toLocaleString() }}</p><p v-for="(credit, index) in accountQuotaDetail.reset_credits?.credits || []" :key="index" class="mt-1 text-xs">{{ credit.status }} · Expires {{ credit.expires_at ? new Date(credit.expires_at).toLocaleString() : '—' }}</p><AppButton v-if="resetCreditSupported" size="sm" color="neutral" variant="outline" class="mt-3" :disabled="!canResetCredit || resetCreditSubmitting || Boolean(resetCreditAttempts[detailsTarget?.id])" @click="openResetCredit">Reset Codex quota with one credit</AppButton><p v-if="resetCreditDisabledReason" class="mt-2 text-xs text-[var(--ui-text-muted)]">{{ resetCreditDisabledReason }}</p></div>
+              <p v-if="accountQuotaDetail.credential?.plan?.name" class="font-medium">{{ accountQuotaDetail.credential.plan.name }}</p>
+              <div v-for="window in accountQuotaDetail.windows || []" :key="window.id" class="rounded-md border border-[var(--ui-border)] p-3"><div class="flex items-start justify-between gap-3"><p class="font-medium">{{ window.label || window.id }}</p><UBadge :color="quotaColor(window.status)" variant="subtle">{{ window.status }}</UBadge></div><p class="mt-1 text-xs text-[var(--ui-text-muted)]">{{ quotaWindowRemaining(window) }} · Used: {{ quotaWindowAmount(window.used, window) }} · Reset: {{ window.reset_at ? new Date(window.reset_at).toLocaleString() : '—' }}</p><div v-if="quotaWindowRatio(window) !== null" class="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--ui-bg-muted)]"><div class="h-full bg-[var(--ui-primary)]" :style="{ width: `${Math.round(quotaWindowRatio(window) * 100)}%` }" /></div></div>
+              <p v-if="accountQuotaDetail.collection?.error?.message" class="text-xs text-red-500">{{ quotaCollectionMessage(accountQuotaDetail.collection.error) }}</p><p v-if="!accountQuotaDetail.windows?.length" class="text-[var(--ui-text-muted)]">No quota windows recorded.</p>
+              <div v-if="accountQuotaDetail.reset_credits || resetCreditSupported" class="rounded-md border border-[var(--ui-border)] p-3"><p class="font-medium">Reset credits: {{ accountQuotaDetail.reset_credits?.available_count ?? '—' }} available</p><p v-if="String(accountQuotaDetail.credential?.provider).toLowerCase() === 'claude'" class="mt-1 text-xs text-[var(--ui-text-muted)]">Remaining resets in active grants, not guaranteed redemption eligibility. Home observes Claude grants only; it cannot consume them. Individual credit expiry details are not provided.</p><p v-if="accountQuotaDetail.reset_credits?.observed_at" class="text-xs text-[var(--ui-text-muted)]">Observed {{ new Date(accountQuotaDetail.reset_credits.observed_at).toLocaleString() }}</p><p v-for="(credit, index) in accountQuotaDetail.reset_credits?.credits || []" :key="index" class="mt-1 text-xs">{{ credit.status }} · Expires {{ credit.expires_at ? new Date(credit.expires_at).toLocaleString() : '—' }}</p><AppButton v-if="resetCreditSupported" size="sm" color="neutral" variant="outline" class="mt-3" :disabled="!canResetCredit || resetCreditSubmitting || Boolean(resetCreditAttempts[detailsTarget?.id])" @click="openResetCredit">Reset Codex quota with one credit</AppButton><p v-if="resetCreditDisabledReason" class="mt-2 text-xs text-[var(--ui-text-muted)]">{{ resetCreditDisabledReason }}</p></div>
             </template>
             <UAlert v-if="resetCreditNotice && resetCreditNoticeCredential === detailsTarget?.id" :color="resetCreditNoticeColor" variant="subtle" :description="resetCreditNotice" />
-            <p class="text-xs text-[var(--ui-text-muted)]">Collection runs in the background. Refresh after it finishes to see updated snapshots.</p>
+            <p role="status" class="text-xs text-[var(--ui-text-muted)]">{{ accountQuotaCollecting ? 'Waiting for a newer settled quota collection result…' : accountQuotaNotice || 'Collection is tracked for up to 30 polls; Home may continue after tracking ends.' }}</p>
             <div class="flex flex-wrap justify-end gap-2 border-t border-[var(--ui-border)] pt-3"><AppButton size="sm" color="neutral" variant="outline" :loading="accountQuotaLoading" @click="refreshAccountQuota">Refresh</AppButton><AppButton size="sm" color="neutral" variant="outline" :loading="accountQuotaCollecting" @click="collectAccountQuota">Collect now</AppButton></div>
           </section>
           <section v-else-if="detailsTab === 'Concurrency'" class="space-y-5 text-sm"><div><h3 class="font-semibold">Concurrency</h3><p class="text-xs text-[var(--ui-text-muted)]">Policy, admitted state, and observed requests.</p></div>
@@ -150,7 +153,8 @@
             <p v-if="modelsLoading" class="py-8 text-center text-[var(--ui-text-muted)]">Loading models…</p>
             <template v-else>
               <div v-if="modelStates?.credential" class="space-y-2"><p class="text-xs text-[var(--ui-text-muted)]">Runtime node {{ modelStates.node?.ip }}:{{ modelStates.node?.port }} · Observed {{ modelStates.observed_at }} · State version {{ modelStates.credential.state_version }}</p><p>Status: {{ modelStates.credential.status }} · Unavailable: {{ modelStates.credential.unavailable }} · Refresh blocked: {{ modelStates.credential.refresh_blocked }}</p><p v-if="modelStates.credential.status_message">{{ modelStates.credential.status_message }}</p></div>
-              <div v-for="model in modelCards" :key="model.id" class="rounded-md border border-[var(--ui-border)] p-3">
+              <USelect v-model="modelScope" aria-label="Model scope" :items="modelScopeOptions" value-key="value" label-key="label" class="w-full" />
+              <div v-for="model in scopedModelCards" :key="model.id" class="rounded-md border border-[var(--ui-border)] p-3">
                 <p class="font-medium">{{ model.display_name || model.id }}</p>
                 <p class="font-mono text-xs text-[var(--ui-text-muted)]">{{ model.id }}</p>
                 <div v-for="state in model.diagnostics" :key="JSON.stringify([state.upstream_model, state.state_key])" class="mt-2 space-y-1">
@@ -160,7 +164,7 @@
                   <p v-if="state.status_message || state.last_error?.message" class="text-xs">{{ state.status_message || state.last_error?.message }}</p>
                 </div>
               </div>
-              <p v-if="!modelCards.length" class="py-6 text-center text-[var(--ui-text-muted)]">No models found.</p>
+              <p v-if="!scopedModelCards.length" class="py-6 text-center text-[var(--ui-text-muted)]">No models found.</p>
             </template>
           </section>
           <section v-else-if="detailsTab === 'Recovery'" class="space-y-3"><h3 class="font-semibold">Credential recovery</h3><p class="text-xs text-[var(--ui-text-muted)]">OAuth refresh updates tokens. Cooldown reset clears quota cooldowns only; it does not redeem credits or clear unrelated errors.</p><UAlert v-if="actionError" color="warning" variant="subtle" :description="actionError" /><div class="flex flex-wrap gap-2"><AppButton v-if="refreshAvailable" size="sm" variant="outline" :disabled="busy || Boolean(credentialAction)" :loading="credentialAction === 'refresh'" @click="runCredentialAction('refresh')">Refresh OAuth credential</AppButton><AppButton v-if="supports('credential_cooldown_reset', false) && cooldownAvailable" size="sm" color="warning" variant="outline" :disabled="busy || Boolean(credentialAction)" :loading="credentialAction === 'cooldown'" @click="runCredentialAction('cooldown')">Reset quota cooldown</AppButton></div><p v-if="!supports('credential_cooldown_reset', false) || !cooldownAvailable" class="text-xs text-[var(--ui-text-muted)]">Cooldown reset is unavailable on this deployment.</p></section>
@@ -206,7 +210,10 @@
 <script setup>
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
 import { useStoreData } from '~/composables/useStoreData'
-import { credentialModelCards } from '~/composables/credentialModelCards'
+import { credentialModelCards, normalizeCredentialModels } from '~/composables/credentialModelCards'
+import { quotaDisplayWindows, quotaWindowAmount, quotaCollectionMessage, credentialWeightPatch } from '~/composables/upstreamQuota'
+import { useQuotaCollection } from '~/composables/useQuotaCollection'
+const quotaCollection = useQuotaCollection()
 const props = defineProps({ attentionRequest: { type: Number, default: 0 }, syncRequest: { type: Number, default: 0 } })
 const { fetchAPI, resolveUrl, token } = useApi()
 const { supports } = useCapabilities()
@@ -256,7 +263,7 @@ function overviewFields(item) {
     ['Provider', item.provider], ['Type', item.type], ['Source', item.source],
     ['Account', item.account || item.email], ['Auth index', item.auth_index || item.id],
     ['Prefix', item.prefix], ['Proxy URL', item.proxy_url],
-    ['Priority', item.priority], ['Request retries', item['request-retry']],
+    ['Priority', item.priority], ['Weight', item.weight ?? 'Unset (default 1)'], ['Request retries', item['request-retry']],
     ['WebSockets', supportsWebsockets(item) ? (item.websockets ? 'Enabled' : 'Disabled') : 'N/A'],
     ['Cooling', item['disable-cooling'] ? 'Disabled' : 'Enabled'],
     ['Path', item.path], ['Size', item.size], ['Updated at', item.mod_time || item.updated_at],
@@ -268,7 +275,8 @@ const accountQuotaTarget = computed(() => detailsTarget.value)
 const accountQuotaDetail = useWorkspaceState('admin:upstream-accounts:accountQuotaDetail', () => (null))
 const accountQuotaError = useWorkspaceState('admin:upstream-accounts:accountQuotaError', () => (''))
 const accountQuotaLoading = useWorkspaceState('admin:upstream-accounts:accountQuotaLoading', () => (false))
-const accountQuotaCollecting = useWorkspaceState('admin:upstream-accounts:accountQuotaCollecting', () => (false))
+const accountQuotaCollecting = computed(() => quotaCollection.collectingAll.value || quotaCollection.collectingIDs.value.has(detailsTarget.value?.id))
+const accountQuotaNotice = ref('')
 const resetCreditOpen = ref(false)
 const resetCreditTarget = ref(null)
 const resetCreditAttempts = useWorkspaceState('admin:upstream-accounts:resetCreditAttempts', () => ({}))
@@ -315,7 +323,7 @@ const bulkBusy = useWorkspaceState('admin:upstream-accounts:bulkBusy', () => (fa
 const bulkAction = ref('')
 const bulkDeleteOpen = ref(false)
 const fieldsTarget = computed(() => detailsTarget.value)
-const fields = reactive({ prefix: '', proxy_url: '', priority: '', request_retry: '', note: '', websockets: false, disable_cooling: 'inherit', enabled: true })
+const fields = reactive({ prefix: '', proxy_url: '', priority: '', weight: '', request_retry: '', note: '', websockets: false, disable_cooling: 'inherit', enabled: true })
 const excludedModels = ref('')
 const originalExcludedModels = ref('')
 const exclusionsLoaded = ref(false)
@@ -328,6 +336,12 @@ const snapshotsSupported = computed(() => supports('credential_in_flight_snapsho
 const modelStates = ref(null)
 const modelStatesNotice = ref('')
 const modelCards = computed(() => credentialModelCards(credentialModels.value, modelStates.value?.credential?.models || []))
+const modelScope = ref('all')
+const modelScopeOptions = [{ label: 'All routes and history', value: 'all' }, { label: 'Currently exposed routes', value: 'registered' }, { label: 'Runtime-only history', value: 'history' }]
+const scopedModelCards = computed(() => {
+  const registered = new Set(credentialModels.value.map(model => model.id))
+  return modelCards.value.filter(model => modelScope.value === 'all' || (modelScope.value === 'registered' ? registered.has(model.id) : !registered.has(model.id)))
+})
 const credentialAction = ref('')
 const actionError = ref('')
 const refreshAvailable = ref(true)
@@ -338,6 +352,7 @@ watch(detailsOpen, open => {
   if (!open) { detailGeneration++; policyRequest++; concurrencyRequest++; modelsRequest++; loadingPolicy.value = false; loadingConcurrency.value = false; modelsLoading.value = false; exclusionsLoading.value = false; policy.value = null }
 })
 onBeforeUnmount(() => { detailGeneration++; policyRequest++; concurrencyRequest++; modelsRequest++ })
+watch(token, () => { detailGeneration++; detailsOpen.value = false; accountQuotaNotice.value = '' }, { flush: 'sync' })
 const unavailable = error => [404, 405, 501].includes(error?.statusCode)
 const ownsDetails = (id, generation) => detailsOpen.value && detailsTarget.value?.id === id && detailGeneration === generation
 const coolingOptions = [
@@ -466,29 +481,27 @@ function quotaWindowRatio(window) {
 }
 function quotaWindowRemaining(window) {
   if (window.is_unlimited) return 'Unlimited'
-  if (window.remaining != null) return `${Number(window.remaining).toLocaleString()}${window.limit != null ? ` / ${Number(window.limit).toLocaleString()}` : ''}${window.currency ? ` ${window.currency}` : ''}`
+  if (window.remaining != null) return `${quotaWindowAmount(window.remaining, window)}${window.limit != null ? ` / ${quotaWindowAmount(window.limit, window)}` : ''} remaining`
   const ratio = quotaWindowRatio(window)
   return ratio == null ? '—' : `${Math.round(ratio * 100)}% remaining`
 }
 async function openAccountQuota(item) {
-  detailsTarget.value = item
-  detailsTab.value = 'Quota'
-  detailsOpen.value = true
-  accountQuotaDetail.value = null
-  accountQuotaError.value = ''
-  await refreshAccountQuota()
+  await showDetails(item, 'Quota')
 }
 async function refreshAccountQuota() {
   if (!accountQuotaTarget.value) return
   const id = accountQuotaTarget.value.id
+  const generation = detailGeneration
+  const session = token.value
+  const current = () => token.value === session && ownsDetails(id, generation)
   accountQuotaLoading.value = true
   accountQuotaError.value = ''
   try {
     const detail = await fetchAPI(`/quota/credentials/${encodeURIComponent(id)}`)
-    if (accountQuotaTarget.value?.id === id) accountQuotaDetail.value = detail
+    if (current()) accountQuotaDetail.value = detail
     await refreshQuotaSummary()
-  } catch (error) { if (accountQuotaTarget.value?.id === id) accountQuotaError.value = message(error) }
-  finally { if (accountQuotaTarget.value?.id === id) accountQuotaLoading.value = false }
+  } catch (error) { if (current()) accountQuotaError.value = message(error) }
+  finally { if (current()) accountQuotaLoading.value = false }
 }
 function openResetCredit() {
   if (!canResetCredit.value || !detailsTarget.value?.id || resetCreditSubmitting.value || resetCreditAttempts.value[detailsTarget.value.id]) return
@@ -527,15 +540,19 @@ async function redeemResetCredit() {
       : message(error)
   } finally { resetCreditSubmitting.value = false }
 }
+watch(quotaCollection.revision, () => { void refreshQuotaSummary() })
+watch(() => quotaCollection.details.value[detailsTarget.value?.id], detail => {
+  if (detailsOpen.value && detail) accountQuotaDetail.value = detail
+})
 async function collectAccountQuota() {
-  if (!accountQuotaTarget.value) return
-  accountQuotaCollecting.value = true
-  accountQuotaError.value = ''
-  try {
-    const result = await fetchAPI('/quota/collect', { method: 'POST', body: { credential_ids: [accountQuotaTarget.value.id] } })
-    toast.add({ title: result.accepted ? 'Quota collection queued' : 'No collection queued', description: result.accepted ? 'Collection runs in the background. Refresh later to see updated snapshots.' : 'No eligible credentials were newly queued.', color: result.accepted ? 'success' : 'warning' })
-  } catch (error) { accountQuotaError.value = message(error) }
-  finally { accountQuotaCollecting.value = false }
+  if (!accountQuotaTarget.value || accountQuotaCollecting.value) return
+  const id = accountQuotaTarget.value.id
+  const generation = detailGeneration
+  const session = token.value
+  accountQuotaError.value = ''; accountQuotaNotice.value = ''
+  const result = await quotaCollection.collect(id)
+  if (session !== token.value || !ownsDetails(id, generation) || !result) return
+  accountQuotaNotice.value = result.completion === 'pending' ? 'Collection remains unconfirmed. Home may still be working; refresh later.' : result.completion === 'settled' ? 'A newer collection result is available. Inspect its status and any errors above.' : 'No new collection was queued.'
 }
 const flightItems = computed(() => Array.isArray(flightData.value?.items) ? flightData.value.items : [])
 const flightByID = computed(() => new Map(flightItems.value.map(item => [item.credential_id, item])))
@@ -723,12 +740,13 @@ async function showDetails(item, section = 'Overview') {
   initializeFields(item)
   detailsTab.value = section
   accountQuotaDetail.value = null
-  accountQuotaError.value = ''
+  accountQuotaError.value = ''; accountQuotaNotice.value = ''
   policy.value = null
   policyError.value = ''
   concurrencyState.value = null
   flightDetails.value = null
   credentialModels.value = []
+  modelScope.value = 'all'
   modelsError.value = ''
   detailsOpen.value = true
   await selectDetailSection(section)
@@ -778,7 +796,8 @@ function initializeFields(item) {
   fieldsError.value = ''
   Object.assign(fields, {
     prefix: item.prefix || '', proxy_url: item.proxy_url || '',
-    priority: item.priority == null ? '' : String(item.priority), request_retry: item['request-retry'] == null ? '' : String(item['request-retry']),
+    weight: item.weight == null ? '' : String(item.weight),
+        priority: item.priority == null ? '' : String(item.priority), request_retry: item['request-retry'] == null ? '' : String(item['request-retry']),
     note: item.note || '', websockets: Boolean(item.websockets), disable_cooling: item['disable-cooling'] == null ? 'inherit' : item['disable-cooling'] ? 'disable' : 'enable', enabled: !item.disabled
   })
   originalFields.value = { ...fields }
@@ -792,6 +811,10 @@ async function loadExclusions() {
     // The list response omits exclusions; read metadata without displaying or retaining tokens.
     const metadata = await fetchAPI(credentialRoute('/download'), { query: { id } })
     if (!ownsDetails(id, generation)) return
+    if (fields.weight === originalFields.value.weight) {
+      fields.weight = metadata.weight == null ? '' : String(metadata.weight)
+      originalFields.value.weight = fields.weight
+    }
     const models = metadata.excluded_models ?? metadata['excluded-models'] ?? []
     if (!Array.isArray(models) || models.some(model => typeof model !== 'string')) throw new Error('Stored exclusions are not a string array. Download the credential to inspect them.')
     excludedModels.value = JSON.stringify(models, null, 2)
@@ -845,7 +868,12 @@ async function saveFields() {
   const body = { id: fieldsTarget.value.id }
   for (const key of Object.keys(fields)) {
     if (fields[key] === originalFields.value[key]) continue
-    if (key === 'priority' || key === 'request_retry') {
+    if (key === 'weight') {
+      try {
+        body.weight = credentialWeightPatch(fields.weight, String(fields.weight).trim() === '')
+
+      } catch (error) { fieldsError.value = message(error); return }
+    } else if (key === 'priority' || key === 'request_retry') {
       const raw = String(fields[key]).trim()
       if (raw && (!/^\d+$/.test(raw) || !Number.isSafeInteger(Number(raw)))) { fieldsError.value = `${key} must be a non-negative integer.`; return }
       body[key] = raw ? Number(raw) : null
@@ -868,7 +896,11 @@ async function saveFields() {
     await refreshData()
     const updated = credentials.value.find(item => item.id === body.id)
     if (ownsDetails(body.id, generation)) {
-      if (updated) { detailsTarget.value = updated; initializeFields(updated) }
+      if (updated) {
+        detailsTarget.value = updated; initializeFields(updated)
+        // Older list responses omit weight; retain the value just persisted by this form.
+        if (body.weight != null && updated.weight == null) { fields.weight = String(body.weight); originalFields.value.weight = fields.weight }
+      }
       if (body.excluded_models) { excludedModels.value = JSON.stringify(body.excluded_models, null, 2); originalExcludedModels.value = excludedModels.value }
       if (body.version != null) { policy.value = null; await loadPolicy(true) }
     }
@@ -1013,7 +1045,7 @@ async function loadModels(item) {
       })
     ])
     if (!current()) return
-    credentialModels.value = models.models || []
+    credentialModels.value = normalizeCredentialModels(models.models)
     modelStates.value = states
     if (states && !states.credential) modelStatesNotice.value = 'No runtime state is available for this credential on the current Home node.'
   } catch (error) { if (current()) modelsError.value = message(error) }
