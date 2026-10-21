@@ -9,7 +9,7 @@
       :aria-modal="mobileOpen ? true : undefined"
       :aria-label="t('shell.management')"
       :inert="!desktopViewport && !mobileOpen"
-      class="admin-sidebar fixed inset-y-0 left-0 z-50 flex w-64 max-w-[calc(100vw-2rem)] flex-col border-r border-[var(--ui-border)] bg-[var(--ui-bg-muted)] transition-[transform,width] duration-200 motion-reduce:transition-none lg:translate-x-0"
+      class="admin-sidebar fixed inset-y-0 left-0 z-50 flex w-64 max-w-[calc(100vw-2rem)] flex-col border-r border-[var(--ui-border)] bg-white/95 shadow-[4px_0_24px_rgba(14,165,233,0.08)] backdrop-blur-xl dark:bg-neutral-950/95 lg:bg-white/30 lg:dark:bg-neutral-900/30 transition-[transform,width] duration-200 motion-reduce:transition-none lg:translate-x-0"
       @keydown="handleSidebarKeydown"
       :class="[mobileOpen ? 'translate-x-0' : '-translate-x-full', sidebarCollapsed ? 'lg:w-16' : 'lg:w-64']"
     >
@@ -76,7 +76,7 @@
 
     <div :inert="mobileOpen" class="relative z-10 flex h-full min-h-0 min-w-0 flex-col transition-[padding] duration-200 motion-reduce:transition-none" :class="sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-64'">
       <div class="flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--ui-bg)]">
-        <header class="admin-workspace-header z-30 flex h-16 shrink-0 items-center justify-between gap-2 border-b border-[var(--ui-border)] bg-[var(--ui-bg)] px-3 sm:gap-3 sm:px-5">
+        <header class="admin-workspace-header z-30 flex h-16 shrink-0 items-center justify-between gap-2 border-b border-[var(--ui-border)] bg-white/50 backdrop-blur-xl dark:bg-neutral-900/50 px-3 sm:gap-3 sm:px-5">
           <div class="flex min-w-0 flex-1 items-center gap-2">
             <AppButton class="shrink-0 lg:hidden" icon="i-tabler-menu-2" color="neutral" variant="ghost" :aria-label="t('shell.openNavigation')" aria-controls="management-sidebar" :aria-expanded="mobileOpen" @click="openMobile" />
             <AppButton

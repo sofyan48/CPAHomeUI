@@ -1,5 +1,5 @@
 <template>
-  <UCard v-bind="$attrs" :class="userCard ? ['user-card', { 'user-card--tinted': tinted, 'user-card--emerald': accent === 'emerald' }] : undefined">
+  <UCard v-bind="$attrs" :class="userCard ? ['user-card', { 'user-card--tinted': tinted, 'user-card--emerald': accent === 'emerald' }] : 'admin-card'">
     <template v-for="(_, name) in $slots" #[name]="slotProps">
       <slot :name="name" v-bind="slotProps || {}" />
     </template>
