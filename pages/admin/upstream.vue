@@ -14,61 +14,47 @@
       title="Upstream summary unavailable"
       :description="summaryError"
     />
-    <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-      <AppCard
-        ><p class="text-xs font-semibold uppercase text-[var(--ui-text-muted)]">
-          Accounts
-        </p>
-        <p class="mt-1 text-2xl font-bold">{{ accounts.length }}</p>
-        <p class="text-xs text-[var(--ui-text-muted)]">
+    <section aria-label="Upstream summary" class="metric-strip">
+      <dl class="metric">
+        <dt>Accounts</dt>
+        <dd class="metric-value">{{ accounts.length }}</dd>
+        <dd class="metric-detail">
           {{ activeAccounts }} active · {{ disabledAccounts }} disabled ·
           {{ unavailableAccounts }} unavailable
-        </p></AppCard
-      >
-      <AppCard
-        ><p class="text-xs font-semibold uppercase text-[var(--ui-text-muted)]">
-          Provider keys
-        </p>
-        <p class="mt-1 text-2xl font-bold">{{ providerKeyCount }}</p>
-        <p
-          class="truncate text-xs text-[var(--ui-text-muted)]"
-          :title="providerGroups"
-        >
+        </dd>
+      </dl>
+      <dl class="metric">
+        <dt>Provider keys</dt>
+        <dd class="metric-value">{{ providerKeyCount }}</dd>
+        <dd class="metric-detail truncate" :title="providerGroups">
           {{ providerGroups || "No entries" }}
-        </p></AppCard
-      >
-      <AppCard
-        ><button
+        </dd>
+      </dl>
+      <div class="metric">
+        <dl>
+          <dt>Quota attention</dt>
+          <dd class="metric-value">{{ quotaError ? "Unavailable" : attentionCount }}</dd>
+          <dd class="metric-detail">Quota status and collection freshness</dd>
+        </dl>
+        <AppButton
           type="button"
-          class="w-full cursor-pointer text-left"
+          size="sm"
+          color="neutral"
+          variant="ghost"
+          icon="i-tabler-arrow-right"
+          class="mt-1"
           aria-label="Show accounts needing attention"
           @click="showAttention"
-        >
-          <p
-            class="text-xs font-semibold uppercase text-[var(--ui-text-muted)]"
-          >
-            Quota attention
-          </p>
-          <p class="mt-1 text-2xl font-bold">
-            {{ quotaError ? "Unavailable" : attentionCount }}
-          </p>
-          <p class="text-xs text-[var(--ui-text-muted)]">
-            Quota status and collection freshness
-          </p>
-        </button></AppCard
-      >
-      <AppCard
-        ><p class="text-xs font-semibold uppercase text-[var(--ui-text-muted)]">
-          WebSockets
-        </p>
-        <p class="mt-1 text-2xl font-bold">
+        >Review accounts</AppButton>
+      </div>
+      <dl class="metric">
+        <dt>WebSockets</dt>
+        <dd class="metric-value">
           {{ accounts.filter((item) => item.websockets).length }}
-        </p>
-        <p class="text-xs text-[var(--ui-text-muted)]">
-          Enabled accounts
-        </p></AppCard
-      >
-    </div>
+        </dd>
+        <dd class="metric-detail">Enabled accounts</dd>
+      </dl>
+    </section>
 
     <AppPanelTabs
       :model-value="tab"
@@ -93,6 +79,10 @@
 <script setup>
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
 import { useStoreData } from '~/composables/useStoreData'
+import { useQuotaCollection } from '~/composables/useQuotaCollection'
+import { isQuotaAttention } from '~/composables/upstreamQuota'
+import { useDataSync } from '~/composables/useDataSync'
+const quotaCollection = useQuotaCollection()
 const route = useRoute();
 if (route.query.tab === "proxy")
   await navigateTo("/admin/proxy-network", { replace: true });
@@ -104,7 +94,7 @@ watch(
   },
 );
 const router = useRouter();
-const { fetchAPI } = useApi();
+const { fetchAPI, token } = useApi();
 const toast = useToast();
 const tab = computed(() =>
   route.query.credential
@@ -249,31 +239,19 @@ function showAttention() {
   if (tab.value === "providers") selectTab("accounts");
   attentionRequest.value++;
 }
+watch(quotaCollection.revision, () => { void refreshSummaryQuota() });
+useDataSync('admin:upstream:quota-collection', syncData);
 async function syncData() {
+  if (syncing.value) return;
+  const session = token.value;
   syncing.value = true;
   try {
-    const [collection] = await Promise.allSettled([
-      fetchAPI("/quota/collect", { method: "POST", body: {} }),
-      refreshSummary(),
-    ]);
+    await Promise.all([quotaCollection.collect(), refreshSummary()]);
+    if (session !== token.value) return;
     void refreshSummaryQuota();
     syncRequest.value++;
-    if (collection.status === "fulfilled")
-      toast.add({
-        title: collection.value.accepted
-          ? "Quota collection queued"
-          : "No collection queued",
-        color: collection.value.accepted ? "success" : "warning",
-      });
-    else
-      toast.add({
-        title: "Quota collection unavailable",
-        description:
-          collection.reason?.message ||
-          "Accounts and providers were refreshed without quota collection.",
-        color: "warning",
-      });
   } catch (error) {
+    if (session !== token.value) return;
     toast.add({
       title: "Sync failed",
       description: error?.message || "Could not queue quota collection.",
@@ -284,3 +262,44 @@ async function syncData() {
   }
 }
 </script>
+
+<style scoped>
+.metric-strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  border-radius: 0.5rem;
+  background: var(--ui-border);
+}
+
+.metric {
+  min-width: 0;
+  padding: 0.75rem 1rem;
+  background: var(--ui-bg-elevated);
+}
+
+.metric dt,
+.metric-detail {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: var(--ui-text-muted);
+}
+
+.metric-value {
+  margin-block: 0.25rem;
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 40rem) {
+  .metric-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 80rem) {
+  .metric-strip { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+</style>

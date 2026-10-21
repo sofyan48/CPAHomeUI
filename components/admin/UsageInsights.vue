@@ -8,7 +8,7 @@
       <USelect v-model="groupBy" :items="['model', 'provider', 'user', 'client_key', 'credential', 'endpoint', 'home_ip']" class="w-44" />
       <USelect v-model="metric" :items="['request_count', 'total_tokens', 'total_amount', 'failed_count', 'avg_latency_ms', 'p95_latency_ms']" class="w-48" />
       <AppButton :loading="loading" :disabled="loading || !canLoadInsights" @click="refresh">Load insights</AppButton>
-      <span class="text-xs text-[var(--ui-text-muted)]">Overview and insights support only date, provider, model, endpoint, and Home IP filters; without dates they default to 24 hours. Realtime uses the last 15 minutes.</span>
+      <span class="text-xs text-[var(--ui-text-muted)]">Overview and insights support date, provider, model, credential type, endpoint, and Home IP filters; without dates aggregates default to 24 hours. Realtime uses the last 15 minutes.</span>
     </div>
     <div class="grid gap-4 xl:grid-cols-2">
       <AppCard v-if="available('usage_aggregates')">
@@ -68,15 +68,19 @@ const featureLabels: Record<string, string> = {
 const available = (feature: string) => supports(feature) && !unavailable.value.includes(feature)
 const unavailableFeatures = computed(() => Object.entries(featureLabels).filter(([feature]) => !available(feature)).map(([, label]) => label))
 const canLoadInsights = computed(() => ['usage_aggregates', 'usage_realtime', 'usage_provider_health', 'usage_credential_health'].some(available))
-const controller = new AbortController()
-onScopeDispose(() => controller.abort())
+let controller = new AbortController()
+let generation = 0
+let disposed = false
+onScopeDispose(() => { disposed = true; generation++; controller.abort() })
 onMounted(() => { void refreshCapabilities().catch(() => {}) })
-watch(token, () => { unavailable.value = [] })
+watch(token, () => { unavailable.value = []; invalidate(); void refreshCapabilities().catch(() => {}) })
 function endpointUnavailable(cause: any) { return [404, 405, 501].includes(cause?.statusCode) }
 async function optionalRequest<T>(feature: string, path: string, query?: Record<string, string | number>) {
   if (!available(feature)) return null
+  const current = generation
   try { return await fetchAPI<T>(path, { query, signal: controller.signal }) }
   catch (cause: any) {
+    if (disposed || current !== generation) return null
     if (endpointUnavailable(cause)) { unavailable.value = [...new Set([...unavailable.value, feature])]; return null }
     throw cause
   }
@@ -95,8 +99,21 @@ const healthSections = computed(() => [
   { feature: 'usage_provider_health', label: 'Provider', items: providerHealth.value?.items || [] },
   { feature: 'usage_credential_health', label: 'Credential', items: credentialHealth.value?.items || [] }
 ].filter(section => available(section.feature)))
+function invalidate() {
+  generation++
+  controller.abort()
+  controller = new AbortController()
+  loading.value = false
+  error.value = ''
+  aggregates.value = null
+  realtime.value = null
+  providerHealth.value = null
+  credentialHealth.value = null
+}
+watch([() => props.commonQuery, groupBy, metric], invalidate)
 async function refresh() {
   if (loading.value || !canLoadInsights.value) return
+  const current = ++generation
   loading.value = true
   error.value = ''
   try {
@@ -108,11 +125,12 @@ async function refresh() {
       optionalRequest('usage_realtime', `/usage/realtime?${realtimeFilters.toString()}`, { window_seconds: 900, bucket_seconds: 60, group_by: realtimeGroupBy.value }),
       optionalRequest('usage_provider_health', `/usage/health/providers?${props.commonQuery}`), optionalRequest('usage_credential_health', `/usage/health/credentials?${props.commonQuery}`)
     ])
+    if (disposed || current !== generation) return
     aggregates.value = ranking
     realtime.value = snapshot
     providerHealth.value = providers
     credentialHealth.value = credentials
-  } catch (cause: any) { error.value = cause?.message || 'Unable to load usage insights.' }
-  finally { loading.value = false }
+  } catch (cause: any) { if (!disposed && current === generation) error.value = cause?.message || 'Unable to load usage insights.' }
+  finally { if (!disposed && current === generation) loading.value = false }
 }
 </script>

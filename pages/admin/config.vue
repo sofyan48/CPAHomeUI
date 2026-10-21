@@ -16,7 +16,7 @@
 
     <div v-else class="grid items-start gap-5 xl:grid-cols-[240px_minmax(0,1fr)]">
       <aside
-        class="hidden min-w-0 self-start xl:block"
+        class="hidden min-w-0 self-start xl:sticky xl:top-0 xl:block xl:max-h-[calc(100dvh-7rem)] xl:overflow-y-auto xl:overscroll-contain"
       >
         <AppCard :ui="{ body: 'p-2 sm:p-2' }">
           <p
@@ -60,7 +60,7 @@
         <AdminConfigVisualSections
           v-model:draft="draft"
           :validation-errors="validationErrors"
-          :loading="loading"
+          :loading="loading || saving"
         >
           <template #oauth-rules>
             <AppCard
@@ -100,6 +100,13 @@
                       >Reload models</AppButton
                     >
                   </div>
+                  <UAlert
+                    v-if="modelsError"
+                    color="warning"
+                    variant="subtle"
+                    title="Channel model definitions unavailable"
+                    :description="modelsError"
+                  />
                   <div
                     class="max-h-80 overflow-y-auto rounded-md border border-[var(--ui-border)]"
                   >
@@ -109,6 +116,7 @@
                       class="flex items-start gap-3 border-b border-[var(--ui-border)] px-3 py-2 last:border-b-0"
                       ><UCheckbox
                         :model-value="excludedForChannel.includes(model.id)"
+                        :disabled="loading || saving || Boolean(validationErrors.oauthExcludedModelsJson)"
                         @update:model-value="toggleExcluded(model.id, $event)"
                       /><span
                         ><span class="block text-sm font-medium">{{
@@ -121,10 +129,10 @@
                       ></label
                     >
                     <p
-                      v-if="!modelsLoading && !filteredChannelModels.length"
+                      v-if="modelsLoading || !filteredChannelModels.length"
                       class="p-6 text-center text-sm text-[var(--ui-text-muted)]"
                     >
-                      No matching models.
+                      {{ modelsLoading ? 'Loading channel models…' : 'No matching model definitions. Manual rules remain available below.' }}
                     </p>
                   </div>
                   <div class="flex items-center justify-between">
@@ -134,11 +142,14 @@
                       color="neutral"
                       variant="ghost"
                       size="sm"
-                      :disabled="!excludedForChannel.length"
+                      :disabled="!excludedForChannel.length || loading || saving || Boolean(validationErrors.oauthExcludedModelsJson)"
                       @click="clearExcludedChannel"
                       >Clear channel</AppButton
                     >
                   </div>
+                  <UFormField label="Manual exclusion rules (JSON)" hint="Map channel IDs to arrays of model IDs or wildcard patterns. Rules outside the catalog and custom channels are preserved." :error="validationErrors.oauthExcludedModelsJson">
+                    <UTextarea v-model="draft.oauthExcludedModelsJson" :disabled="loading || saving" :rows="6" class="w-full font-mono text-xs" spellcheck="false" />
+                  </UFormField>
                 </section>
 
                 <section
@@ -163,7 +174,7 @@
                     v-for="(row, index) in aliasRows"
                     :key="row.key"
                     :ui="{
-                      body: 'grid gap-3 p-3 lg:grid-cols-[1fr_1.3fr_1.3fr_auto_auto_auto] lg:items-end',
+                      body: 'grid gap-3 p-3 lg:grid-cols-2 lg:items-end',
                     }"
                     ><UFormField label="Channel"
                       ><UInput v-model="row.channel" /></UFormField
@@ -171,12 +182,15 @@
                       ><UInput v-model="row.name" /></UFormField
                     ><UFormField label="Client alias"
                       ><UInput v-model="row.alias" /></UFormField
+                    ><UFormField label="Display name (optional)"
+                      ><UInput v-model="row.displayName" /></UFormField
                     ><UCheckbox v-model="row.fork" label="Fork" /><UCheckbox
                       v-model="row.forceMapping"
                       label="Force mapping" /><AppButton
                       color="error"
                       variant="ghost"
                       icon="i-tabler-trash"
+                      aria-label="Remove model alias"
                       @click="aliasRows.splice(index, 1)"
                   /></AppCard>
                   <p
@@ -462,8 +476,12 @@ const modelSearch = ref("");
 const exclusionChannel = ref("claude");
 const channelModels = useWorkspaceState('admin:config:channelModels', () => ([]));
 const modelsLoading = useWorkspaceState('admin:config:modelsLoading', () => (false));
+const modelsError = ref("");
+let modelRequestVersion = 0;
 const aliasRows = ref([]);
 let aliasKey = 0;
+let aliasEditorBaseline = "";
+let aliasEditorSource = "{}";
 const payloadDraft = reactive({
   default: [],
   "default-raw": [],
@@ -471,6 +489,8 @@ const payloadDraft = reactive({
   "override-raw": [],
   filter: [],
 });
+let payloadEditorBaseline = "";
+let payloadEditorSource = "{}";
 const payloadModes = [
   { label: "Fill", value: "default" },
   { label: "Raw fill", value: "default-raw" },
@@ -491,11 +511,36 @@ const channelOptions = [
   ["vertex", "Vertex"],
   ["aistudio", "AI Studio"],
   ["codex", "Codex"],
+  ["codex-free", "Codex Free"],
+  ["codex-team", "Codex Team"],
+  ["codex-plus", "Codex Plus"],
+  ["codex-pro", "Codex Pro"],
   ["kimi", "Kimi"],
+  ["kimi-ai", "Kimi AI"],
   ["antigravity", "Antigravity"],
   ["xai", "xAI"],
+  ["devin", "Devin"],
+  ["meta", "Meta"],
 ].map(([value, label]) => ({ value, label }));
 const sharedConfigSections = [
+  {
+    id: "session-streaming", title: "Session routing and streaming", description: "Session-sticky routing and downstream response keepalives. Unset settings retain backend defaults.",
+    fields: [
+      { key: "sessionAffinity", path: ["routing", "session-affinity"], label: "Session affinity", type: "boolean", description: "Keep a session on its selected credential, with automatic failover when unavailable." },
+      { key: "sessionAffinityTtl", path: ["routing", "session-affinity-ttl"], label: "Session affinity TTL", type: "session-duration", placeholder: "1h or 30m", description: "Session-to-credential binding duration, for example 1h or 30m. Backend default: 1h; empty uses the backend fallback." },
+      { key: "sessionAffinitySubagents", path: ["routing", "session-affinity-subagents"], label: "Subagent credential inheritance", type: "boolean", description: "Optional CPA compatibility setting for inheriting a parent session's credential. Home continues to manage its own session hierarchy." },
+      { key: "streamingKeepaliveSeconds", path: ["requests", "streaming", "keepalive-seconds"], label: "SSE keepalive interval (seconds)", type: "number", description: "SSE heartbeat interval; zero or negative values disable heartbeats." },
+      { key: "streamingSendKeepaliveBeforeFt", path: ["requests", "streaming", "send-keepalive-before-ft"], label: "SSE keepalive before first token", type: "boolean", description: "Send heartbeats before the first token only when the SSE keepalive interval is greater than zero." },
+      { key: "streamingBootstrapRetries", path: ["requests", "streaming", "bootstrap-retries"], label: "Streaming bootstrap retries", type: "number", description: "Retries before the first byte of a stream; zero or negative values disable retries." },
+      { key: "nonstreamKeepaliveInterval", path: ["requests", "nonstream-keepalive-interval"], label: "Non-streaming keepalive interval (seconds)", type: "number", description: "Blank-line heartbeat interval for non-streaming responses; zero or negative values disable it." },
+    ],
+  },
+  {
+    id: "oauth-request-errors", title: "OAuth request-scoped errors", description: "Provider-keyed OAuth error overrides, separate from API-key group and credential rules. Custom provider IDs and additional rule fields are preserved.",
+    fields: [
+      { key: "oauthRequestScopedErrorsJson", path: ["oauth", "request-scoped-errors"], label: "Request-scoped error rules (JSON)", type: "json", description: 'Map provider IDs to rule arrays, e.g. {"codex":[{"status":429,"match-regexr":["rate.*limit"],"action":"continue-and-cooldown"}]}. Actions: stop, stop-and-cooldown, continue, continue-and-cooldown. Use the exact spelling match-regexr. An empty object is explicit; backend default removes the setting.' },
+    ],
+  },
   {
     id: "upstream-claude", title: "Claude shared upstream", description: "Applies to OAuth and API-key routes under their existing execution conditions. Explicit credential options keep precedence.",
     fields: [
@@ -580,7 +625,8 @@ const outline = [
       "errorLogsMaxFiles",
     ],
   },
-  { id: "network", short: "Network", keys: ["proxyUrl"] },
+  { id: "models", short: "Model catalogs", keys: ["modelsCatalog", "modelsCodexCatalog", "modelsDevinCatalog"] },
+  { id: "network", short: "Network", keys: ["proxyUrl", "tlsHandshakeTimeoutSeconds"] },
   {
     id: "quota",
     short: "Quota",
@@ -600,6 +646,7 @@ const outline = [
   },
   ...sharedConfigSections.map(section => ({ id: section.id, short: section.title, keys: section.fields.map(field => field.key) })),
   { id: "payload", short: "Parameters", keys: ["payloadJson"] },
+  { id: "devin", short: "Devin OAuth", keys: ["devinSensitiveWordsJson"] },
   {
     id: "antigravity",
     short: "Antigravity",
@@ -632,6 +679,7 @@ const validationErrors = computed(() => {
     "maxRetryInterval",
     "logsMaxTotalSizeMb",
     "errorLogsMaxFiles",
+    "tlsHandshakeTimeoutSeconds",
   ];
   if (
     !Number.isInteger(Number(draft.value.port)) ||
@@ -641,6 +689,7 @@ const validationErrors = computed(() => {
     errors.port = "Enter an integer from 1 to 65535.";
   for (const key of integerKeys)
     if (
+      draft.value[key] === null || draft.value[key] === "" ||
       !Number.isInteger(Number(draft.value[key])) ||
       Number(draft.value[key]) < 0
     )
@@ -657,6 +706,16 @@ const validationErrors = computed(() => {
       if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) throw new Error();
     } catch {
       errors.cpaPublicUrl = "Enter an absolute HTTP or HTTPS URL without credentials.";
+    }
+  }
+  for (const key of ["modelsCatalog", "modelsCodexCatalog", "modelsDevinCatalog"]) {
+    const source = String(draft.value[key] || "").trim();
+    if (!source || source.startsWith("/") || /^[a-zA-Z]:[\\/]/.test(source) || source.startsWith("\\\\")) continue;
+    try {
+      const url = new URL(source);
+      if (!["http:", "https:"].includes(url.protocol) || !url.hostname) throw new Error();
+    } catch {
+      errors[key] = "Enter an HTTP(S) URL or an absolute server file path, or leave empty for the default.";
     }
   }
   if (draft.value.userEmailEnabled) {
@@ -680,13 +739,33 @@ const validationErrors = computed(() => {
       if (!/^\+?(?:(?:\d+(?:\.\d*)?|\.\d+)(?:ns|us|µs|μs|ms|s|m|h))+$/.test(value) || !/[1-9]/.test(value)) errors[key] = "Enter a positive Go duration, for example 24h or 30m.";
     }
   }
+  const exclusions = parseJSON(draft.value.oauthExcludedModelsJson, null);
+  if (!exclusions || typeof exclusions !== "object" || Array.isArray(exclusions) || Object.values(exclusions).some(rules => !Array.isArray(rules) || rules.some(rule => typeof rule !== "string"))) {
+    errors.oauthExcludedModelsJson = "Enter a JSON object mapping channel IDs to arrays of strings.";
+  }
   for (const field of sharedConfigFields) {
     const value = draft.value[field.key];
     if (value === null || value === undefined) continue;
     if (field.type === "boolean") {
       if (typeof value !== "boolean") errors[field.key] = "Select the backend default, enabled or disabled.";
+    } else if (field.type === "number") {
+      if (typeof value !== "number" || !Number.isSafeInteger(value)) errors[field.key] = "Enter an integer, or use the backend default.";
+    } else if (field.type === "json") {
+      const rules = parseJSON(value, null);
+      const isObject = item => item !== null && typeof item === "object" && !Array.isArray(item);
+      const actions = ["stop", "stop-and-cooldown", "continue", "continue-and-cooldown"];
+      if (!isObject(rules) || Object.values(rules).some(entries => !Array.isArray(entries) || entries.some(rule =>
+        !isObject(rule) || !actions.includes(rule.action) ||
+        (rule.status !== undefined && !Number.isSafeInteger(rule.status)) ||
+        ["match", "match-regexr"].some(key => rule[key] !== undefined && (!Array.isArray(rule[key]) || rule[key].some(item => typeof item !== "string"))) ||
+        Object.hasOwn(rule, "match-regex")
+      ))) errors[field.key] = "Enter a provider-to-rule-array JSON object with a supported action, optional integer status, and optional string arrays match / match-regexr (not match-regex).";
     } else if (typeof value !== "string") {
       errors[field.key] = "Enter a string value or use the backend default.";
+    } else if (field.type === "session-duration") {
+      if (value.trim() !== "" && value.trim() !== "0" && !/^\+?(?:(?:\d+(?:\.\d*)?|\.\d+)(?:ns|us|µs|μs|ms|s|m|h))+$/.test(value.trim())) {
+        errors[field.key] = "Enter a non-negative Go duration (e.g. 1h or 30m), or leave empty for the backend fallback.";
+      }
     } else if (field.type === "duration") {
       const text = value.trim().toLowerCase();
       if (!["", "0", "0s", "none", "unlimited", "disabled", "off", "never"].includes(text) && !/^\+?(?:(?:\d+(?:\.\d*)?|\.\d+)(?:ns|us|µs|μs|ms|s|m|h))+$/.test(value.trim())) {
@@ -714,14 +793,16 @@ const changes = computed(() =>
     })),
 );
 const dirtyCount = computed(() => changes.value.length);
-const excludedMap = computed(() =>
-  parseJSON(draft.value.oauthExcludedModelsJson, {}),
-);
+const excludedMap = computed(() => {
+  const value = parseJSON(draft.value.oauthExcludedModelsJson, {});
+  return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+});
 const excludedForChannel = computed(() =>
   Array.isArray(excludedMap.value[exclusionChannel.value])
     ? excludedMap.value[exclusionChannel.value]
     : [],
 );
+
 const filteredChannelModels = computed(() => {
   const q = modelSearch.value.trim().toLowerCase();
   return channelModels.value.filter(
@@ -793,11 +874,16 @@ function buildDraft(config, yamlRoot) {
   const usage = observability.usage || {};
   const oauth = config.oauth || yamlRoot.oauth || {};
   const antigravity = oauth.providers?.antigravity || {};
+  const devin = oauth.providers?.devin || {};
+  const models = config.models || yamlRoot.models || {};
   const email = config["user-email"] || yamlRoot["user-email"] || {};
   const smtp = email.sender?.smtp || {};
   return {
     // Read shared settings from YAML so omitted/null, false and empty strings stay distinct.
-    ...Object.fromEntries(sharedConfigFields.map(field => [field.key, field.path.reduce((value, part) => value?.[part], yamlRoot) ?? null])),
+    ...Object.fromEntries(sharedConfigFields.map(field => {
+      const value = field.path.reduce((node, part) => node?.[part], yamlRoot) ?? null;
+      return [field.key, field.type === "json" && value !== null ? JSON.stringify(value, null, 2) : value];
+    })),
     debug: Boolean(logs.debug),
     port: Number(server.port || 8317),
     cpaPublicUrl: (config["user-panel"] || yamlRoot["user-panel"])?.["cpa-public-url"] || "",
@@ -841,6 +927,11 @@ function buildDraft(config, yamlRoot) {
     logsMaxTotalSizeMb: Number(logs["logs-max-total-size-mb"] || 0),
     errorLogsMaxFiles: Number(logs["error-logs-max-files"] ?? 10),
     proxyUrl: requests["proxy-url"] || "",
+    tlsHandshakeTimeoutSeconds: Number(requests["tls-handshake-timeout-seconds"] ?? 0),
+    modelsCatalog: models.catalog || "",
+    modelsCodexCatalog: models["codex-catalog"] || "",
+    modelsDevinCatalog: models["devin-catalog"] || "",
+    devinSensitiveWordsJson: (devin["sensitive-words"] || []).join("\n"),
     quotaSwitchProject: Boolean(config["quota-exceeded"]?.["switch-project"]),
     quotaSwitchPreviewModel: Boolean(
       config["quota-exceeded"]?.["switch-preview-model"],
@@ -865,17 +956,23 @@ function syncEditors() {
     (entries || []).map((entry) => ({
       key: ++aliasKey,
       channel,
+      original: structuredClone(entry),
+      displayName: entry["display-name"] || "",
       name: entry.name || "",
       alias: entry.alias || "",
       fork: Boolean(entry.fork),
       forceMapping: Boolean(entry["force-mapping"]),
     })),
   );
+  aliasEditorBaseline = JSON.stringify(aliasRows.value);
+  aliasEditorSource = draft.value.oauthModelAliasJson;
   const payload = parseJSON(draft.value.payloadJson, {});
   for (const mode of payloadModes)
     payloadDraft[mode.value] = structuredClone(
       Array.isArray(payload[mode.value]) ? payload[mode.value] : [],
     );
+  payloadEditorBaseline = JSON.stringify(payloadDraft);
+  payloadEditorSource = draft.value.payloadJson;
 }
 function syncSpecialDrafts() {
   const grouped = {};
@@ -883,20 +980,25 @@ function syncSpecialDrafts() {
     const channel = row.channel.trim().toLowerCase();
     if (!channel || !row.name.trim() || !row.alias.trim()) continue;
     (grouped[channel] ||= []).push({
+      ...row.original,
+      ...(row.displayName?.trim() ? { "display-name": row.displayName.trim() } : row.original?.["display-name"] !== undefined ? { "display-name": "" } : {}),
       name: row.name.trim(),
       alias: row.alias.trim(),
       fork: row.fork,
       "force-mapping": row.forceMapping,
     });
   }
-  draft.value.oauthModelAliasJson = JSON.stringify(grouped, null, 2);
-  draft.value.payloadJson = JSON.stringify(
-    Object.fromEntries(
-      payloadModes.map((mode) => [mode.value, payloadDraft[mode.value]]),
-    ),
-    null,
-    2,
-  );
+  if (JSON.stringify(aliasRows.value) !== aliasEditorBaseline) {
+    draft.value.oauthModelAliasJson = JSON.stringify(grouped, null, 2);
+  } else {
+    draft.value.oauthModelAliasJson = aliasEditorSource;
+  }
+  draft.value.payloadJson = JSON.stringify(payloadDraft) === payloadEditorBaseline
+    ? payloadEditorSource
+    : JSON.stringify({
+        ...parseJSON(payloadEditorSource, {}),
+        ...Object.fromEntries(payloadModes.map((mode) => [mode.value, payloadDraft[mode.value]])),
+      }, null, 2);
 }
 async function loadWorkspace(preserveDraft = false) {
   if (loading.value) return;
@@ -940,18 +1042,21 @@ function reloadWorkspace() {
   else loadWorkspace();
 }
 async function loadChannelModels() {
+  const version = ++modelRequestVersion;
+  const channel = exclusionChannel.value;
   modelsLoading.value = true;
+  modelsError.value = "";
+  channelModels.value = [];
   try {
-    const response = await fetchAPI("/models", {
-      query: { scope: "available", channel: exclusionChannel.value },
-    });
-    channelModels.value = Array.isArray(response?.models)
-      ? response.models
-      : [];
-  } catch {
-    channelModels.value = [];
+    const response = await fetchAPI(`/routing/model-definitions/${encodeURIComponent(channel)}`);
+    if (version !== modelRequestVersion) return;
+    if (!Array.isArray(response?.models)) throw new Error("Invalid model definitions response.");
+    channelModels.value = response.models;
+  } catch (error) {
+    if (version !== modelRequestVersion) return;
+    modelsError.value = error?.message || "Unable to load channel model definitions. Edit rules manually below.";
   } finally {
-    modelsLoading.value = false;
+    if (version === modelRequestVersion) modelsLoading.value = false;
   }
 }
 function toggleExcluded(id, checked) {
@@ -973,6 +1078,7 @@ function addAlias() {
     channel: aliasRows.value.at(-1)?.channel || "claude",
     name: "",
     alias: "",
+    displayName: "",
     fork: false,
     forceMapping: false,
   });
@@ -1091,6 +1197,11 @@ const v8YamlPaths = {
   logsMaxTotalSizeMb: ["observability", "logs", "logs-max-total-size-mb"],
   errorLogsMaxFiles: ["observability", "logs", "error-logs-max-files"],
   proxyUrl: ["requests", "proxy-url"],
+  tlsHandshakeTimeoutSeconds: ["requests", "tls-handshake-timeout-seconds"],
+  modelsCatalog: ["models", "catalog"],
+  modelsCodexCatalog: ["models", "codex-catalog"],
+  modelsDevinCatalog: ["models", "devin-catalog"],
+  devinSensitiveWordsJson: ["oauth", "providers", "devin", "sensitive-words"],
   quotaSwitchProject: ["quota-exceeded", "switch-project"],
   quotaSwitchPreviewModel: ["quota-exceeded", "switch-preview-model"],
   requestRetry: ["routing", "retry", "request-retry"],
@@ -1133,11 +1244,12 @@ async function saveWorkspace() {
           "requestRetry",
           "maxRetryCredentials",
           "maxRetryInterval",
+          "tlsHandshakeTimeoutSeconds",
         ].includes(key)
       )
         value = Number(value);
       else if (
-        ["pluginStoreSourcesJson", "antigravitySensitiveWordsJson"].includes(
+        ["pluginStoreSourcesJson", "antigravitySensitiveWordsJson", "devinSensitiveWordsJson"].includes(
           key,
         )
       )
@@ -1145,12 +1257,13 @@ async function saveWorkspace() {
       else if (
         [
           "oauthExcludedModelsJson",
+          "oauthRequestScopedErrorsJson",
           "oauthModelAliasJson",
           "payloadJson",
         ].includes(key)
       )
         value = parseJSON(value, {});
-      else if (key === "proxyUrl" || key === "cpaPublicUrl") value = String(value).trim();
+      else if (["proxyUrl", "cpaPublicUrl", "modelsCatalog", "modelsCodexCatalog", "modelsDevinCatalog"].includes(key)) value = String(value).trim();
       document.setIn(path, value);
     }
     if (changed.some(key => key.startsWith("userEmail"))) {
@@ -1176,6 +1289,8 @@ async function saveWorkspace() {
     saving.value = false;
   }
 }
+
+watch(aliasRows, syncSpecialDrafts, { deep: true });
 
 useDataSync('admin:config:sync', () => loadWorkspace(true));
 onMounted(loadWorkspace);

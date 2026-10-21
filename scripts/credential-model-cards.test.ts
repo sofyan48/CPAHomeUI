@@ -51,7 +51,9 @@ describe('credential model cards', () => {
     const source = readFileSync(new URL('../components/admin/UpstreamAccounts.vue', import.meta.url), 'utf8')
     const section = source.split(`detailsTab === 'Models'`)[1].split(`detailsTab === 'Recovery'`)[0]
     expect(section.match(/<h3 /g)?.length).toBe(1)
-    expect(section).toContain('v-for="model in modelCards" :key="model.id"')
+    expect(section).toContain('v-for="model in scopedModelCards" :key="model.id"')
+        expect(section.match(/v-for="model in /g)?.length).toBe(1)
+        expect(section).toContain('v-model="modelScope"')
     expect(section).not.toContain('v-for="model in credentialModels"')
     expect(section).not.toContain('v-for="model in modelStates.credential.models')
     expect(source).toContain('credentialModelCards(credentialModels.value, modelStates.value?.credential?.models || [])')

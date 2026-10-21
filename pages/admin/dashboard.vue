@@ -19,10 +19,8 @@
     </UAlert>
 
     <template v-if="snapshot && !loadError">
-      <AppCard
-        class="border-white/40 bg-white/40 dark:border-white/10 dark:bg-neutral-900/40"
-      >
-        <template #header>
+      <section aria-label="Service readiness" class="space-y-3 border-b border-[var(--ui-border)] pb-4">
+        <header>
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div class="flex flex-wrap items-center gap-2">
@@ -37,24 +35,15 @@
             </div>
             <AppSyncButton :loading="loading" @click="refreshDashboard" />
           </div>
-        </template>
-        <div class="flex flex-wrap gap-2">
-          <UBadge color="info" variant="subtle" icon="i-tabler-server"
-            >Server: {{ runtimeMode || "Home" }}</UBadge
-          >
-          <UBadge color="success" variant="subtle" icon="i-tabler-tag"
-            >Version: {{ latestVersion || "Unavailable" }}</UBadge
-          >
-          <UBadge color="warning" variant="subtle" icon="i-tabler-clock-check"
-            >Synced:
-            {{
-              lastUpdated ? lastUpdated.toLocaleString() : "Not synced"
-            }}</UBadge
-          >
+        </header>
+        <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--ui-text-muted)]">
+          <span>Server: {{ runtimeMode || "Home" }}</span>
+          <span>Version: {{ latestVersion || "Unavailable" }}</span>
+          <span>Synced: {{ lastUpdated ? lastUpdated.toLocaleString() : "Not synced" }}</span>
         </div>
         <div
           v-if="missingCapabilities.length"
-          class="mt-4 flex flex-wrap gap-2"
+          class="flex flex-wrap gap-2"
         >
           <UBadge
             v-for="item in missingCapabilities"
@@ -66,7 +55,7 @@
         </div>
         <div
           v-if="suggestedActions.length"
-          class="mt-4 flex flex-wrap items-center gap-2"
+          class="flex flex-col items-stretch gap-2 border-t border-[var(--ui-border)] pt-3 sm:flex-row sm:flex-wrap sm:items-center"
         >
           <span class="text-xs font-medium">Suggested actions</span
           ><AppButton
@@ -79,26 +68,19 @@
             >{{ action.label }}</AppButton
           >
         </div>
-      </AppCard>
+      </section>
 
-      <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section aria-label="Operating metrics" class="dashboard-metric-strip">
         <NuxtLink
           v-for="card in operatingCards"
           :key="card.label"
           :to="card.to"
-          class="group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          class="dashboard-metric"
         >
-          <AppCard
-            class="h-full border-white/40 bg-white/40 transition-shadow group-hover:shadow-lg dark:border-white/10 dark:bg-neutral-900/40"
-          >
-            <template #header
-              ><h2 class="font-semibold">{{ card.label }}</h2></template
-            >
-            <p class="text-2xl font-semibold tabular-nums">{{ card.value }}</p>
-            <p class="mt-1 text-xs text-[var(--ui-text-muted)]">
-              {{ card.detail }}
-            </p>
-          </AppCard>
+          <h2 class="metric-label">{{ card.label }}</h2>
+          <p class="metric-value">{{ card.value }}</p>
+          <p class="metric-detail">{{ card.detail }}</p>
+          <UIcon name="i-tabler-chevron-right" class="metric-link-icon" aria-hidden="true" />
         </NuxtLink>
       </section>
 
@@ -119,11 +101,9 @@
       </section>
 
       <section class="grid gap-4 lg:grid-cols-2">
-        <AppCard
-          class="border-white/40 bg-white/40 dark:border-white/10 dark:bg-neutral-900/40"
-        >
+        <AppCard>
           <template #header
-            ><div class="flex items-center justify-between">
+            ><div class="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <h2 class="font-semibold">Key status</h2>
                 <p class="text-xs text-[var(--ui-text-muted)]">
@@ -183,11 +163,9 @@
             }}
           </p>
         </AppCard>
-        <AppCard
-          class="border-white/40 bg-white/40 dark:border-white/10 dark:bg-neutral-900/40"
-        >
+        <AppCard>
           <template #header
-            ><div class="flex items-center justify-between">
+            ><div class="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <h2 class="font-semibold">Model usage distribution</h2>
                 <p class="text-xs text-[var(--ui-text-muted)]">
@@ -248,34 +226,24 @@
         </AppCard>
       </section>
 
-      <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section aria-label="Service inventory" class="dashboard-metric-strip">
         <NuxtLink
           v-for="card in inventoryCards"
           :key="card.label"
           :to="card.to"
-          class="group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          class="dashboard-metric"
         >
-          <AppCard
-            class="h-full border-white/40 bg-white/40 transition-shadow group-hover:shadow-lg dark:border-white/10 dark:bg-neutral-900/40"
-          >
-            <template #header
-              ><h2 class="font-semibold">{{ card.label }}</h2></template
-            >
-            <p class="text-2xl font-semibold tabular-nums">
-              {{ formatNumber(card.value) }}
-            </p>
-            <p class="mt-1 text-xs text-[var(--ui-text-muted)]">
-              {{ card.detail }}
-            </p>
-          </AppCard>
+          <h2 class="metric-label">{{ card.label }}</h2>
+          <p class="metric-value">{{ formatNumber(card.value) }}</p>
+          <p class="metric-detail">{{ card.detail }}</p>
+          <UIcon name="i-tabler-chevron-right" class="metric-link-icon" aria-hidden="true" />
         </NuxtLink>
       </section>
 
       <section class="grid gap-4 lg:grid-cols-2">
         <AppCard
-          class="border-white/40 bg-white/40 dark:border-white/10 dark:bg-neutral-900/40"
           ><template #header
-            ><div class="flex items-center justify-between">
+            ><div class="flex flex-wrap items-center justify-between gap-2">
               <h2 class="font-semibold">Model service access</h2>
               <AppButton
                 to="/admin/providers"
@@ -315,7 +283,6 @@
           >
         </AppCard>
         <AppCard
-          class="border-white/40 bg-white/40 dark:border-white/10 dark:bg-neutral-900/40"
           ><template #header
             ><h2 class="font-semibold">Key switches</h2></template
           >
@@ -337,7 +304,6 @@
       <section class="grid gap-4 lg:grid-cols-2">
         <AppCard
           v-if="dataIssues.length || missingCapabilities.length"
-          class="border-white/40 bg-white/40 dark:border-white/10 dark:bg-neutral-900/40"
           ><template #header
             ><h2 class="font-semibold">
               Data loading status ·
@@ -358,7 +324,6 @@
           </div>
         </AppCard>
         <AppCard
-          class="border-white/40 bg-white/40 dark:border-white/10 dark:bg-neutral-900/40"
           ><template #header
             ><h2 class="font-semibold">Account credential sources</h2></template
           >
@@ -973,3 +938,63 @@ async function refreshDashboard() {
 useDataSync('admin:dashboard:sync', refreshDashboard);
 onMounted(refreshDashboard);
 </script>
+
+<style scoped>
+.dashboard-metric-strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  border-radius: 0.5rem;
+  background: var(--ui-border);
+}
+
+.dashboard-metric {
+  position: relative;
+  min-width: 0;
+  padding: 0.75rem 2rem 0.75rem 1rem;
+  background: var(--ui-bg-elevated);
+}
+
+.dashboard-metric:focus-visible {
+  z-index: 1;
+  outline: 2px solid var(--ui-focus);
+  outline-offset: -2px;
+}
+
+.metric-label,
+.metric-detail {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 400;
+  color: var(--ui-text-muted);
+}
+
+.metric-value {
+  margin-block: 0.25rem;
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.metric-link-icon {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  color: var(--ui-text-muted);
+}
+
+@media (hover: hover) {
+  .dashboard-metric:hover { background: var(--ui-hover); }
+}
+
+@media (min-width: 40rem) {
+  .dashboard-metric-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 80rem) {
+  .dashboard-metric-strip { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+</style>

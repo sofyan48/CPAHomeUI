@@ -80,8 +80,12 @@
         </template>
 
         <AppTable
-          :columns="userColumns"
+          :columns="visibleUserColumns"
           :data="filteredUsers"
+          :virtualize="{ estimateSize: 88, overscan: 8 }"
+          :get-row-id="(user) => String(user.id)"
+          class="max-h-[65dvh]"
+          :ui="{ base: 'table-fixed lg:min-w-[90rem]', thead: 'sticky top-0 z-10 bg-[var(--ui-bg)]' }"
           :loading="loading"
           empty="No users match the current filter."
         >
@@ -104,7 +108,8 @@
               "
           /></template>
           <template #user-cell="{ row }"
-            ><p class="font-medium">{{ row.original.username }}</p></template
+            ><p class="truncate font-medium" :title="row.original.username">{{ row.original.username }}</p>
+            <p v-if="row.original.pending_topup" class="text-xs text-[var(--ui-text-muted)]">Topup pending</p></template
           >
           <template #status-cell="{ row }"
             ><UBadge
@@ -163,60 +168,23 @@
             ></template
           >
 
-          <template #actions-cell="{ row }"
-            ><div class="flex items-center justify-end gap-1">
-              <AppButton
-                v-if="row.original.approval_pending && !row.original.deleted_at"
-                icon="i-tabler-user-check"
-                color="success"
-                variant="soft"
-                size="xs"
-                :loading="approvingUserId === row.original.id"
-                :disabled="approvingUserId !== null"
-                :aria-label="`Approve user ${row.original.username}`"
-                title="Approve user"
-                @click="openApproval(row.original)"
-              />
-              <AppButton
-                v-if="topupApprovalSupported && row.original.pending_topup && !row.original.deleted_at"
-                icon="i-tabler-coins"
-                color="warning"
-                variant="soft"
-                size="xs"
-                :loading="approvingTopupUserId === row.original.id"
-                :disabled="approvingTopupUserId !== null"
-                :aria-label="`Approve topup for ${row.original.username}`"
-                title="Approve topup"
-                @click="openTopupApproval(row.original)"
-              />
-              <AdminTableAction
-                action="view"
-                label="View user"
-                @click="openUserDetail(row.original)"
-              /><AdminTableAction
-                action="edit"
-                label="Edit user"
-                @click="openUserEdit(row.original)"
-              /><AdminTableAction
-                action="edit"
-                icon="i-tabler-cash-banknote"
-                label="Balance operation"
-                :disabled="!isOperableUser(row.original)"
-                @click="openBalance([row.original])"
-              /><AdminTableAction
-                v-if="resetAllowanceSupported"
-                action="edit"
-                icon="i-tabler-refresh"
-                label="Configure reset allowance"
-                :disabled="!isOperableUser(row.original)"
-                @click="openResetAllowance(row.original)"
-              /><AdminTableAction
-                action="delete"
-                label="Delete user"
-                destructive
-                @click="confirmUserDelete(row.original)"
-              /></div
-          ></template>
+          <template #actions-cell="{ row }">
+            <UsersRowActions
+              :user="row.original"
+              :operable="isOperableUser(row.original)"
+              :topup-supported="topupApprovalSupported"
+              :reset-supported="resetAllowanceSupported"
+              :approving="approvingUserId !== null"
+              :approving-topup="approvingTopupUserId !== null"
+              @view="openUserDetail(row.original)"
+              @edit="openUserEdit(row.original)"
+              @balance="openBalance([row.original])"
+              @reset="openResetAllowance(row.original)"
+              @approve="openApproval(row.original)"
+              @topup="openTopupApproval(row.original)"
+              @delete="confirmUserDelete(row.original)"
+            />
+          </template>
         </AppTable>
       </AdminTablePanel>
 
@@ -735,6 +703,8 @@
             </p>
           </div>
           <DetailSection title="Profile" :items="profileItems(userDetail)" />
+                    <DetailSection title="Pending topup" :items="topupDetailItems(userDetail)" />
+                    <DetailSection v-if="resetAllowanceSupported" title="Reset allowance" :items="resetAllowanceItems(userDetail)" />
           <section class="grid gap-3">
             <div class="flex items-center justify-between gap-3">
               <h3 class="text-sm font-semibold">Period limits</h3>
@@ -1369,6 +1339,7 @@ import SummaryRow from "@/components/admin/users/UsersSummaryRow.vue";
 import DetailSection from "@/components/admin/users/UsersDetailSection.vue";
 import PeriodCard from "@/components/admin/users/UsersPeriodCard.vue";
 import UsersResetAllowance from "~/components/admin/users/UsersResetAllowance.vue";
+import UsersRowActions from "~/components/admin/users/UsersRowActions.vue";
 import ScopePicker from "@/components/admin/users/UsersScopePicker.vue";
 import CandidatePicker from "@/components/admin/users/UsersCandidatePicker.vue";
 import GroupCards from "@/components/admin/users/UsersGroupCards.vue";
@@ -1496,9 +1467,9 @@ async function approveUser() {
   }
 }
 const userColumns = [
-  { id: "select", header: "" },
+  { id: "select", header: "", meta: { class: { th: 'w-12', td: 'w-12' } } },
   { accessorKey: "user", header: "User" },
-  { accessorKey: "status", header: "Status" },
+  { accessorKey: "status", header: "Status", meta: { class: { th: 'w-28', td: 'w-28' } } },
   { accessorKey: "credits", header: "Credits" },
   { accessorKey: "pendingTopup", header: "Pending topup" },
   { accessorKey: "periodLimits", header: "Period limits" },
@@ -1512,12 +1483,25 @@ const userColumns = [
     header: "Actions",
     meta: {
       class: {
-        th: "w-px whitespace-nowrap text-right",
-        td: "w-px whitespace-nowrap text-right",
+        th: "w-24 whitespace-nowrap text-right",
+        td: "w-24 whitespace-nowrap text-right",
       },
     },
   },
 ];
+const compactUsers = ref(false);
+const visibleUserColumns = computed(() => compactUsers.value
+  ? userColumns.filter((column) => ['select', 'user', 'status', 'actions'].includes(column.id || column.accessorKey))
+  : userColumns);
+let usersMedia;
+const updateUsersLayout = () => { compactUsers.value = usersMedia.matches; };
+onMounted(() => {
+  usersMedia = window.matchMedia('(max-width: 63.99rem)');
+  updateUsersLayout();
+  usersMedia.addEventListener('change', updateUsersLayout);
+});
+onBeforeUnmount(() => usersMedia?.removeEventListener('change', updateUsersLayout));
+
 const keyColumns = [
   { accessorKey: "key", header: "Client key" },
   { accessorKey: "owner", header: "Owner" },
@@ -1866,8 +1850,17 @@ function keyChannelNames(key) {
 function keyModelNames(key) {
   return key.model_groups.map(modelGroupName);
 }
+const keysByUser = computed(() => {
+  const grouped = new Map();
+  for (const key of keys.value) {
+    const id = Number(key.user_id);
+    if (!grouped.has(id)) grouped.set(id, []);
+    grouped.get(id).push(key);
+  }
+  return grouped;
+});
 function keysForUser(id) {
-  return keys.value.filter((key) => Number(key.user_id) === Number(id));
+  return keysByUser.value.get(Number(id)) || [];
 }
 function effectiveChannelScopes(id) {
   const owned = keysForUser(id);
@@ -2216,7 +2209,7 @@ async function openUserDetail(user) {
   detailPeriodError.value = "";
   try {
     const response = await fetchAPI(`/users/${encodeURIComponent(user.id)}`);
-    userDetail.value = response?.user || response || user;
+    userDetail.value = { ...user, ...(response?.user || response || {}) };
   } catch {}
   if (periodLimitsSupported.value) await loadUserPeriods(user);
 }
@@ -2232,6 +2225,25 @@ async function loadUserPeriods(user) {
   } finally {
     detailPeriodLoading.value = false;
   }
+}
+function topupDetailItems(user) {
+  const request = user.pending_topup;
+  return request ? [
+    { label: 'Request ID', value: String(request.id) },
+    { label: 'Amount', value: `${formatCredits(request.amount)} credits` },
+    { label: 'Requested', value: formatDate(request.created_at) },
+    { label: 'Note', value: request.note || '—' },
+  ] : [{ label: 'Request', value: 'None' }];
+}
+function resetAllowanceItems(user) {
+  const allowance = user.reset_allowance;
+  return allowance ? [
+    { label: 'Available', value: String(allowance.available) },
+    { label: 'Mode', value: allowance.mode === 'monthly' ? 'Monthly' : 'One-time' },
+    { label: 'Amount', value: String(allowance.amount) },
+    { label: 'Renews', value: formatDate(allowance.renews_at) },
+    { label: 'Expires', value: formatDate(allowance.expires_at) },
+  ] : [{ label: 'Allowance', value: 'Not configured' }];
 }
 function profileItems(user) {
   const mfa = Array.isArray(user.mfa)
@@ -2253,7 +2265,7 @@ function profileItems(user) {
       label: "Deleted at",
       value: user.deleted_at ? formatDate(user.deleted_at) : "Not deleted",
     },
-    { label: "Credits", value: formatCredits(user.credits) },
+    { label: "Credits", value: user.credits_unlimited ? 'Unlimited' : formatCredits(user.credits) },
     { label: "MFA", value: mfa ? "Enabled" : "Disabled" },
     { label: "Passkeys", value: String(passkeys) },
   ];

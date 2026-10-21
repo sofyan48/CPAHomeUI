@@ -1,22 +1,22 @@
 <template>
-  <AppCard class="min-w-0 max-w-full" :ui="{ body: 'min-w-0 p-0' }" :aria-label="title || 'Data table'">
-    <template v-if="title || description || $slots.actions" #header>
-      <div class="flex min-h-8 items-center gap-3">
-        <div class="min-w-0 flex-1">
-          <h2 v-if="title" class="truncate text-sm font-semibold text-highlighted">{{ title }}</h2>
-          <p v-if="description" class="mt-0.5 truncate text-xs text-muted">{{ description }}</p>
+  <section class="min-w-0 max-w-full rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg)]" :aria-label="title || 'Data table'">
+    <header v-if="title || description || $slots.actions" class="border-b border-[var(--ui-border)] px-4 py-3">
+      <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div v-if="title || description" class="min-w-0 flex-1">
+          <h2 v-if="title" class="text-sm font-semibold text-highlighted [overflow-wrap:anywhere]">{{ title }}</h2>
+          <p v-if="description" class="mt-1 text-xs leading-5 text-muted [overflow-wrap:anywhere]">{{ description }}</p>
         </div>
-        <div v-if="$slots.actions" class="flex shrink-0 items-center gap-1.5">
+        <div v-if="$slots.actions" class="flex min-w-0 flex-col gap-2 sm:shrink-0 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
           <slot name="actions" />
         </div>
       </div>
-    </template>
+    </header>
 
     <div v-if="$slots.toolbar" class="border-b border-[var(--ui-border)] px-4 py-3">
       <slot name="toolbar" />
     </div>
 
-    <div v-if="$slots.bulk" class="border-b border-[var(--ui-border)] bg-[var(--ui-bg-muted)] px-4 py-3">
+    <div v-if="$slots.bulk" class="border-b border-[var(--ui-border)] px-4 py-2">
       <slot name="bulk" />
     </div>
 
@@ -24,10 +24,10 @@
       <slot />
     </div>
 
-    <template v-if="$slots.footer" #footer>
+    <footer v-if="$slots.footer" class="min-w-0 border-t border-[var(--ui-border)] px-4 py-3">
       <slot name="footer" />
-    </template>
-  </AppCard>
+    </footer>
+  </section>
 </template>
 
 <script setup lang="ts">

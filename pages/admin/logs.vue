@@ -29,6 +29,20 @@
       {{ errorMessage }}
     </div>
 
+    <div v-if="activeView === 'application' && applicationError" role="alert" class="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+      <p>{{ applicationError }}</p>
+      <AppButton v-if="applicationCursorExpired" class="mt-2" color="neutral" variant="outline" :loading="applicationLoading" @click="restartApplicationLogs">Restart from latest logs</AppButton>
+    </div>
+    <div v-if="activeView === 'application' && applicationSearchUnsupported" role="status" class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm">
+      This Home version did not confirm server-side search support. Returned rows may be unfiltered; upgrade Home or reset the search.
+    </div>
+    <div v-if="activeView === 'application' && applicationResponse && !applicationAnchorId && applicationTotal > 0" role="status" class="text-sm text-[var(--ui-text-muted)]">
+      This Home version did not return a usable pagination anchor. Historical navigation is unavailable; upgrade Home and refresh.
+    </div>
+    <div v-if="activeView === 'application' && applicationMode === 'pages' && liveRefresh && applicationPage > 1" role="status" class="text-sm text-[var(--ui-text-muted)]">
+      Live refresh is paused while viewing historical pages. Refresh to return to the latest logs.
+    </div>
+
     <AppPanelTabs :model-value="activeView" :items="views" label="Log views" @update:model-value="switchView" />
 
     <AppCard>
@@ -65,6 +79,9 @@
         </template>
 
         <template v-else>
+          <UFormField label="Search log content" class="md:col-span-2 xl:col-span-6">
+            <UInput v-model="applicationFilters.search" placeholder="Case-insensitive search across stored log lines" icon="i-tabler-search" class="w-full" />
+          </UFormField>
           <UFormField label="After">
             <UInput v-model="applicationFilters.after" type="datetime-local" class="w-full" />
           </UFormField>
@@ -245,10 +262,20 @@
         <div>
           <h2 class="font-semibold">Application logs</h2>
           <p class="text-xs text-[var(--ui-text-muted)]">{{ formatNumber(applicationTotal) }} database-backed log lines across Home and CPA nodes</p>
+          <div class="mt-3 flex gap-2">
+            <AppButton color="neutral" variant="outline" :aria-pressed="applicationMode === 'pages'" :disabled="clearingLogs" @click="changeApplicationMode('pages')">Pages</AppButton>
+            <AppButton color="neutral" variant="outline" :aria-pressed="applicationMode === 'tail'" :disabled="clearingLogs" @click="changeApplicationMode('tail')">Tail</AppButton>
+          </div>
         </div>
       </template>
 
-      <AppTable :columns="applicationColumns" :data="applicationLogs" :loading="applicationLoading">
+      <ApplicationLogTail v-if="applicationMode === 'tail'"
+        :rows="tail.rows.value" :following="tail.following.value" :pending-count="tail.pending.value.length"
+        :busy="tail.busy.value || applicationLoading" :can-load-older="tail.canLoadOlder.value"
+        :disabled="applicationLoading || applicationCursorExpired || applicationSearchUnsupported || clearingLogs"
+        :truncated="tail.truncated.value" @following="tail.setFollowing" @accept="tail.accept"
+        @older="loadOlderApplicationTail" @detail="selectedApplicationLog = $event" />
+      <AppTable v-else :columns="applicationColumns" :data="applicationLogs" :loading="applicationLoading">
         <template #empty>
           <EmptyState icon="i-tabler-terminal-2" message="No application logs match these filters." />
         </template>
@@ -280,7 +307,7 @@
         </template>
       </AppTable>
 
-      <TablePager :page="applicationPage" :total="applicationTotal" :page-size="applicationPageSize" :loading="applicationLoading" @previous="changeApplicationPage(-1)" @next="changeApplicationPage(1)" />
+      <TablePager v-if="applicationMode === 'pages'" :page="applicationPage" :total="applicationTotal" :page-size="applicationPageSize" :loading="applicationLoading" :disabled="applicationCursorExpired || !applicationAnchorId || clearingLogs" @previous="changeApplicationPage(-1)" @next="changeApplicationPage(1)" />
     </AppCard>
 
     <AppModal v-model:open="eventDetailOpen" title="Request event details" description="Redacted event, routing, token, performance, and billing metadata.">
@@ -374,7 +401,9 @@
 <script setup>
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
 import { useDataSync } from '~/composables/useDataSync'
-const { fetchAPI } = useApi()
+import { useApplicationLogTail } from '~/composables/useApplicationLogTail'
+import ApplicationLogTail from '~/components/admin/ApplicationLogTail.vue'
+const { fetchAPI, token } = useApi()
 const allOptionValue = '__all__'
 
 const pageSize = ref(50)
@@ -406,6 +435,7 @@ const defaultRequestFilters = () => ({
 })
 
 const defaultApplicationFilters = () => ({
+  search: '',
   after: '',
   before: '',
   level: '',
@@ -441,6 +471,36 @@ const errorLogsLoading = useWorkspaceState('admin:logs:errorLogsLoading', () => 
 const eventsPage = ref(1)
 const requestLogsPage = ref(1)
 const applicationPage = ref(1)
+const applicationAnchorId = ref(null)
+const applicationError = ref('')
+const applicationCursorExpired = ref(false)
+const applicationMode = ref('pages')
+const tail = useApplicationLogTail({
+  fetchAPI,
+  params: () => buildApplicationParams(),
+  limit: () => applicationPageSize.value,
+  onError: error => setApplicationError(error),
+})
+let applicationGeneration = 0
+let applicationController = null
+let refreshGeneration = 0
+const cancelApplicationLoad = () => {
+  tail.cancel()
+  applicationGeneration += 1
+  applicationController?.abort()
+  applicationController = null
+  applicationLoading.value = false
+}
+const resetApplicationPagination = () => {
+  cancelApplicationLoad()
+  applicationPage.value = 1
+  applicationAnchorId.value = null
+  applicationResponse.value = null
+  tail.reset()
+  applicationError.value = ''
+  applicationCursorExpired.value = false
+  selectedApplicationLog.value = null
+}
 const errorLogsPage = ref(1)
 const errorLogSearch = ref('')
 
@@ -521,6 +581,7 @@ const requestLogs = computed(() => Array.isArray(requestLogsResponse.value?.item
 const requestLogsTotal = computed(() => Number(requestLogsResponse.value?.total) || 0)
 const applicationLogs = computed(() => Array.isArray(applicationResponse.value?.logs) ? applicationResponse.value.logs : [])
 const applicationTotal = computed(() => Number(applicationResponse.value?.total) || 0)
+const applicationSearchUnsupported = computed(() => Boolean(applicationResponse.value) && appliedApplicationFilters.value.search.trim() !== '' && applicationResponse.value.search !== appliedApplicationFilters.value.search.trim())
 const errorLogs = computed(() => Array.isArray(errorLogsResponse.value?.files) ? errorLogsResponse.value.files : [])
 const filteredErrorLogs = computed(() => {
   const query = errorLogSearch.value.trim().toLowerCase()
@@ -588,39 +649,93 @@ const loadErrorLogs = async () => {
   }
 }
 
-const loadApplicationLogs = async () => {
+const buildApplicationParams = () => {
+  const source = appliedApplicationFilters.value
+  const params = new URLSearchParams()
+  if (source.search.trim()) params.set('search', source.search.trim())
+  if (source.after) params.set('after', new Date(source.after).toISOString())
+  if (source.before) params.set('before', new Date(source.before).toISOString())
+  if (source.level) params.set('level', source.level)
+  if (source.home_ip.trim()) params.set('home_ip', source.home_ip.trim())
+  if (source.client_ip.trim()) params.set('client_ip', source.client_ip.trim())
+  if (source.request_id.trim()) params.set('request_id', source.request_id.trim())
+  return params
+}
+const setApplicationError = error => {
+  applicationCursorExpired.value = error?.statusCode === 409 && error?.data?.error === 'log_cursor_expired'
+  applicationError.value = applicationCursorExpired.value
+    ? 'The log cursor has expired. Restart from the latest logs to continue; the expired cursor will not be retried.'
+    : apiErrorMessage(error, 'Failed to load application logs.')
+}
+const changeApplicationMode = async mode => {
+  applicationMode.value = mode
+  await restartApplicationLogs()
+}
+const pollApplicationTail = async () => {
+  if (applicationCursorExpired.value || applicationSearchUnsupported.value || applicationLoading.value || clearingLogs.value || selectedApplicationLog.value || clearConfirmOpen.value) return
+  applicationError.value = ''
+  await tail.poll()
+}
+const loadOlderApplicationTail = async () => {
+  if (applicationCursorExpired.value || applicationSearchUnsupported.value || clearingLogs.value) return
+  applicationError.value = ''
+  await tail.loadOlder()
+}
+const loadApplicationLogs = async (page = applicationPage.value) => {
+  cancelApplicationLoad()
+  if (clearingLogs.value || applicationCursorExpired.value) return
+  const generation = applicationGeneration
+  const controller = new AbortController()
+  applicationController = controller
   applicationLoading.value = true
+  applicationError.value = ''
   try {
-    const source = appliedApplicationFilters.value
-    const params = new URLSearchParams()
-    if (source.after) params.set('after', new Date(source.after).toISOString())
-    if (source.before) params.set('before', new Date(source.before).toISOString())
-    if (source.level) params.set('level', source.level)
-    if (source.home_ip.trim()) params.set('home_ip', source.home_ip.trim())
-    if (source.client_ip.trim()) params.set('client_ip', source.client_ip.trim())
-    if (source.request_id.trim()) params.set('request_id', source.request_id.trim())
+    const params = buildApplicationParams()
     params.set('limit', String(applicationPageSize.value))
-    params.set('offset', String((applicationPage.value - 1) * applicationPageSize.value))
-    applicationResponse.value = await fetchAPI(`/observability/logs?${params.toString()}`)
+    params.set('offset', String((page - 1) * applicationPageSize.value))
+    if (applicationAnchorId.value) params.set('anchor_id', String(applicationAnchorId.value))
+    const response = await fetchAPI(`/observability/logs?${params.toString()}`, { signal: controller.signal })
+    if (generation !== applicationGeneration || controller.signal.aborted) return
+    // The ingestion ceiling can be outside this page and must come from the server.
+    const anchor = response?.anchor_id
+    if (anchor !== undefined && Number.isSafeInteger(Number(anchor)) && Number(anchor) > 0) {
+      applicationAnchorId.value = anchor
+    }
+    applicationResponse.value = response
+    applicationPage.value = page
+    if (applicationMode.value === 'tail') tail.seed(response)
+  } catch (error) {
+    if (generation !== applicationGeneration || controller.signal.aborted) return
+    setApplicationError(error)
   } finally {
-    applicationLoading.value = false
+    if (generation === applicationGeneration) {
+      applicationLoading.value = false
+      applicationController = null
+    }
   }
 }
 
+const restartApplicationLogs = async () => {
+  resetApplicationPagination()
+  await loadApplicationLogs()
+}
+
 const refreshActive = async () => {
+  const generation = ++refreshGeneration
   errorMessage.value = ''
   try {
     if (activeView.value === 'events') await loadEvents()
     else if (activeView.value === 'request-logs') await loadRequestLogs()
     else if (activeView.value === 'error-logs') await loadErrorLogs()
-    else await loadApplicationLogs()
+    else await restartApplicationLogs()
   } catch (error) {
-    errorMessage.value = apiErrorMessage(error, 'Failed to load logs.')
+    if (generation === refreshGeneration) errorMessage.value = apiErrorMessage(error, 'Failed to load logs.')
   }
 }
 
 const switchView = async (view) => {
   if (activeView.value === view) return
+  if (activeView.value === 'application') cancelApplicationLoad()
   activeView.value = view
   await refreshActive()
 }
@@ -628,7 +743,7 @@ const switchView = async (view) => {
 const applyFilters = async () => {
   if (activeView.value === 'application') {
     appliedApplicationFilters.value = { ...applicationFilters.value }
-    applicationPage.value = 1
+    resetApplicationPagination()
   } else if (activeView.value === 'error-logs') {
     errorLogsPage.value = 1
   } else {
@@ -643,7 +758,7 @@ const resetFilters = async () => {
   if (activeView.value === 'application') {
     applicationFilters.value = defaultApplicationFilters()
     appliedApplicationFilters.value = defaultApplicationFilters()
-    applicationPage.value = 1
+    resetApplicationPagination()
   } else if (activeView.value === 'error-logs') {
     errorLogSearch.value = ''
     errorLogsPage.value = 1
@@ -674,11 +789,11 @@ const changeRequestLogsPage = async (delta) => {
 }
 
 const changeApplicationPage = async (delta) => {
+  if (applicationLoading.value || clearingLogs.value || applicationCursorExpired.value || !applicationAnchorId.value) return
   const next = applicationPage.value + delta
   const pages = Math.max(1, Math.ceil(applicationTotal.value / applicationPageSize.value))
   if (next < 1 || next > pages) return
-  applicationPage.value = next
-  await refreshActive()
+  await loadApplicationLogs(next)
 }
 
 const changeErrorLogsPage = (delta) => {
@@ -691,7 +806,7 @@ const changeErrorLogsPage = (delta) => {
 const resetPages = async () => {
   eventsPage.value = 1
   requestLogsPage.value = 1
-  applicationPage.value = 1
+  resetApplicationPagination()
   errorLogsPage.value = 1
   await refreshActive()
 }
@@ -765,12 +880,14 @@ const downloadErrorLog = async (name) => {
 
 const clearApplicationLogs = async () => {
   clearingLogs.value = true
+  cancelApplicationLoad()
   errorMessage.value = ''
   try {
     await fetchAPI('/observability/logs', { method: 'DELETE' })
     clearConfirmOpen.value = false
-    applicationPage.value = 1
-    await loadApplicationLogs()
+    resetApplicationPagination()
+    clearingLogs.value = false
+    if (activeView.value === 'application') await loadApplicationLogs()
   } catch (error) {
     errorMessage.value = apiErrorMessage(error, 'Failed to clear application logs.')
   } finally {
@@ -807,11 +924,27 @@ const apiErrorMessage = (error, fallback) => error?.data?.message || error?.data
 watch(errorLogSearch, () => { errorLogsPage.value = 1 })
 watch(liveRefresh, enabled => {
   if (liveRefreshTimer) clearInterval(liveRefreshTimer)
-  liveRefreshTimer = enabled ? setInterval(() => { if (!loading.value) void refreshActive() }, 15_000) : null
+  liveRefreshTimer = enabled ? setInterval(() => {
+    if (loading.value || clearingLogs.value) return
+    if (activeView.value === 'application') {
+      if (applicationMode.value === 'tail') { void pollApplicationTail(); return }
+      if (applicationPage.value > 1 || applicationCursorExpired.value) return
+    }
+    void refreshActive()
+  }, 15_000) : null
 })
+watch(token, () => {
+  refreshGeneration += 1
+  resetApplicationPagination()
+  if (activeView.value === 'application') void loadApplicationLogs()
+}, { flush: 'sync' })
 useDataSync('admin:logs:sync', refreshActive)
 onMounted(refreshActive)
-onBeforeUnmount(() => { if (liveRefreshTimer) clearInterval(liveRefreshTimer) })
+onBeforeUnmount(() => {
+  refreshGeneration += 1
+  cancelApplicationLoad()
+  if (liveRefreshTimer) clearInterval(liveRefreshTimer)
+})
 </script>
 
 <script>
@@ -845,6 +978,7 @@ export default {
         total: Number,
         pageSize: Number,
         loading: Boolean,
+        disabled: Boolean,
       },
       emits: ['previous', 'next'],
       computed: {
@@ -859,9 +993,9 @@ export default {
         <div class="flex flex-col gap-3 border-t border-[var(--ui-border)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <p class="text-xs text-[var(--ui-text-muted)]">Showing {{ start }}–{{ end }} of {{ formatted(total) }}</p>
           <div class="flex items-center gap-2">
-            <AppButton size="sm" color="neutral" variant="outline" :disabled="page <= 1 || loading" @click="$emit('previous')">Previous</AppButton>
+            <AppButton size="sm" color="neutral" variant="outline" :disabled="page <= 1 || loading || disabled" @click="$emit('previous')">Previous</AppButton>
             <span class="min-w-20 text-center text-sm">Page {{ page }} of {{ pages }}</span>
-            <AppButton size="sm" color="neutral" variant="outline" :disabled="page >= pages || loading" @click="$emit('next')">Next</AppButton>
+            <AppButton size="sm" color="neutral" variant="outline" :disabled="page >= pages || loading || disabled" @click="$emit('next')">Next</AppButton>
           </div>
         </div>
       `,

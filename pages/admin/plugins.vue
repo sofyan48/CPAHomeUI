@@ -296,6 +296,31 @@
                             {{ plugin.oauth_provider || "supported" }}</UBadge
                         >
                     </div>
+                    <div class="mt-4 flex flex-wrap items-center gap-3">
+                        <USwitch
+                            :model-value="plugin.enabled === true"
+                            :label="`Enable ${plugin.metadata?.name || plugin.id}`"
+                            :loading="busyPlugin === plugin.id"
+                            :disabled="!!busyPlugin || configOpen"
+                            @update:model-value="togglePlugin(plugin, $event)"
+                        />
+                        <AppButton
+                            color="neutral"
+                            variant="outline"
+                            size="sm"
+                            icon="i-tabler-settings"
+                            :disabled="!!busyPlugin || configOpen"
+                            @click="openPluginConfig(plugin)"
+                        >Configure</AppButton>
+                    </div>
+                    <UAlert
+                        v-if="pluginMutationError?.id === plugin.id"
+                        class="mt-3"
+                        color="error"
+                        variant="subtle"
+                        title="Plugin update failed"
+                        :description="pluginMutationError.message"
+                    />
                     <AppButton
                         color="neutral"
                         variant="link"
@@ -548,6 +573,31 @@
                                 >
                             </div>
                         </div>
+                        <div v-if="plugin.installed || plugin.configured" class="mt-3 flex flex-wrap items-center gap-3">
+                            <USwitch
+                                :model-value="plugin.enabled === true"
+                                :label="`Enable ${plugin.name || plugin.id}`"
+                                :loading="busyPlugin === plugin.id"
+                                :disabled="!!busyPlugin || configOpen"
+                                @update:model-value="togglePlugin(plugin, $event)"
+                            />
+                            <AppButton
+                                color="neutral"
+                                variant="outline"
+                                size="sm"
+                                icon="i-tabler-settings"
+                                :disabled="!!busyPlugin || configOpen"
+                                @click="openPluginConfig(plugin)"
+                            >Configure</AppButton>
+                            <UAlert
+                                v-if="pluginMutationError?.id === plugin.id"
+                                color="error"
+                                variant="subtle"
+                                title="Plugin update failed"
+                                :description="pluginMutationError.message"
+                                class="w-full"
+                            />
+                        </div>
                         <div
                             v-if="
                                 selectedStore ===
@@ -696,6 +746,12 @@
             >
         </section>
 
+        <AdminPluginConfigEditor
+            v-model:open="configOpen"
+            :plugin="configPlugin"
+            :disabled="!!busyPlugin"
+            @saved="refreshAll"
+        />
         <AppModal
             v-model:open="authOpen"
             :title="
@@ -828,7 +884,7 @@
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
 import { useDataSync } from '~/composables/useDataSync'
 import { useStoreData } from '~/composables/useStoreData'
-const { fetchAPI } = useApi();
+const { fetchAPI, token } = useApi();
 const toast = useToast();
 const value = (row) => row?.original ?? row;
 const section = ref("installed");
@@ -844,6 +900,47 @@ const statusFilter = ref("all");
 const installFilter = ref("all");
 const selectedInstalled = ref("");
 const selectedStore = ref("");
+const configOpen = ref(false);
+const configPlugin = ref(null);
+const pluginMutationError = ref(null);
+watch(token, () => {
+    configOpen.value = false;
+    configPlugin.value = null;
+    pluginMutationError.value = null;
+});
+function openPluginConfig(plugin) {
+    if (busyPlugin.value) return;
+    configPlugin.value = installed.value.find((item) => item.id === plugin.id) || plugin;
+    configOpen.value = true;
+}
+async function togglePlugin(plugin, enabled) {
+    if (busyPlugin.value || configOpen.value) return;
+    const activeToken = token.value;
+    busyPlugin.value = plugin.id;
+    pluginMutationError.value = null;
+    try {
+        await fetchAPI(`/config/plugins/configs/${encodeURIComponent(plugin.id)}/enabled`, {
+            method: "PUT",
+            body: JSON.stringify(enabled),
+            headers: { "Content-Type": "application/json" },
+        });
+        if (activeToken !== token.value) return;
+        toast.add({
+            title: enabled ? "Plugin enabled" : "Plugin disabled",
+            description: enabled ? "Effective status also depends on the global plugin switch and runtime registration." : plugin.id,
+            color: "success",
+        });
+        await refreshAll();
+    } catch (error) {
+        if (activeToken !== token.value) return;
+        pluginMutationError.value = {
+            id: plugin.id,
+            message: `${message(error)} Refresh to verify persisted state before retrying; a reload failure may occur after the write is committed.`,
+        };
+    } finally {
+        if (activeToken === token.value) busyPlugin.value = "";
+    }
+}
 const operation = useWorkspaceState('admin:plugins:operation', () => (null));
 const busyPlugin = useWorkspaceState('admin:plugins:busyPlugin', () => (""));
 const authOpen = ref(false);

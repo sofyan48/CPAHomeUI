@@ -322,54 +322,67 @@ export const useUserSessionStore = defineStore('userSession', () => {
   }
 
   const clearSession = () => {
-    if (import.meta.client) { localStorage.removeItem(persistentSessionKey); sessionStorage.removeItem(temporarySessionKey) }
+    if (import.meta.client) {
+          for (const [storage, key] of [[localStorage, persistentSessionKey], [sessionStorage, temporarySessionKey]] as const) {
+            try { storage.removeItem(key) } catch { /* Storage can be unavailable in private browsing. */ }
+          }
+        }
     token.value = null
     tokenExpiresAt.value = null
     rememberSession.value = false
     currentUser.value = null
   }
 
-  const saveSession = (sessionValue: UserSessionResponse) => {
+  const saveSession = (sessionValue: UserSessionResponse, remembered = true) => {
     const session = normalizeSession(sessionValue)
     const expiresAt = new Date(session.expires_at)
     const cookieOptions = {
       sameSite: 'strict' as const,
       secure: import.meta.client && window.location.protocol === 'https:',
-      ...(Number.isFinite(expiresAt.getTime()) ? { expires: expiresAt } : {})
+      ...(remembered && Number.isFinite(expiresAt.getTime()) ? { expires: expiresAt } : {})
     }
     useCookie<string | null>('user_token', cookieOptions).value = session.token
     useCookie<string | null>('user_token_expires_at', cookieOptions).value = session.expires_at
-    useCookie<boolean>('user_remember_session', cookieOptions).value = true
+    useCookie<boolean>('user_remember_session', cookieOptions).value = remembered
     token.value = session.token
     tokenExpiresAt.value = session.expires_at
-    rememberSession.value = true
+    rememberSession.value = remembered
     currentUser.value = session.user
     if (import.meta.client) {
-      const stored: StoredUserSession = { ...session, baseUrl: apiBase, rememberSession: true }
-      localStorage.setItem(persistentSessionKey, JSON.stringify(stored))
-      sessionStorage.removeItem(temporarySessionKey)
+      const stored: StoredUserSession = { ...session, baseUrl: apiBase, rememberSession: remembered }
+      // Remove the other mode first so an older remembered login cannot return.
+      for (const [storage, key] of [[localStorage, persistentSessionKey], [sessionStorage, temporarySessionKey]] as const) {
+        try { storage.removeItem(key) } catch { /* Cookies remain available when storage is blocked. */ }
+      }
+      try {
+        const storage = remembered ? localStorage : sessionStorage
+        storage.setItem(remembered ? persistentSessionKey : temporarySessionKey, JSON.stringify(stored))
+      } catch { /* Keep the active cookie session even when storage is unavailable. */ }
     }
   }
 
   const hydrateSession = () => {
     if (!import.meta.client || sessionHydrated.value) return
     sessionHydrated.value = true
-    for (const [storage, key, remembered] of [[localStorage, persistentSessionKey, true], [sessionStorage, temporarySessionKey, false]] as const) {
+    // A tab-scoped login takes precedence; never migrate it into localStorage.
+        for (const [storage, key, remembered] of [[sessionStorage, temporarySessionKey, false], [localStorage, persistentSessionKey, true]] as const) {
       try {
         const raw = storage.getItem(key)
         if (!raw) continue
         const parsed = JSON.parse(raw)
+        if (parsed.baseUrl && parsed.baseUrl !== apiBase) continue
         const normalized = normalizeSession(parsed)
         const expiry = new Date(normalized.expires_at)
         if (!normalized.token || !Number.isFinite(expiry.getTime()) || expiry <= new Date()) { storage.removeItem(key); continue }
-        token.value = normalized.token; tokenExpiresAt.value = normalized.expires_at; rememberSession.value = true; currentUser.value = normalized.user
-        if (!remembered) {
-          localStorage.setItem(persistentSessionKey, JSON.stringify({ ...normalized, baseUrl: apiBase, rememberSession: true }))
-          sessionStorage.removeItem(temporarySessionKey)
-        }
-        break
-      } catch { storage.removeItem(key) }
+        token.value = normalized.token; tokenExpiresAt.value = normalized.expires_at; rememberSession.value = remembered; currentUser.value = normalized.user
+        return
+      } catch {
+        try { storage.removeItem(key) } catch { /* Storage may be disabled. */ }
+      }
     }
+    // Keep legacy remembered cookie sessions, but not orphaned temporary cookies.
+    const expiry = new Date(tokenExpiresAt.value || '')
+    if (token.value && (!rememberSession.value || !Number.isFinite(expiry.getTime()) || expiry <= new Date())) clearSession()
   }
 
   const fetchAPI = async <T = unknown>(path: string, options: UserApiRequestOptions = {}): Promise<T> => {
@@ -412,17 +425,17 @@ export const useUserSessionStore = defineStore('userSession', () => {
     return currentUser.value
   }
 
-  const login = async (username: string, password: string, totpCode?: string) => {
+  const login = async (username: string, password: string, totpCode?: string, remembered = true) => {
     const response = await fetchAPI<UserSessionResponse>(totpCode ? '/login/totp' : '/login', {
       method: 'POST',
       auth: false,
       body: { username, password, ...(totpCode ? { totp_code: totpCode } : {}) }
     })
-    saveSession(response)
+    saveSession(response, remembered)
     return response
   }
 
-  const loginWithPasskey = async (username: string) => {
+  const loginWithPasskey = async (username: string, remembered = true) => {
     if (!import.meta.client || !window.PublicKeyCredential) throw new UserApiError('Passkeys are not supported by this browser.')
     const begin = await fetchAPI<{ challenge_id: string; publicKey: any }>('/login/passkey/begin', {
       method: 'POST', auth: false, body: { username }
@@ -432,7 +445,7 @@ export const useUserSessionStore = defineStore('userSession', () => {
     const response = await fetchAPI<UserSessionResponse>('/login/passkey', {
       method: 'POST', auth: false, body: { username, challenge_id: begin.challenge_id, credential: credentialJSON(credential) }
     })
-    saveSession(response)
+    saveSession(response, remembered)
     return response
   }
 

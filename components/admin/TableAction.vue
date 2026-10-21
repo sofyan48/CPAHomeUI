@@ -2,6 +2,7 @@
   <UTooltip :text="label" :delay-duration="250">
     <span class="inline-flex" :tabindex="disabled ? 0 : undefined">
       <AppButton
+        type="button"
         size="xs"
         :color="destructive ? 'error' : 'neutral'"
         variant="ghost"
@@ -10,9 +11,11 @@
         :title="label"
         :loading="loading"
         :disabled="disabled"
-        class="admin-table-action"
+        class="admin-table-action shrink-0 whitespace-nowrap"
         @click="$emit('click', $event)"
-      />
+      >
+        {{ text }}
+      </AppButton>
     </span>
   </UTooltip>
 </template>
@@ -39,12 +42,14 @@ type Action = keyof typeof icons
 const props = withDefaults(defineProps<{
   action: Action
   label?: string
+  text?: string
   icon?: string
   loading?: boolean
   disabled?: boolean
   destructive?: boolean
 }>(), {
   label: '',
+  text: '',
   icon: '',
   loading: false,
   disabled: false,
@@ -54,5 +59,7 @@ const props = withDefaults(defineProps<{
 defineEmits<{ click: [event: MouseEvent] }>()
 
 const resolvedIcon = computed(() => props.icon || icons[props.action])
-const label = computed(() => props.label || `${props.action.charAt(0).toUpperCase()}${props.action.slice(1)}`)
+// Keep contextual labels available without spending their full length in every row.
+const text = computed(() => props.text || `${props.action.charAt(0).toUpperCase()}${props.action.slice(1)}`)
+const label = computed(() => props.label || text.value)
 </script>

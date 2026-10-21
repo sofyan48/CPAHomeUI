@@ -81,7 +81,9 @@
             </span>
           </template>
 
-          <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><AdminTableAction action="view" label="View provider" @click="openProviderDetail(rowValue(row))" /><AdminTableAction action="edit" label="Edit provider" @click="openProviderEdit(rowValue(row))" /><AdminTableAction action="duplicate" label="Duplicate provider" @click="duplicateProvider(rowValue(row))" /><AdminTableAction action="delete" label="Delete provider" destructive @click="confirmProviderDelete(rowValue(row))" /></div></template>
+          <template #actions-cell="{ row }">
+            <AdminRowActions :actions="providerRowActions(rowValue(row))" :menu-label="`provider ${providerEntryLabel(rowValue(row))}`" />
+          </template>
 
           <template #empty>
             <div class="flex flex-col items-center justify-center px-6 py-14 text-center">
@@ -99,7 +101,7 @@
 
     <AdminModalForm
       v-model:open="providerEditorOpen"
-      :title="providerEditorMode === 'detail' ? 'Provider details' : providerEditorMode === 'edit' ? `Edit model key · ${selectedProvider.label}` : `New model key · ${selectedProvider.label}`"
+      :title="providerEditorMode === 'detail' ? 'Provider details' : isCompat ? (providerEditorMode === 'edit' ? 'Edit compatibility group' : 'New compatibility group') : providerEditorMode === 'edit' ? `Edit model key · ${selectedProvider.label}` : `New model key · ${selectedProvider.label}`"
       description="Configure model provider credentials and settings."
     >
         <div v-if="providerEditorMode === 'detail' && editingProviderEntry" class="max-h-[75vh] space-y-5 overflow-y-auto pr-1">
@@ -125,17 +127,42 @@
 
             <div class="grid gap-4">
               <UFormField v-if="isCompat" label="Model provider name" required><UInput v-model="providerForm.name" class="w-full" placeholder="my-upstream" /></UFormField>
-              <UFormField label="Model service key" :required="providerEditorMode === 'create'"><UInput v-model="providerKey" type="password" autocomplete="new-password" class="w-full" :placeholder="providerEditorMode === 'edit' ? 'Leave blank to keep the current key' : 'Enter API key'" /></UFormField>
+              <UFormField v-if="!isCompat" label="Model service key" :required="providerEditorMode === 'create'"><UInput v-model="providerKey" type="password" autocomplete="new-password" class="w-full" :placeholder="providerEditorMode === 'edit' ? 'Leave blank to keep the current key' : 'Enter API key'" /></UFormField>
               <UFormField label="Base URL" :required="requiresBaseURL"><UInput v-model="providerForm['base-url']" type="url" class="w-full" placeholder="https://api.example.com" /></UFormField>
               <UFormField v-if="!isCompat" label="Proxy URL"><UInput v-model="providerForm['proxy-url']" type="url" class="w-full" placeholder="http://127.0.0.1:7890" /></UFormField>
               <UFormField label="Model prefix"><UInput v-model="providerForm.prefix" class="w-full" /></UFormField>
               <UFormField label="Priority"><UInput v-model="providerForm.priority" type="number" step="1" class="w-full" /></UFormField>
-              <UFormField label="Weight" hint="Used by weighted round-robin routing"><UInput v-model="providerForm.weight" type="number" step="1" class="w-full" /></UFormField>
+              <UFormField v-if="!isCompat" label="Weight" hint="Used by weighted round-robin routing"><UInput v-model="providerForm.weight" type="number" step="1" class="w-full" /></UFormField>
               <UFormField label="Request retry rounds" hint="Blank inherits global; 0 disables retry rounds"><UInput v-model="requestRetryText" type="number" step="1" class="w-full" placeholder="Inherit global" /></UFormField>
               <UFormField label="Cooling policy" hint="Inherit uses the group policy, then the global policy.">
                       <USelect v-model="coolingPolicy" :items="coolingPolicyOptions" value-key="value" label-key="label" class="w-full" />
                     </UFormField>
             </div>
+            <AdminModalCard v-if="isCompat" class="space-y-3">
+              <div class="flex items-center justify-between gap-2">
+                <h3 class="text-sm font-medium">API key entries</h3>
+                <AppButton type="button" size="sm" color="neutral" variant="outline" icon="i-tabler-plus" @click="addCompatKey()">Add key</AppButton>
+              </div>
+              <p class="text-xs text-[var(--ui-text-muted)]">Editing all keys in this compatibility group. Shared settings apply to every key. Discovery and connectivity tests use the first key; save proxy changes before testing.</p>
+              <UAlert v-if="!compatKeyRows.length" color="warning" variant="subtle" title="Keyless fallback" description="Saving without keys creates a fallback credential that sends no API key. Group authentication headers still apply." />
+              <AdminModalCard v-for="(key, index) in compatKeyRows" :key="key.rowId" nested class="space-y-3">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-sm font-medium">Key {{ index + 1 }}</span>
+                  <AppButton type="button" color="error" variant="ghost" icon="i-tabler-trash" :aria-label="`Remove key ${index + 1}`" @click="compatKeyRows.splice(index, 1)">Remove</AppButton>
+                </div>
+                <p v-if="key.source.id || key.source.uuid" class="break-all font-mono text-xs text-[var(--ui-text-muted)]">{{ key.source.id || key.source.uuid }}</p>
+                <UFormField label="Model service key" :required="!key.source['api-key']" :hint="key.source['api-key'] ? 'Leave blank to keep the saved key and its identity.' : undefined">
+                  <UInput v-model="key.secret" type="password" autocomplete="new-password" class="w-full" :placeholder="key.source['api-key'] ? 'Keep saved key' : 'Enter API key'" />
+                </UFormField>
+                <UFormField label="Proxy URL" hint="Blank inherits the global proxy; direct bypasses it. HTTP, HTTPS, SOCKS5 and SOCKS5H are supported.">
+                  <UInput v-model="key.proxy" class="w-full" placeholder="direct or http://127.0.0.1:7890" />
+                </UFormField>
+                <UFormField label="Weight" hint="Blank defaults to 1. Maximum 1000000; non-positive values exclude this key only in weighted round-robin routing.">
+                  <UInput v-model="key.weight" type="number" max="1000000" step="1" class="w-full" placeholder="1" />
+                </UFormField>
+              </AdminModalCard>
+            </AdminModalCard>
+            <UCheckbox v-if="isCompat" v-model="providerForm['support-prompt-cache-key']" label="Support prompt_cache_key" />
             <UCheckbox v-if="supportsWebsockets" v-model="providerForm.websockets" label="WebSocket support" />
             <UCheckbox v-if="isCompat" v-model="providerForm.disabled" label="Disabled" />
             <div v-if="selectedProviderRoute === 'codex-api-key'" class="space-y-3">
@@ -279,7 +306,13 @@ const props = defineProps({ syncRequest: { type: Number, default: 0 } })
 const emit = defineEmits(['changed'])
 const { fetchAPI } = useApi()
 const toast = useToast()
-const rowValue = (row) => row?.original ?? row
+const rowValue = row => row?.original || row
+const providerRowActions = entry => [
+  { id: 'view', label: 'View', ariaLabel: 'View provider', icon: 'i-tabler-eye', onSelect: () => openProviderDetail(entry) },
+  { id: 'edit', label: 'Edit', ariaLabel: 'Edit provider', icon: 'i-tabler-pencil', onSelect: () => openProviderEdit(entry) },
+  { id: 'duplicate', label: 'Duplicate', ariaLabel: 'Duplicate provider', icon: 'i-tabler-copy', onSelect: () => duplicateProvider(entry) },
+  { id: 'delete', label: 'Delete', ariaLabel: 'Delete provider', icon: 'i-tabler-trash', destructive: true, onSelect: () => confirmProviderDelete(entry) }
+]
 
 const providerCategories = [
   { label: 'Gemini API keys', value: 'gemini-api-key', path: '/config/api-keys/gemini', template: { 'api-key': '', 'base-url': '', priority: 0, weight: 1, prefix: '', 'proxy-url': '', models: [], headers: {}, 'excluded-models': [] } },
@@ -306,6 +339,12 @@ const providerForm = ref({})
 const excludedModelsText = ref('')
 const headerRows = ref([{ name: '', value: '' }])
 const providerKey = ref('')
+const compatKeyRows = ref([])
+let compatKeyRowId = 0
+function addCompatKey(source = {}) {
+  compatKeyRows.value.push({ rowId: ++compatKeyRowId, source: cloneValue(source), secret: '', proxy: source['proxy-url'] || '', weight: source.weight ?? '' })
+}
+const primaryProviderKey = computed(() => isCompat.value ? compatKeyRows.value[0]?.secret.trim() || '' : providerKey.value.trim())
 const unsetCloakMode = '__not-set__'
 const automaticTestModel = '__auto__'
 const cloakMode = ref(unsetCloakMode)
@@ -345,14 +384,18 @@ let discoveryGeneration = 0
 const discoveryAuthIndex = computed(() => {
   if (providerEditorMode.value !== 'edit') return ''
   const entry = editingProviderEntry.value
-  const credential = isCompat.value ? entry?.['api-key-entries']?.[0] : entry
-  return String(credential?.auth_index || credential?.id || entry?.auth_index || entry?.id || '').trim()
+  if (isCompat.value) {
+    const credential = compatKeyRows.value[0]?.source
+    if (credential) return String(credential.auth_index || credential.id || credential.uuid || '').trim()
+    return entry?.__v8KeyIndex === -1 ? String(entry.__v8Group?.id || entry.__v8Group?.uuid || '').trim() : ''
+  }
+  return String(entry?.auth_index || entry?.id || '').trim()
 })
 const discoveryHeaders = computed(() => Object.fromEntries(headerRows.value.filter(row => row.name.trim()).map(row => [row.name.trim(), row.value])))
-const discoveryAuthLabel = computed(() => providerKey.value.trim() ? 'Entered key' : discoveryAuthIndex.value ? 'Saved credential' : hasProviderAuthHeader.value ? 'Authentication header' : 'Authentication required')
+const discoveryAuthLabel = computed(() => primaryProviderKey.value ? 'Entered key' : discoveryAuthIndex.value ? 'Saved credential' : hasProviderAuthHeader.value ? 'Authentication header' : 'Authentication required')
 const hasProviderAuthHeader = computed(() => Object.entries(discoveryHeaders.value).some(([name, value]) =>
   name.toLowerCase() === (['gemini-api-key', 'interactions-api-key'].includes(selectedProviderRoute.value) ? 'x-goog-api-key' : selectedProviderRoute.value === 'claude-api-key' ? 'x-api-key' : 'authorization') && String(value).trim()))
-const discoveryReady = computed(() => (providerKey.value.trim() || discoveryAuthIndex.value || hasProviderAuthHeader.value) && (!requiresBaseURL.value || String(providerForm.value['base-url'] || '').trim()))
+const discoveryReady = computed(() => (primaryProviderKey.value || discoveryAuthIndex.value || hasProviderAuthHeader.value) && (!requiresBaseURL.value || String(providerForm.value['base-url'] || '').trim()))
 const existingModelNames = computed(() => new Set(providerForm.value.models.map(model => String(model.name || '').trim().toLowerCase()).filter(Boolean)))
 const filteredDiscoveredModels = computed(() => discoveredModels.value.filter(model => `${model.name} ${model.alias || ''} ${model.description || ''}`.toLowerCase().includes(discoverySearch.value.trim().toLowerCase())))
 const defaultDiscoveryURL = computed(() => {
@@ -458,21 +501,10 @@ function v8GroupsFromEntries(entries, category = selectedProvider.value) {
       })
       return group
     }
-    group.keys = groupEntries.flatMap((entry) => {
-      const existingKey = cloneValue(entry.__v8Key)
-      const currentKey = Array.isArray(entry['api-key-entries']) ? entry['api-key-entries'][0] : null
-      if (!existingKey && !currentKey) return []
-      const key = existingKey || {}
-      if (currentKey) Object.assign(key, cloneValue(currentKey))
-      key.weight = entry.weight
-      return [key]
-    })
+    group.keys = groupEntries.flatMap(entry => cloneValue(entry['api-key-entries']) || [])
     if (group.keys.length) {
       delete group.id
       delete group.uuid
-    } else {
-      if (editedEntry.id) group.id = editedEntry.id
-      if (editedEntry.uuid) group.uuid = editedEntry.uuid
     }
     return group
   })
@@ -544,6 +576,7 @@ const providerMetadataFields = computed(() => {
     { label: 'Weight', value: entry.weight ?? 'Default (1)' },
     { label: 'Request retry', value: entry['request-retry'] ?? 'Inherited' },
     { label: 'Cooling disabled', value: entry['disable-cooling'] ? 'Yes' : 'No' },
+    ...(isCompat.value ? [{ label: 'Prompt cache key', value: entry['support-prompt-cache-key'] ? 'Supported' : 'Not enabled' }] : []),
     ...(supportsWebsockets.value ? [{ label: 'WebSockets', value: entry.websockets ? 'Enabled' : 'Disabled' }] : [])
   ]
 })
@@ -594,7 +627,10 @@ function duplicateProvider(entry) {
   }
   if (isCompat.value) {
     copy.name = ''
-    copy['api-key-entries'] = (copy['api-key-entries'] || []).map(key => ({ ...key, id: undefined, uuid: undefined, auth_index: undefined, 'api-key': '', weight: key.weight ?? copy.weight ?? 1 }))
+    copy['api-key-entries'] = providerEntries.value
+      .filter(candidate => candidate.__v8GroupIndex === entry.__v8GroupIndex)
+      .flatMap(candidate => candidate['api-key-entries'] || [])
+      .map(key => ({ ...cloneValue(key), id: undefined, uuid: undefined, auth_index: undefined, 'api-key': '' }))
   } else copy['api-key'] = ''
   loadGuidedEntry(copy)
   editorError.value = ''
@@ -606,7 +642,7 @@ async function discoverModels() {
   discoveryError.value = ''
   selectedDiscovered.value = []
   const route = selectedProviderRoute.value
-  const key = providerKey.value.trim()
+  const key = primaryProviderKey.value
   const authIndex = discoveryAuthIndex.value
   let url
   try {
@@ -674,7 +710,7 @@ async function testProviderConnection() {
   const selectedTestModel = testModel.value === automaticTestModel ? '' : testModel.value.trim()
   const model = selectedTestModel || providerForm.value.models.find(item => String(item.name || '').trim())?.name.trim()
   const authIndex = discoveryAuthIndex.value
-  const key = providerKey.value.trim()
+  const key = primaryProviderKey.value
   const headers = Object.fromEntries(headerRows.value.filter(row => row.name.trim()).map(row => [row.name.trim(), row.value]))
   const hasAuthHeader = Object.entries(headers).some(([name, value]) =>
     (selectedProviderRoute.value === 'claude-api-key' ? name.toLowerCase() === 'x-api-key' : name.toLowerCase() === 'authorization') && String(value).trim())
@@ -746,10 +782,14 @@ function removeProviderModel(index) { providerForm.value.models.splice(index, 1)
 function loadGuidedEntry(entry) {
   clearDiscoveryResults()
   providerForm.value = JSON.parse(JSON.stringify(entry))
-  if (providerEditorMode.value === 'edit') {
-    if (isCompat.value) providerForm.value['api-key-entries'] = (providerForm.value['api-key-entries'] || []).map(key => ({ ...key, 'api-key': '' }))
-    else providerForm.value['api-key'] = ''
-  }
+  compatKeyRows.value = []
+  if (isCompat.value) {
+    const siblings = providerEditorMode.value === 'edit'
+      ? providerEntries.value.filter(candidate => candidate.__v8GroupIndex === entry.__v8GroupIndex)
+      : [entry]
+    for (const key of siblings.flatMap(candidate => candidate['api-key-entries'] || [])) addCompatKey(key)
+    if (providerEditorMode.value === 'create' && !compatKeyRows.value.length) addCompatKey()
+  } else if (providerEditorMode.value === 'edit') providerForm.value['api-key'] = ''
   if (!Array.isArray(providerForm.value.models)) providerForm.value.models = []
   if (isCompat.value && !Array.isArray(providerForm.value['api-key-entries'])) providerForm.value['api-key-entries'] = []
   providerForm.value.weight = entry.weight ?? entry['api-key-entries']?.[0]?.weight ?? 1
@@ -888,7 +928,7 @@ function guidedEntry() {
     editorError.value = 'Base URL is required for this provider.'
     return null
   }
-  if (providerEditorMode.value === 'create' && !providerKey.value.trim()) {
+  if (!isCompat.value && providerEditorMode.value === 'create' && !providerKey.value.trim()) {
     editorError.value = 'Model service key is required.'
     return null
   }
@@ -897,8 +937,28 @@ function guidedEntry() {
     if (testModel.value !== automaticTestModel && testModel.value.trim()) value['test-model'] = testModel.value.trim()
     else delete value['test-model']
     delete value['proxy-url']
-    if (providerKey.value.trim()) value['api-key-entries'] = [{ ...value['api-key-entries']?.[0], 'api-key': providerKey.value.trim(), weight: value.weight }]
-    else delete value['api-key-entries']
+    value['api-key-entries'] = []
+    for (const [index, row] of compatKeyRows.value.entries()) {
+      const key = cloneValue(row.source)
+      const secret = row.secret.trim() || key['api-key'] || ''
+      if (!secret) { editorError.value = `Enter an API key for key ${index + 1}, or remove the row.`; return null }
+      key['api-key'] = secret
+      const proxy = row.proxy.trim()
+      if (proxy && proxy !== 'direct') {
+        try {
+          if (!['http:', 'https:', 'socks5:', 'socks5h:'].includes(new URL(proxy).protocol)) throw new Error()
+        } catch { editorError.value = `Proxy for key ${index + 1} must be direct or use http, https, socks5, or socks5h.`; return null }
+      }
+      if (proxy) key['proxy-url'] = proxy
+      else delete key['proxy-url']
+      if (row.weight === '' || row.weight == null) delete key.weight
+      else {
+        const keyWeight = Number(row.weight)
+        if (!Number.isSafeInteger(keyWeight) || keyWeight > 1000000) { editorError.value = `Weight for key ${index + 1} must be a whole number no greater than 1000000.`; return null }
+        key.weight = keyWeight
+      }
+      value['api-key-entries'].push(key)
+    }
   } else if (providerKey.value.trim()) value['api-key'] = providerKey.value.trim()
   else delete value['api-key']
   const payload = {
@@ -931,18 +991,24 @@ async function saveProviderEntry() {
     editorError.value = 'Provider name is required.'
     return
   }
-  if (providerEditorMode.value === 'create' && !providerKey.value.trim()) {
-    editorError.value = 'Model service key is required.'
-    return
-  }
-  if (isCompat.value && providerEditorMode.value === 'edit' && !providerKey.value.trim()) delete value['api-key-entries']
-  if (providerEditorMode.value === 'edit' && !providerKey.value.trim()) delete value['api-key']
+  if (savingProvider.value) return
+  if (!isCompat.value && providerEditorMode.value === 'edit' && !providerKey.value.trim()) delete value['api-key']
 
   savingProvider.value = true
   try {
-    const entries = [...providerEntries.value]
+    let entries = [...providerEntries.value]
     if (providerEditorMode.value === 'create') entries.push(value)
-    else entries.splice(editingProviderIndex.value, 1, { ...editingProviderEntry.value, ...value })
+    else {
+      const targetIndex = entries.findIndex(candidate => providerEntryMatches(candidate, editingProviderEntry.value))
+      if (targetIndex < 0) throw new Error('Provider entry is no longer present. Reload and try again.')
+      if (isCompat.value) {
+        // One edited row now owns the complete key list; remove its flattened siblings.
+        const groupIndex = editingProviderEntry.value.__v8GroupIndex
+        const firstIndex = entries.findIndex(candidate => candidate.__v8GroupIndex === groupIndex)
+        entries = entries.filter(candidate => candidate.__v8GroupIndex !== groupIndex)
+        entries.splice(firstIndex, 0, value)
+      } else entries.splice(targetIndex, 1, { ...editingProviderEntry.value, ...value })
+    }
     await fetchAPI(providerApiPath(), { method: 'PUT', body: v8GroupsFromEntries(entries) })
     providerEditorOpen.value = false
     await refreshWorkspace()
@@ -950,7 +1016,7 @@ async function saveProviderEntry() {
     emit('changed')
     toast.add({ title: providerEditorMode.value === 'create' ? 'Provider entry created' : 'Provider entry updated', color: 'success', icon: 'i-tabler-circle-check' })
   } catch (error) {
-    editorError.value = 'Could not save the provider entry. Check the fields and try again.'
+    editorError.value = error?.data?.message || error?.data?.error || error?.message || 'Could not save the provider entry. Check the fields and try again.'
   } finally {
     savingProvider.value = false
   }

@@ -54,6 +54,7 @@
           <UFormField
             v-else
             :label="field.label"
+            :description="field.description"
             :hint="field.hint"
             :error="errorFor(field.key)"
             class="grid gap-2 px-1 py-3 md:grid-cols-[minmax(0,1fr)_minmax(220px,0.45fr)] md:items-center"
@@ -236,6 +237,16 @@ const sections: Section[] = [
     ]
   },
   {
+    id: 'models',
+    title: 'Model catalog sources',
+    description: 'Home loads all three catalogs from its database settings. Use an HTTP(S) URL or an absolute file path on the server. Empty uses the embedded fallback and official remote refresh. Sources refresh every 3 hours and when changed; failed refreshes retain the last valid catalog. Custom sources never fall back to official URLs.',
+    fields: [
+      { key: 'modelsCatalog', label: 'General catalog', type: 'text', placeholder: 'https://example.com/models.json', hint: 'models.catalog — Home supplies the general model list to CPA nodes.' },
+      { key: 'modelsCodexCatalog', label: 'Codex client catalog', type: 'text', placeholder: '/etc/home/codex-models.json', hint: 'models.codex-catalog — also selects the Codex client catalog on CPA nodes.' },
+      { key: 'modelsDevinCatalog', label: 'Devin catalog', type: 'text', placeholder: 'https://example.com/devin-models.json', hint: 'models.devin-catalog — Home supplies the Devin model list to CPA nodes.' }
+    ]
+  },
+  {
     id: 'logs',
     title: 'Logs and statistics',
     description: 'Choose collected diagnostics and local log retention limits.',
@@ -253,7 +264,8 @@ const sections: Section[] = [
     description: 'Set the current global outbound proxy. Proxy pools are managed separately.',
     navigateTo: 'proxy-network',
     fields: [
-      { key: 'proxyUrl', label: 'Proxy URL', type: 'url', span: 'full', placeholder: 'http://user:password@proxy.example:8080', hint: 'Leave empty to connect directly.' }
+      { key: 'proxyUrl', label: 'Proxy URL', type: 'url', span: 'full', placeholder: 'http://user:password@proxy.example:8080', hint: 'Leave empty to connect directly.' },
+      { key: 'tlsHandshakeTimeoutSeconds', label: 'Upstream TLS handshake timeout', type: 'number', min: 0, step: 1, hint: 'Seconds; 0 disables the limit.', description: 'CPA shared uTLS client: Claude Code Anthropic and Chrome ChatGPT/Codex transports. Starts after TCP/proxy connection establishment; does not limit dialing, proxy CONNECT, or the request stream.' }
     ]
   },
   {
@@ -277,6 +289,14 @@ const sections: Section[] = [
       { key: 'disableCooling', label: 'Disable cooling', type: 'switch', description: 'Do not temporarily cool credentials after retryable failures.' },
       { key: 'forceModelPrefix', label: 'Force model prefix', type: 'switch', description: 'Require provider prefixes on model names.' },
       { key: 'routingStrategy', label: 'Routing strategy', type: 'select', items: routingOptions }
+    ]
+  },
+  {
+    id: 'devin',
+    title: 'Devin OAuth',
+    description: 'OAuth-scoped Devin settings. These do not configure API-key credentials.',
+    fields: [
+      { key: 'devinSensitiveWordsJson', label: 'Sensitive words obfuscation', type: 'textarea', rows: 5, span: 'full', hint: 'One word per line. Words are obfuscated in system prompts and messages.', placeholder: 'sensitive-word' }
     ]
   },
   {
