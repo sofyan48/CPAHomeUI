@@ -28,7 +28,7 @@
   --admin-panel-border: var(--color-slate-200);
   --admin-panel-shadow: 0 1px 3px rgb(15 23 42 / 6%), 0 4px 12px rgb(15 23 42 / 3%);
   --admin-control-bg: var(--color-slate-50);
-  --admin-table-header: var(--color-slate-50);
+  --admin-table-header: var(--color-slate-100);
   --admin-control-height: 2rem;
   --admin-control-radius: 0.375rem;
   --admin-overlay-shadow: 0 8px 24px rgb(15 23 42 / 16%);
@@ -120,7 +120,7 @@
     box-shadow: none;
   }
   /* Override shared glass utilities so panels stay distinct from the workspace. */
-  :is(.admin-card, .app-surface, [data-slot="root"]:has(> [data-slot="body"])) {
+  :is(.admin-card, .admin-data-panel, .app-surface, [data-slot="root"]:has(> [data-slot="body"])) {
     background: var(--admin-panel-bg) !important;
     border: 1px solid var(--admin-panel-border) !important;
     box-shadow: var(--admin-panel-shadow) !important;
@@ -132,6 +132,11 @@
     border-color: var(--admin-panel-border);
     box-shadow: none;
   }
+
+  .admin-data-panel { isolation: isolate; }
+  .admin-data-panel > header { background: var(--admin-panel-bg); border-radius: 0.5rem 0.5rem 0 0; }
+  .admin-data-panel__toolbar { background: var(--admin-control-bg); }
+  .admin-data-panel__bulk { background: var(--admin-selected); }
 
   .admin-card > :is([data-slot="header"], [data-slot="footer"]) {
     border-color: var(--admin-panel-border);
@@ -210,7 +215,10 @@
 
   /* AppTable's scoped CSS is unlayered: these narrow overrides are intentional. */
   .app-table :is(thead, th),
-  table :is(thead, th.table-action-head) { background: var(--admin-table-header) !important; }
+  table :is(thead, th.table-action-head) {
+    background: var(--admin-table-header) !important;
+    color: var(--ui-text-toned);
+  }
   .app-table th {
     text-transform: none !important;
     letter-spacing: normal !important;
@@ -218,8 +226,8 @@
   }
   .app-table td { padding-block: 0.625rem !important; }
   .app-table :is(th, td) { border-color: var(--ui-border); }
-  .app-table tbody tr { background: var(--admin-panel-bg); }
-  .app-table tbody tr[data-state="selected"] { background: var(--admin-selected); }
+  .app-table tbody tr:not([data-state="selected"]) { background: var(--admin-panel-bg); }
+  .app-table tbody tr[data-state="selected"] { background: var(--admin-selected) !important; }
   @media (hover: hover) {
     .app-table tbody tr:hover { background: var(--ui-hover) !important; }
   }

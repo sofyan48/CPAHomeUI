@@ -1,5 +1,5 @@
 <template>
-  <section class="min-w-0 max-w-full rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg)]" :aria-label="title || 'Data table'">
+  <section class="admin-data-panel min-w-0 max-w-full rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg)]" :aria-label="title || 'Data table'">
     <header v-if="title || description || $slots.actions" class="border-b border-[var(--ui-border)] px-4 py-3">
       <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div v-if="title || description" class="min-w-0 flex-1">
@@ -12,11 +12,11 @@
       </div>
     </header>
 
-    <div v-if="$slots.toolbar" class="border-b border-[var(--ui-border)] px-4 py-3">
+    <div v-if="$slots.toolbar" class="admin-data-panel__toolbar border-b border-[var(--ui-border)] px-4 py-3">
       <slot name="toolbar" />
     </div>
 
-    <div v-if="$slots.bulk" class="border-b border-[var(--ui-border)] px-4 py-2">
+    <div v-if="$slots.bulk" class="admin-data-panel__bulk border-b border-[var(--ui-border)] px-4 py-2">
       <slot name="bulk" />
     </div>
 
