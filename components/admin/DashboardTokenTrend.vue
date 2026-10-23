@@ -23,17 +23,17 @@
         <svg viewBox="0 0 720 240" class="size-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
           <defs>
             <linearGradient :id="gradientId" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#50c7bd" stop-opacity="0.2" />
-              <stop offset="100%" stop-color="#50c7bd" stop-opacity="0.04" />
+              <stop offset="0%" stop-color="var(--ui-primary)" stop-opacity="0.2" />
+              <stop offset="100%" stop-color="var(--ui-primary)" stop-opacity="0.04" />
             </linearGradient>
           </defs>
 
           <line v-for="y in gridLines" :key="y" x1="12" x2="708" :y1="y" :y2="y" stroke="var(--ui-border)" stroke-opacity="0.65" stroke-dasharray="3 5" vector-effect="non-scaling-stroke" />
           <path v-if="areaPath" :d="areaPath" :fill="`url(#${gradientId})`" />
-          <path v-if="linePath" :d="linePath" fill="none" stroke="#50c7bd" stroke-width="2.75" stroke-linecap="round" vector-effect="non-scaling-stroke" />
+          <path v-if="linePath" :d="linePath" fill="none" stroke="var(--ui-primary)" stroke-width="2.75" stroke-linecap="round" vector-effect="non-scaling-stroke" />
 
           <line v-if="selectedPoint" :x1="selectedPoint.x" :x2="selectedPoint.x" y1="18" y2="202" stroke="var(--ui-border)" stroke-opacity="0.8" vector-effect="non-scaling-stroke" />
-          <circle v-if="selectedPoint" :cx="selectedPoint.x" :cy="selectedPoint.y" r="5" fill="#50c7bd" stroke="var(--ui-bg)" stroke-width="2.5" vector-effect="non-scaling-stroke" />
+          <circle v-if="selectedPoint" :cx="selectedPoint.x" :cy="selectedPoint.y" r="5" fill="var(--ui-primary)" stroke="var(--ui-bg)" stroke-width="2.5" vector-effect="non-scaling-stroke" />
 
         </svg>
 
