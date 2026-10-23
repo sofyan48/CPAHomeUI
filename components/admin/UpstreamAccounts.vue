@@ -79,7 +79,9 @@
         </template>
         <template #cooling-cell="{ row }"><USwitch :model-value="!value(row)['disable-cooling']" :disabled="busy || !value(row).id" :loading="inlineChanging === value(row).id" :aria-label="`Cooling schedule for ${value(row).label || value(row).name || value(row).id}`" @update:model-value="setInlineField(value(row), 'disable_cooling', !$event)" /></template>
         <template #priority-cell="{ row }"><span class="font-mono text-xs tabular-nums" :title="value(row).priority == null ? 'Not set' : undefined">{{ value(row).priority ?? '—' }}</span></template>
-        <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><AdminTableAction action="view" label="View credential details" @click="showDetails(value(row))" /><AdminTableAction action="test" label="Test connectivity" @click="openConnectivity(value(row))" /><AdminTableAction action="download" label="Download credential" :disabled="busy" @click="downloadCredential(value(row))" /><AdminTableAction action="delete" label="Delete credential" destructive :disabled="busy" @click="confirmDelete(value(row))" /></div></template>
+        <template #actions-cell="{ row }">
+          <AdminRowActions :actions="credentialRowActions(value(row))" :max-inline="1" :menu-label="`credential ${value(row).label || value(row).name || value(row).id}`" />
+        </template>
         <template #empty><div class="py-14 text-center text-sm text-[var(--ui-text-muted)]"><p>{{ pending ? 'Loading accounts…' : pageError ? 'Could not load accounts. Check the connection and refresh.' : hasActiveFilters ? 'No matching credentials.' : 'No credentials have been added.' }}</p><AppButton v-if="hasActiveFilters && !pending" class="mt-3" color="neutral" variant="outline" size="sm" @click="clearFilters">Clear filters</AppButton></div></template>
       </AppTable>
       </AppCard>
@@ -147,7 +149,7 @@
             <section class="space-y-3 border-t border-[var(--ui-border)] pt-4"><div class="flex items-center justify-between gap-2"><div><h3 class="font-semibold">Current concurrency</h3><p class="text-xs text-[var(--ui-text-muted)]">Admitted state and observed in-flight requests.</p></div><AppButton size="sm" color="neutral" variant="outline" :loading="loadingConcurrency" @click="loadConcurrency()">Refresh</AppButton></div><div v-if="concurrencyState" class="space-y-2"><p>Admitted: <strong>{{ concurrencyState.admitted_in_flight }}</strong> / {{ concurrencyState.max_in_flight ?? '∞' }} <UBadge v-if="concurrencyState.total_saturated" color="warning" variant="subtle">Saturated</UBadge></p><p class="text-xs text-[var(--ui-text-muted)]">Remaining: {{ concurrencyState.remaining ?? 'unlimited' }} · Policy version: {{ concurrencyState.policy_version }} · Fully enforced: {{ concurrencyState.fully_enforced }}</p><div v-for="model in concurrencyState.models || []" :key="model.model" class="rounded-md border border-[var(--ui-border)] p-3"><span class="font-medium">{{ model.model }}</span> · {{ model.admitted_in_flight }} / {{ model.max_in_flight }} <UBadge v-if="model.saturated" color="warning" variant="subtle">Saturated</UBadge></div></div><p v-if="flightDetails?.stale || flightDetails?.details_truncated || flightDetails?.coverage_complete === false" class="text-xs text-amber-500">Observation may be stale or incomplete.</p><p v-if="flightDetails?.observed_at" class="text-xs text-[var(--ui-text-muted)]">Observed at {{ flightDetails.observed_at }} · {{ flightDetails.total }} request(s)</p><div v-for="request in flightDetails?.items || []" :key="request.request_id" class="rounded-md border border-[var(--ui-border)] p-3"><p class="break-all font-mono text-xs">{{ request.request_id }}</p><p>{{ request.model || 'Unknown model' }} · {{ request.request_kind || 'request' }}</p><p class="text-xs text-[var(--ui-text-muted)]">Started {{ request.started_at }}</p></div><p v-if="snapshotsSupported && !loadingConcurrency && !flightDetails?.items?.length" class="text-[var(--ui-text-muted)]">No observed requests.</p><AppButton v-if="flightDetails?.next_offset != null" color="neutral" variant="outline" :loading="loadingConcurrency" @click="loadConcurrency(flightDetails.next_offset)">Load more</AppButton></section>
           </section>
           <section v-else-if="detailsTab === 'Models'" class="space-y-3 text-sm">
-            <div class="flex items-center justify-between gap-2"><div><h3 class="font-semibold">Models</h3><p class="text-xs text-[var(--ui-text-muted)]">Models exposed by this credential and runtime-only history.</p></div><AppButton size="sm" color="neutral" variant="outline" :loading="modelsLoading" @click="loadModels(detailsTarget)">Refresh</AppButton></div>
+            <div class="flex items-center justify-between gap-2"><div><h3 class="font-semibold">Models</h3><p class="text-xs text-[var(--ui-text-muted)]">Models exposed by this credential and runtime-only history.</p></div><AppButton size="sm" color="neutral" variant="outline" :loading="modelsLoading" @click="loadModels(detailsTarget, true)">Refresh</AppButton></div>
             <UAlert v-if="modelsError" color="error" variant="subtle" :description="modelsError" />
             <UAlert v-if="modelStatesNotice" color="warning" variant="subtle" :description="modelStatesNotice" />
             <p v-if="modelsLoading" class="py-8 text-center text-[var(--ui-text-muted)]">Loading models…</p>
@@ -1020,7 +1022,7 @@ async function importVertex() {
   } catch (error) { vertexError.value = message(error) }
   finally { importingVertex.value = false }
 }
-async function loadModels(item) {
+async function loadModels(item, refresh = false) {
   if (!item?.id || modelsLoading.value) return
   const generation = detailGeneration
   const requestID = ++modelsRequest
@@ -1029,7 +1031,7 @@ async function loadModels(item) {
   credentialModels.value = []; modelStates.value = null
   try {
     const [models, states] = await Promise.all([
-      fetchAPI(credentialRoute('/models'), { query: { name: item.id } }),
+      fetchAPI(credentialRoute('/models'), { query: { name: item.id }, refresh }),
       fetchAPI(`/credentials/${encodeURIComponent(item.id)}/model-states`).catch(async error => {
         if (error?.statusCode === 404) {
           try {
@@ -1088,6 +1090,14 @@ async function downloadCredential(item) {
   } catch (error) { toast.add({ title: 'Download failed', description: message(error), color: 'error' }) }
 }
 
+function credentialRowActions(item) {
+  return [
+    { id: 'view', label: 'View', ariaLabel: 'View credential details', icon: 'i-tabler-eye', onSelect: () => showDetails(item) },
+    { id: 'test', label: 'Test', ariaLabel: 'Test connectivity', icon: 'i-tabler-plug-connected', onSelect: () => openConnectivity(item) },
+    { id: 'download', label: 'Download', ariaLabel: 'Download credential', icon: 'i-tabler-download', disabled: busy.value, onSelect: () => downloadCredential(item) },
+    { id: 'delete', label: 'Delete', ariaLabel: 'Delete credential', icon: 'i-tabler-trash', destructive: true, disabled: busy.value, onSelect: () => confirmDelete(item) }
+  ]
+}
 function confirmDelete(item) { deleteTarget.value = item; deleteOpen.value = true }
 async function deleteCredential() { if (!deleteTarget.value) return; deleting.value = true; try { await fetchAPI(`${credentialRoute('')}?id=${encodeURIComponent(deleteTarget.value.id)}`, { method: 'DELETE' }); deleteOpen.value = false; await refreshData(); toast.add({ title: 'Credential deleted', color: 'success' }) } catch (error) { toast.add({ title: 'Delete failed', description: message(error), color: 'error' }) } finally { deleting.value = false } }
 async function startOAuth(provider) {

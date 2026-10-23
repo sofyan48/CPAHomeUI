@@ -249,10 +249,10 @@ const sections: Section[] = [
   {
     id: 'logs',
     title: 'Logs and statistics',
-    description: 'Choose collected diagnostics and local log retention limits.',
+    description: 'Choose collected diagnostics and local log retention limits. Home always collects usage statistics.',
     fields: [
       { key: 'requestLog', label: 'Request logs', type: 'switch', description: 'Write per-request diagnostic records.' },
-      { key: 'usageStatisticsEnabled', label: 'Usage statistics', type: 'switch', description: 'Collect runtime usage statistics.' },
+
       { key: 'loggingToFile', label: 'Logging to file', type: 'switch', description: 'Persist application logs to local files.' },
       { key: 'logsMaxTotalSizeMb', label: 'Maximum total log size', type: 'number', min: 0, step: 1, hint: 'Megabytes; 0 uses runtime behavior.' },
       { key: 'errorLogsMaxFiles', label: 'Error log files', type: 'number', min: 0, step: 1, hint: 'Maximum retained error log files.' }

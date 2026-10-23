@@ -54,6 +54,7 @@ type RowAction = {
 const props = defineProps<{
   actions: (RowAction | false | null | undefined)[]
   menuLabel: string
+  maxInline?: number
 }>()
 
 const buttonUI = { base: 'admin-table-action no-underline hover:no-underline min-h-10 sm:min-h-0' }
@@ -72,7 +73,8 @@ const inlineCount = computed(() => {
   const count = visibleActions.value.length
   if (count <= 1) return count
   if (compact.value) return 0
-  return count <= 3 ? count : 2
+  const defaultCount = count <= 3 ? count : 2
+  return Math.min(defaultCount, Math.max(0, props.maxInline ?? defaultCount))
 })
 
 // Priority decides membership; destructive actions only move within their group.

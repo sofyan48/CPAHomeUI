@@ -18,6 +18,16 @@ export function parseCredentialExclusions(value: string): string[] | null {
   } catch { return null }
 }
 
+export function credentialExclusionCandidates(models: RegisteredModel[] | null, knownRules: string[]): RegisteredModel[] {
+  const candidates = new Map<string, RegisteredModel>()
+  for (const model of models || []) candidates.set(model.id.toLowerCase(), model)
+  for (const rule of knownRules) {
+    const id = rule.trim()
+    if (id && !id.includes('*') && !candidates.has(id.toLowerCase())) candidates.set(id.toLowerCase(), { id })
+  }
+  return [...candidates.values()]
+}
+
 export function credentialExclusionMatches(rule: string, id: string): boolean {
   const pattern = rule.trim().split('*').map(part => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*')
   return Boolean(pattern) && new RegExp(`^${pattern}$`, 'i').test(id)

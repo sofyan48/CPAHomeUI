@@ -26,7 +26,7 @@
           <UFormField label="Provider"><USelectMenu :model-value="filters.provider || allOptionValue" @update:model-value="setSelectFilter('provider', $event)" :items="providerOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
           <UFormField label="Model"><USelectMenu :model-value="filters.model || allOptionValue" @update:model-value="setSelectFilter('model', $event)" :items="modelOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
         </div>
-        <div v-if="timeRange === 'custom'" class="grid grid-cols-1 gap-3 border-t border-[var(--ui-border)] pt-3 sm:grid-cols-2"><UFormField label="Start time"><UInput v-model="filters.from" type="datetime-local" class="w-full" /></UFormField><UFormField label="End time"><UInput v-model="filters.to" type="datetime-local" class="w-full" /></UFormField></div>
+        <div v-if="timeRange === 'custom'" class="grid grid-cols-1 gap-3 border-t border-[var(--ui-border)] pt-3 sm:grid-cols-2"><UFormField label="Start time"><AppDateInput v-model="filters.from" type="datetime-local" :max="filters.to" class="w-full" /></UFormField><UFormField label="End time"><AppDateInput v-model="filters.to" type="datetime-local" :min="filters.from" class="w-full" /></UFormField></div>
 
         <div v-if="advancedOpen" class="grid grid-cols-1 gap-3 border-t border-[var(--ui-border)] pt-3 md:grid-cols-2 xl:grid-cols-6">
           <UFormField label="Event type"><USelect :model-value="filters.event_type || allOptionValue" @update:model-value="setSelectFilter('event_type', $event)" :items="eventTypeOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
@@ -104,6 +104,7 @@
 </template>
 
 <script setup>
+import { dateRangeError } from '~/composables/dateRange'
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
 import { useDataSync } from '~/composables/useDataSync'
 const { fetchAPI, token } = useApi()
@@ -227,7 +228,7 @@ function applyTimeRange(value) {
   filters.value.from = toInputDateTime(start)
   filters.value.to = value === 'yesterday' ? toInputDateTime(now) : ''
 }
-async function applyFilters() { appliedSearchField.value = searchField.value; appliedFilters.value = { ...filters.value }; page.value = 1; pendingNewEvents.value = 0; await refreshEvents() }
+async function applyFilters() { const error = dateRangeError(filters.value.from, filters.value.to, 'datetime-local'); if (error) { pageError.value = error; return }; appliedSearchField.value = searchField.value; appliedFilters.value = { ...filters.value }; page.value = 1; pendingNewEvents.value = 0; await refreshEvents() }
 async function resetFilters() { filters.value = defaultFilters(); appliedFilters.value = { ...filters.value }; searchField.value = 'all'; appliedSearchField.value = 'all'; timeRange.value = '24h'; advancedOpen.value = false; sort.value = 'timestamp_desc'; page.value = 1; pendingNewEvents.value = 0; await refreshEvents() }
 async function changePage(delta) {
   const next = page.value + delta

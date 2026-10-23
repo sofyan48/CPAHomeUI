@@ -619,7 +619,7 @@ const outline = [
     short: "Logs",
     keys: [
       "requestLog",
-      "usageStatisticsEnabled",
+
       "loggingToFile",
       "logsMaxTotalSizeMb",
       "errorLogsMaxFiles",
@@ -871,7 +871,7 @@ function buildDraft(config, yamlRoot) {
   const requests = config.requests || yamlRoot.requests || {};
   const observability = config.observability || yamlRoot.observability || {};
   const logs = observability.logs || {};
-  const usage = observability.usage || {};
+
   const oauth = config.oauth || yamlRoot.oauth || {};
   const antigravity = oauth.providers?.antigravity || {};
   const devin = oauth.providers?.devin || {};
@@ -922,7 +922,7 @@ function buildDraft(config, yamlRoot) {
     ),
     oauthModelAliasJson: JSON.stringify(oauth["model-alias"] || {}, null, 2),
     requestLog: Boolean(logs["request-log"]),
-    usageStatisticsEnabled: Boolean(usage["usage-statistics-enabled"]),
+
     loggingToFile: Boolean(logs["logging-to-file"]),
     logsMaxTotalSizeMb: Number(logs["logs-max-total-size-mb"] || 0),
     errorLogsMaxFiles: Number(logs["error-logs-max-files"] ?? 10),
@@ -1188,11 +1188,7 @@ const v8YamlPaths = {
   oauthExcludedModelsJson: ["oauth", "excluded-models"],
   oauthModelAliasJson: ["oauth", "model-alias"],
   requestLog: ["observability", "logs", "request-log"],
-  usageStatisticsEnabled: [
-    "observability",
-    "usage",
-    "usage-statistics-enabled",
-  ],
+
   loggingToFile: ["observability", "logs", "logging-to-file"],
   logsMaxTotalSizeMb: ["observability", "logs", "logs-max-total-size-mb"],
   errorLogsMaxFiles: ["observability", "logs", "error-logs-max-files"],

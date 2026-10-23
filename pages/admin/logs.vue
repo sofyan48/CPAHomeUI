@@ -54,10 +54,10 @@
         </template>
         <template v-else-if="activeView !== 'application'">
           <UFormField label="From">
-            <UInput v-model="requestFilters.from" type="date" class="w-full" />
+            <AppDateInput v-model="requestFilters.from" type="date" :max="requestFilters.to" class="w-full" />
           </UFormField>
           <UFormField label="To">
-            <UInput v-model="requestFilters.to" type="date" class="w-full" />
+            <AppDateInput v-model="requestFilters.to" type="date" :min="requestFilters.from" class="w-full" />
           </UFormField>
           <UFormField label="Provider">
             <UInput v-model="requestFilters.provider" placeholder="e.g. openai" class="w-full" />
@@ -83,10 +83,10 @@
             <UInput v-model="applicationFilters.search" placeholder="Case-insensitive search across stored log lines" icon="i-tabler-search" class="w-full" />
           </UFormField>
           <UFormField label="After">
-            <UInput v-model="applicationFilters.after" type="datetime-local" class="w-full" />
+            <AppDateInput v-model="applicationFilters.after" type="datetime-local" :max="applicationFilters.before" class="w-full" />
           </UFormField>
           <UFormField label="Before">
-            <UInput v-model="applicationFilters.before" type="datetime-local" class="w-full" />
+            <AppDateInput v-model="applicationFilters.before" type="datetime-local" :min="applicationFilters.after" class="w-full" />
           </UFormField>
           <UFormField label="Level">
             <USelect :model-value="applicationFilters.level || allOptionValue" @update:model-value="applicationFilters.level = $event === allOptionValue ? '' : $event" :items="levelOptions" value-key="value" label-key="label" class="w-full" />
@@ -399,6 +399,7 @@
 </template>
 
 <script setup>
+import { dateRangeError } from '~/composables/dateRange'
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
 import { useDataSync } from '~/composables/useDataSync'
 import { useApplicationLogTail } from '~/composables/useApplicationLogTail'
@@ -741,6 +742,10 @@ const switchView = async (view) => {
 }
 
 const applyFilters = async () => {
+  const error = activeView.value === 'application'
+    ? dateRangeError(applicationFilters.value.after, applicationFilters.value.before, 'datetime-local')
+    : activeView.value === 'error-logs' ? '' : dateRangeError(requestFilters.value.from, requestFilters.value.to)
+  if (error) { errorMessage.value = error; return }
   if (activeView.value === 'application') {
     appliedApplicationFilters.value = { ...applicationFilters.value }
     resetApplicationPagination()

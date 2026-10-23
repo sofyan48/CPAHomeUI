@@ -37,8 +37,8 @@
         </div>
 
         <div v-if="rangePreset === 'custom'" class="mt-3 grid grid-cols-1 gap-3 border-t border-[var(--ui-border)] pt-3 sm:grid-cols-2">
-          <UFormField label="Start date"><UInput v-model="filters.from" type="date" class="w-full" /></UFormField>
-          <UFormField label="End date"><UInput v-model="filters.to" type="date" class="w-full" /></UFormField>
+          <UFormField label="Start date"><AppDateInput v-model="filters.from" type="date" :max="filters.to" class="w-full" /></UFormField>
+          <UFormField label="End date"><AppDateInput v-model="filters.to" type="date" :min="filters.from" class="w-full" /></UFormField>
         </div>
         <div class="mt-3 border-t border-[var(--ui-border)] pt-3">
           <AppButton type="button" color="neutral" variant="ghost" size="sm" :icon="showAdvancedFilters ? 'i-tabler-chevron-up' : 'i-tabler-adjustments-horizontal'" :aria-expanded="showAdvancedFilters" @click="showAdvancedFilters = !showAdvancedFilters">{{ showAdvancedFilters ? 'Hide advanced' : 'Advanced filters' }}</AppButton>
@@ -213,6 +213,7 @@
 </template>
 
 <script setup>
+import { dateRangeError } from '~/composables/dateRange'
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
 import { useDataSync } from '~/composables/useDataSync'
 const { fetchAPI, token } = useApi()
@@ -510,6 +511,8 @@ const changeRecordsView = async () => {
 }
 
 const applyFilters = async () => {
+  const error = dateRangeError(filters.value.from, filters.value.to)
+  if (error) { errorMessage.value = error; return }
   appliedFilters.value = { ...filters.value }
   appliedPreset.value = rangePreset.value
   credentialPage.value = 1

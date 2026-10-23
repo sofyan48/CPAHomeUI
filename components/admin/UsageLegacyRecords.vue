@@ -6,8 +6,8 @@
     <AppCard>
       <form class="space-y-3" @submit.prevent="apply">
         <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <UFormField label="From"><UInput v-model="filters.from" type="datetime-local" class="w-full" /></UFormField>
-          <UFormField label="To"><UInput v-model="filters.to" type="datetime-local" class="w-full" /></UFormField>
+          <UFormField label="From"><AppDateInput v-model="filters.from" type="datetime-local" :max="filters.to" class="w-full" /></UFormField>
+          <UFormField label="To"><AppDateInput v-model="filters.to" type="datetime-local" :min="filters.from" class="w-full" /></UFormField>
           <UFormField v-for="field in fields" :key="field.key" :label="field.label"><UInput v-model="filters[field.key]" class="w-full" /></UFormField>
           <UFormField label="Status"><USelect v-model="filters.status" :items="statusOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
           <UFormField label="Sort"><USelect v-model="sort" :items="sortOptions" value-key="value" label-key="label" class="w-full" /></UFormField>
@@ -45,6 +45,7 @@
 </template>
 
 <script setup lang="ts">
+import { dateRangeError } from '~/composables/dateRange'
 import { useDataSync } from '~/composables/useDataSync'
 const { fetchAPI, token } = useApi()
 const { supports } = useCapabilities()
@@ -103,7 +104,7 @@ async function load() {
   } catch (cause) { if (!disposed && current === version) failure(cause, 'usage_records') }
   finally { if (!disposed && current === version) loading.value = false }
 }
-function apply() { applied.value = { ...filters.value }; if (page.value !== 1) page.value = 1; else void load() }
+function apply() { const invalid = dateRangeError(filters.value.from, filters.value.to, 'datetime-local'); if (invalid) { error.value = invalid; return }; applied.value = { ...filters.value }; if (page.value !== 1) page.value = 1; else void load() }
 function reset() { filters.value = defaults(); apply() }
 async function openDetail(record: any) {
   const current = ++detailVersion

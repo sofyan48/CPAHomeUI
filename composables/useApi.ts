@@ -1,6 +1,7 @@
 import { useRuntimeConfig } from '#imports'
 import { storeToRefs } from 'pinia'
 import { useManagementConfigStore } from '~/stores/managementConfig'
+import { useCredentialModelsStore } from '~/stores/credentialModels'
 import { useManagementSessionStore } from '~/stores/managementSession'
 
 export type ApiQueryValue = string | number | boolean | null | undefined | Array<string | number | boolean>
@@ -14,6 +15,8 @@ export interface ApiRequestOptions {
   headers?: HeadersInit
   responseType?: ApiResponseType
   signal?: AbortSignal
+  /** Replace cached and in-flight credential models with a fresh request. */
+  refresh?: boolean
   token?: string | null
 }
 
@@ -59,6 +62,7 @@ export const useApi = () => {
   const config = useRuntimeConfig()
   const { token } = storeToRefs(useManagementSessionStore())
   const managementConfig = useManagementConfigStore()
+  const credentialModels = useCredentialModelsStore()
 
   // Home often listens on IPv4 only; localhost may resolve to ::1 in browsers.
   const configuredURL = String(config.public.apiUrl || '').trim().replace(/\/+$/, '').replace(/^(https?:\/\/)localhost(?=:\d+|\/|$)/i, (_, scheme: string) => `${scheme}127.0.0.1`)
@@ -115,6 +119,23 @@ export const useApi = () => {
     return Array.isArray(groups) ? groups : []
   }
 
+  const credentialModelsId = (url: string, options: ApiRequestOptions) => {
+    if (options.signal || options.headers || options.body !== undefined || (options.responseType && options.responseType !== 'json')) return ''
+    const baseOrigin = import.meta.client ? window.location.origin : 'http://localhost'
+    const requested = new URL(url, baseOrigin)
+    const endpoint = new URL(resolveUrl('/credentials/models'), baseOrigin)
+    if (requested.origin !== endpoint.origin || requested.pathname !== endpoint.pathname || requested.hash) return ''
+
+    // Only the documented name query is cacheable; leave other request variants untouched.
+    const params = requested.searchParams
+    for (const [key, value] of Object.entries(options.query || {})) {
+      if (key !== 'name' || typeof value !== 'string' || params.has(key)) return ''
+      params.set(key, value)
+    }
+    if ([...params.keys()].some(key => key !== 'name') || params.getAll('name').length !== 1) return ''
+    return (params.get('name') || '').trim()
+  }
+
   const fetchAPI = async <T = unknown>(path: string, options: ApiRequestOptions = {}): Promise<T> => {
     const activeToken = requireToken(options.token)
     const method = options.method || (options.body === undefined ? 'GET' : 'POST')
@@ -122,13 +143,18 @@ export const useApi = () => {
     const providerPath = pathWithoutQuery && providerPaths.has(pathWithoutQuery) ? pathWithoutQuery : ''
 
     try {
+      credentialModels.setScope(apiBase, activeToken)
       if (method === 'GET' && providerPath) {
         const configRoot = await fetchConfig(options, activeToken)
         return providerGroupsFromConfig(configRoot, providerPath) as T
       }
 
-      if (method !== 'GET') managementConfig.invalidate()
-      const response = await $fetch<T>(resolveUrl(path), {
+      const url = resolveUrl(path)
+      if (method !== 'GET') {
+        managementConfig.invalidate()
+        credentialModels.invalidate()
+      }
+      const fetchResponse = () => $fetch<T>(url, {
         method,
         query: options.query,
         body: options.body as any,
@@ -136,20 +162,33 @@ export const useApi = () => {
         responseType: options.responseType || 'json',
         signal: options.signal
       })
-      if (method !== 'GET') managementConfig.invalidate()
-      return response
+      const credentialId = method === 'GET' ? credentialModelsId(url, options) : ''
+      return await (credentialId
+        ? credentialModels.fetchModels(credentialId, fetchResponse, options.refresh)
+        : fetchResponse())
     } catch (error: any) {
       throw new ManagementApiError(errorMessage(error), error?.statusCode || error?.status, error?.data)
+    } finally {
+      if (method !== 'GET') {
+        managementConfig.invalidate()
+        credentialModels.invalidate()
+      }
     }
   }
 
   const fetchRaw = async <T = unknown>(path: string, options: ApiRequestOptions = {}) => {
     const activeToken = requireToken(options.token)
     const url = resolveUrl(path)
+    const method = options.method || (options.body === undefined ? 'GET' : 'POST')
 
     try {
+      credentialModels.setScope(apiBase, activeToken)
+      if (method !== 'GET') {
+        managementConfig.invalidate()
+        credentialModels.invalidate()
+      }
       return await $fetch.raw<T>(url, {
-        method: options.method || (options.body === undefined ? 'GET' : 'POST'),
+        method,
         query: options.query,
         body: options.body as any,
         headers: requestHeaders(options, activeToken),
@@ -158,6 +197,11 @@ export const useApi = () => {
       })
     } catch (error: any) {
       throw new ManagementApiError(errorMessage(error), error?.statusCode || error?.status, error?.data)
+    } finally {
+      if (method !== 'GET') {
+        managementConfig.invalidate()
+        credentialModels.invalidate()
+      }
     }
   }
 

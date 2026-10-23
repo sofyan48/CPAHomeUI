@@ -20,10 +20,10 @@
         <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6" @submit.prevent="applyOverviewFilters">
           <UFormField label="Time range"><USelect v-model="overviewPreset" :items="rangeOptions" value-key="value" label-key="label" class="w-full" @update:model-value="selectRange('overview', $event)" /></UFormField>
           <UFormField label="From">
-            <UInput v-model="overviewFilters.from" type="date" class="w-full" @update:model-value="overviewPreset = 'custom'" />
+            <AppDateInput v-model="overviewFilters.from" type="date" :max="overviewFilters.to" class="w-full" @update:model-value="overviewPreset = 'custom'" />
           </UFormField>
           <UFormField label="To">
-            <UInput v-model="overviewFilters.to" type="date" class="w-full" @update:model-value="overviewPreset = 'custom'" />
+            <AppDateInput v-model="overviewFilters.to" type="date" :min="overviewFilters.from" class="w-full" @update:model-value="overviewPreset = 'custom'" />
           </UFormField>
           <UFormField label="User">
             <UInputMenu v-model="overviewFilters.user" :items="userSearchOptions" create-item @create="overviewFilters.user = $event.trim()" placeholder="Search users or enter ID..." class="w-full" />
@@ -139,8 +139,8 @@
       <AppCard class="workbench-filter-panel">
         <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5" @submit.prevent="applyChargeFilters">
           <UFormField label="Time range"><USelect v-model="chargePreset" :items="rangeOptions" value-key="value" label-key="label" class="w-full" @update:model-value="selectRange('charges', $event)" /></UFormField>
-          <UFormField label="From"><UInput v-model="chargeFilters.from" type="date" class="w-full" @update:model-value="chargePreset = 'custom'" /></UFormField>
-          <UFormField label="To"><UInput v-model="chargeFilters.to" type="date" class="w-full" @update:model-value="chargePreset = 'custom'" /></UFormField>
+          <UFormField label="From"><AppDateInput v-model="chargeFilters.from" type="date" :max="chargeFilters.to" class="w-full" @update:model-value="chargePreset = 'custom'" /></UFormField>
+          <UFormField label="To"><AppDateInput v-model="chargeFilters.to" type="date" :min="chargeFilters.from" class="w-full" @update:model-value="chargePreset = 'custom'" /></UFormField>
           <UFormField label="User"><UInputMenu v-model="chargeFilters.user" :items="userSearchOptions" create-item @create="chargeFilters.user = $event.trim()" placeholder="Search users..." class="w-full" /></UFormField>
           <UFormField label="Provider"><UInputMenu v-model="chargeFilters.provider" :items="providerSearchOptions" create-item @create="chargeFilters.provider = $event.trim()" placeholder="Search providers..." class="w-full" /></UFormField>
           <UFormField label="Model"><UInputMenu v-model="chargeFilters.model" :items="modelSearchOptions" create-item @create="chargeFilters.model = $event.trim()" placeholder="Search models..." class="w-full" /></UFormField>
@@ -170,8 +170,8 @@
       <AppCard class="workbench-filter-panel">
         <form class="grid grid-cols-1 gap-3 md:grid-cols-4" @submit.prevent="applyBalanceFilters">
           <UFormField label="Time range"><USelect v-model="balancePreset" :items="rangeOptions" value-key="value" label-key="label" class="w-full" @update:model-value="selectRange('balances', $event)" /></UFormField>
-          <UFormField label="From"><UInput v-model="balanceFilters.from" type="date" class="w-full" @update:model-value="balancePreset = 'custom'" /></UFormField>
-          <UFormField label="To"><UInput v-model="balanceFilters.to" type="date" class="w-full" @update:model-value="balancePreset = 'custom'" /></UFormField>
+          <UFormField label="From"><AppDateInput v-model="balanceFilters.from" type="date" :max="balanceFilters.to" class="w-full" @update:model-value="balancePreset = 'custom'" /></UFormField>
+          <UFormField label="To"><AppDateInput v-model="balanceFilters.to" type="date" :min="balanceFilters.from" class="w-full" @update:model-value="balancePreset = 'custom'" /></UFormField>
           <UFormField label="User"><UInputMenu v-model="balanceFilters.user" :items="userSearchOptions" create-item @create="balanceFilters.user = $event.trim()" placeholder="Search users..." class="w-full" /></UFormField>
           <div class="flex items-end gap-2"><AppButton type="submit" :loading="balancesLoading">Apply</AppButton><AppButton color="neutral" variant="ghost" @click="resetBalanceFilters">Reset</AppButton></div>
         </form>
@@ -310,8 +310,10 @@
 </template>
 
 <script setup>
+import { dateRangeError } from '~/composables/dateRange'
 import { useWorkspaceState } from '~/composables/useWorkspaceState'
 import { useDataSync } from '~/composables/useDataSync'
+import { billingModelCandidates } from '~/composables/billingModelCandidates'
 const { fetchAPI } = useApi()
 const allOptionValue = '__all__'
 const toast = useToast()
@@ -507,28 +509,7 @@ const modelSearchOptions = computed(() => [...new Set([
   ...topModels.value.map(item => item.label || item.model),
   ...modelCandidates.value.map(item => item.model)
 ].filter(Boolean))].sort())
-function flattenModels(source) { return Array.isArray(source) ? source : source && typeof source === 'object' ? Object.values(source).flatMap(group => Array.isArray(group) ? group : []) : [] }
-const modelCandidates = computed(() => {
-  const map = new Map()
-  const add = (model, available) => {
-    if (!model?.id || !Array.isArray(model.providers) || !model.providers.length) return
-    for (const provider of model.providers) {
-      const normalizedProvider = String(provider || '').trim()
-      if (!normalizedProvider) continue
-      const key = `${normalizedProvider.toLowerCase()}::${model.id}`
-      const previous = map.get(key)
-      map.set(key, { key, provider: normalizedProvider, model: model.id, displayName: model.display_name || model.name || model.id, description: model.description || '', ownedBy: model.owned_by || '', type: model.type || '', available: Boolean(available || previous?.available), raw: model })
-    }
-  }
-  flattenModels(modelCandidatesResponse.value.static).forEach(model => add(model, false))
-  flattenModels(modelCandidatesResponse.value.available).forEach(model => add(model, true))
-  priceRules.value.forEach(rule => {
-    if (!rule?.provider || !rule?.model) return
-    const key = `${String(rule.provider).toLowerCase()}::${rule.model}`
-    if (!map.has(key)) map.set(key, { key, provider: rule.provider, model: rule.model, displayName: rule.model, description: 'Existing model price rule', ownedBy: '', type: '', available: false, raw: null })
-  })
-  return [...map.values()].sort((a, b) => Number(b.available) - Number(a.available) || a.provider.localeCompare(b.provider) || a.model.localeCompare(b.model))
-})
+const modelCandidates = computed(() => billingModelCandidates(modelCandidatesResponse.value.available, modelCandidatesResponse.value.static, priceRules.value))
 const filteredModelCandidates = computed(() => {
   const query = modelCandidateSearch.value.trim().toLowerCase()
   return modelCandidates.value.filter(candidate =>
@@ -657,11 +638,11 @@ async function changePageSize(section) {
   else { balancePage.value = 1; await safely(loadBalances, 'Failed to load balance records.') }
 }
 async function openMatchingSettings() { await safely(async () => { await loadSettings(); settingsError.value = ''; matchingSettingsOpen.value = true; if (priceSchemaVersion.value >= 2) await loadDiagnostics() }, 'Could not load billing settings.') }
-async function applyOverviewFilters() { appliedOverviewFilters.value = { ...overviewFilters.value }; await safely(loadOverview, 'Failed to load billing overview.') }
+async function applyOverviewFilters() { const error = dateRangeError(overviewFilters.value.from, overviewFilters.value.to); if (error) { pageError.value = error; return }; appliedOverviewFilters.value = { ...overviewFilters.value }; await safely(loadOverview, 'Failed to load billing overview.') }
 async function resetOverviewFilters() { overviewPreset.value = '7d'; overviewFilters.value = { ...defaultRange(), user: '', provider: '', model: '' }; appliedOverviewFilters.value = { ...overviewFilters.value }; await safely(loadOverview, 'Failed to load billing overview.') }
-async function applyChargeFilters() { appliedChargeFilters.value = { ...chargeFilters.value }; chargePage.value = 1; await safely(loadCharges, 'Failed to load charges.') }
+async function applyChargeFilters() { const error = dateRangeError(chargeFilters.value.from, chargeFilters.value.to); if (error) { pageError.value = error; return }; appliedChargeFilters.value = { ...chargeFilters.value }; chargePage.value = 1; await safely(loadCharges, 'Failed to load charges.') }
 async function resetChargeFilters() { chargePreset.value = '7d'; chargeFilters.value = { ...defaultRange(), user: '', provider: '', model: '' }; appliedChargeFilters.value = { ...chargeFilters.value }; chargePage.value = 1; await safely(loadCharges, 'Failed to load charges.') }
-async function applyBalanceFilters() { appliedBalanceFilters.value = { ...balanceFilters.value }; balancePage.value = 1; await safely(loadBalances, 'Failed to load balance records.') }
+async function applyBalanceFilters() { const error = dateRangeError(balanceFilters.value.from, balanceFilters.value.to); if (error) { pageError.value = error; return }; appliedBalanceFilters.value = { ...balanceFilters.value }; balancePage.value = 1; await safely(loadBalances, 'Failed to load balance records.') }
 async function resetBalanceFilters() { balancePreset.value = '7d'; balanceFilters.value = { ...defaultRange(), user: '' }; appliedBalanceFilters.value = { ...balanceFilters.value }; balancePage.value = 1; await safely(loadBalances, 'Failed to load balance records.') }
 async function changeChargePage(delta) { const next = chargePage.value + delta; const pages = Math.max(1, Math.ceil(chargesTotal.value / chargePageSize.value)); if (next < 1 || next > pages) return; chargePage.value = next; await safely(loadCharges, 'Failed to load charges.') }
 async function changeBalancePage(delta) { const next = balancePage.value + delta; const pages = Math.max(1, Math.ceil(balancesTotal.value / balancePageSize.value)); if (next < 1 || next > pages) return; balancePage.value = next; await safely(loadBalances, 'Failed to load balance records.') }
